@@ -1,0 +1,25 @@
+# Local environment
+.env
+.env.*
+venv/
+.venv/
+
+# Python generated files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local assistant data
+*.sqlite
+*.sqlite3
+*.db
+
+# C toolserver build output
+c_toolserver/build/
+
+# Local Codex/session files
+.codex
+codex

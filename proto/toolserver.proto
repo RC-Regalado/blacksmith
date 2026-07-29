@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package toolserver.v1;
+
+enum ToolStatus {
+  TOOL_STATUS_UNSPECIFIED = 0;
+  TOOL_STATUS_OK = 1;
+  TOOL_STATUS_ERROR = 2;
+  TOOL_STATUS_DENIED = 3;
+  TOOL_STATUS_NOT_FOUND = 4;
+  TOOL_STATUS_INVALID_ARGUMENT = 5;
+  TOOL_STATUS_TIMEOUT = 6;
+}
+
+enum PermissionLevel {
+  PERMISSION_UNSPECIFIED = 0;
+  PERMISSION_READ_ONLY = 1;
+  PERMISSION_WORKSPACE_WRITE = 2;
+  PERMISSION_PROCESS_EXEC = 3;
+  PERMISSION_NETWORK = 4;
+  PERMISSION_SYSTEM = 5;
+}
+
+message ToolRequest {
+  string request_id = 1;
+  string tool_name = 2;
+  string workspace_id = 3;
+  string session_id = 4;
+
+  PermissionLevel requested_permission = 5;
+
+  map<string, string> args = 6;
+
+  int64 timeout_ms = 7;
+  bool dry_run = 8;
+}
+
+message ToolResponse {
+  string request_id = 1;
+  ToolStatus status = 2;
+
+  string message = 3;
+
+  bytes stdout_data = 4;
+  bytes stderr_data = 5;
+
+  int32 exit_code = 6;
+
+  repeated ToolArtifact artifacts = 7;
+
+  ToolError error = 8;
+}
+
+message ToolArtifact {
+  string name = 1;
+  string mime_type = 2;
+  bytes data = 3;
+  string path = 4;
+}
+
+message ToolError {
+  string code = 1;
+  string detail = 2;
+  string source = 3;
+}
