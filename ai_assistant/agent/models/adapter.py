@@ -35,7 +35,6 @@ class ModelAdapter(ModelProvider):
             base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
             api_key=os.getenv("OPENAI_API_KEY"),
         )
-        print(config.provider)
         return cls.from_config(config)
 
     @classmethod

@@ -1,6 +1,9 @@
 """Minimal command line interface."""
 
+import os
+
 from ai_assistant.agent.context import ContextBuilder
+from ai_assistant.agent.memory import DEFAULT_SESSION_ID
 from ai_assistant.agent.models.adapter import ModelAdapter
 from ai_assistant.agent.planner import ToolCallDetector
 from ai_assistant.agent.runtime import AgentRuntime
@@ -13,6 +16,7 @@ def build_runtime() -> AgentRuntime:
         memory=SQLiteConversationStore("assistant.sqlite3"),
         model=ModelAdapter.from_env(),
         tool_detector=ToolCallDetector(),
+        session_id=os.getenv("AI_ASSISTANT_SESSION", DEFAULT_SESSION_ID),
     )
 
 
