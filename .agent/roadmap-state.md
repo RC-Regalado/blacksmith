@@ -10,8 +10,8 @@ Phase 1: Python Core
 
 ## Current milestone
 
-- ID: M5
-- Name: Explicit ports
+- ID: M6
+- Name: Composition root
 - Status: implemented-awaiting-human-review
 - Source: `docs/roadmap.md`
 
@@ -32,8 +32,8 @@ Phase 1: Python Core
 | M2 | Migration to pytest | accepted | — | `.agent/reports/M2.md` | approved |
 | M3 | Explicit sessions | accepted | — | `.agent/reports/M3.md` | approved |
 | M4 | Transactional persistence | accepted | — | `.agent/reports/M4.md` | approved |
-| M5 | Explicit ports | implemented-awaiting-human-review | — | `.agent/reports/M5.md` | awaiting-review |
-| M6 | Composition root | planned | M5 | — | — |
+| M5 | Explicit ports | accepted | — | `.agent/reports/M5.md` | approved |
+| M6 | Composition root | implemented-awaiting-human-review | — | `.agent/reports/M6.md` | awaiting-review |
 | M7 | Centralized configuration | planned | M6 | — | — |
 | M8 | Basic logging | planned | M7 | — | — |
 | M9 | Typed internal errors | planned | M8 | — | — |
@@ -62,5 +62,5 @@ Record after first inspection:
 ## Last supervisor update
 
 - Date: 2026-07-29
-- Summary: Milestone 5 implemented and validated. Model and memory contracts now live under application ports.
-- Next action: Await human review for M5. Do not start M6 until M5 is accepted.
+- Summary: Milestone 6 implemented and validated. Runtime construction now lives in the bootstrap composition root, and the CLI can be constructed with fakes.
+- Next action: Await human review before starting Milestone 7.

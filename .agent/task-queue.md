@@ -33,6 +33,9 @@ The supervisor is the only agent permitted to update this file.
 | M5-T1 | M5 | Architect | Create explicit application ports for model and memory | `ai_assistant/application/ports/`, `ai_assistant/agent/models/provider.py`, `ai_assistant/agent/memory.py` | M4 | implemented |
 | M5-T2 | M5 | Runtime implementer | Update runtime/providers/tests to depend on ports and fakes | `ai_assistant/agent/runtime.py`, `ai_assistant/agent/models/*.py`, `ai_assistant/cli/app.py`, `tests/test_agent_runtime.py`, `tests/test_ports_contract.py` | M5-T1 | implemented |
 | M5-T3 | M5 | Integration validator | Validate explicit ports and produce review artifacts | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M5.md` | M5-T2 | implemented |
+| M6-T1 | M6 | Architect | Add bootstrap composition root | `ai_assistant/bootstrap/`, `ai_assistant/cli/app.py`, `tests/test_cli_app.py` | M5 | implemented |
+| M6-T2 | M6 | Runtime implementer | Move CLI runtime construction to bootstrap | `ai_assistant/bootstrap/container.py`, `ai_assistant/cli/app.py`, `ai_assistant/main.py`, `tests/test_cli_app.py` | M6-T1 | implemented |
+| M6-T3 | M6 | Integration validator | Validate composition root and produce review artifacts | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M6.md` | M6-T2 | implemented |
 
 ## Task records
 
@@ -1351,3 +1354,258 @@ rg -n "from ai_assistant\\.(storage|agent\\.models\\.(dummy|openai_compatible|ad
 - Assumptions: `Message` remains under `agent` until M15 layered reorganization.
 - Remaining issues: None for M5.
 - Recommended follow-up: Human review should verify M5 before M6 starts.
+
+### Task M6-T1 — Add Bootstrap Composition Root
+
+## Parent milestone
+
+M6
+
+## Status
+
+implemented
+
+## Owner role
+
+Architect
+
+## Objective
+
+Create a bootstrap composition root that owns runtime construction.
+
+## Scope
+
+- Add `ai_assistant/bootstrap/container.py`.
+- Add `create_application()`.
+- Keep dependency construction out of CLI.
+
+## Explicit exclusions
+
+- No DI framework.
+- No config object milestone work.
+- No dynamic discovery.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/bootstrap/`
+- `ai_assistant/cli/app.py`
+- `tests/test_cli_app.py`
+
+### Read-only
+
+- `docs/roadmap.md`
+
+### Forbidden
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M5 accepted.
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-007 Configuration at bootstrap
+
+## Acceptance criteria
+
+- [x] `create_application()` exists.
+- [x] Bootstrap builds runtime dependencies.
+- [x] CLI no longer imports concrete model/store adapters.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit
+```
+
+## Risks
+
+- Import cycles.
+
+## Result report
+
+- Summary: Added bootstrap composition root and moved runtime construction there.
+- Files changed: `ai_assistant/bootstrap/__init__.py`, `ai_assistant/bootstrap/container.py`, `ai_assistant/cli/app.py`, `tests/test_cli_app.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit`
+- Test results: 18 unit tests passed.
+- Assumptions: Full configuration object remains for M7.
+- Remaining issues: None for this task.
+- Recommended follow-up: M7 should replace direct env reads in bootstrap/model adapter.
+
+### Task M6-T2 — Move CLI Runtime Construction
+
+## Parent milestone
+
+M6
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Make CLI receive an application/runtime from bootstrap while preserving `python main.py`.
+
+## Scope
+
+- Introduce a small CLI app object or equivalent function boundary.
+- Keep `run_cli()` working.
+- Add tests proving CLI app can be constructed with fakes.
+
+## Explicit exclusions
+
+- No config dataclass.
+- No logging.
+- No changed CLI commands.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/bootstrap/container.py`
+- `ai_assistant/cli/app.py`
+- `ai_assistant/main.py`
+- `tests/test_cli_app.py`
+
+### Read-only
+
+- `ai_assistant/agent/runtime.py`
+
+### Forbidden
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M6-T1
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-007 Configuration at bootstrap
+
+## Acceptance criteria
+
+- [x] `main.py` still starts CLI.
+- [x] CLI can be constructed with fake runtime.
+- [x] CLI does not import concrete model/store adapters.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit
+printf 'quit\n' | PYTHONDONTWRITEBYTECODE=1 python main.py
+```
+
+## Risks
+
+- Tests around `input()`/`print()` can overfit CLI internals.
+
+## Result report
+
+- Summary: CLI now owns input/output loop only and delegates construction to bootstrap.
+- Files changed: `ai_assistant/bootstrap/container.py`, `ai_assistant/cli/app.py`, `tests/test_cli_app.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest`; `printf 'quit\n' | PYTHONDONTWRITEBYTECODE=1 python main.py`; CLI concrete-import `rg` check.
+- Test results: full pytest passed; CLI smoke exited 0; import check found no matches.
+- Assumptions: Lazy import inside `run_cli()` avoids a bootstrap/CLI import cycle.
+- Remaining issues: None for this task.
+- Recommended follow-up: M7 centralizes config values.
+
+### Task M6-T3 — Validate Composition Root
+
+## Parent milestone
+
+M6
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Verify M6 acceptance criteria and prepare human review.
+
+## Scope
+
+- Run pytest validation.
+- Run CLI smoke.
+- Write `.agent/reports/M6.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M6 accepted.
+- Do not start M7.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M6.md`
+
+### Read-only
+
+- all project source files
+- tests
+- docs
+
+### Forbidden
+
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M6-T2
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-007 Configuration at bootstrap
+
+## Acceptance criteria
+
+- [x] `main.py` only starts the application.
+- [x] CLI does not import concrete adapters.
+- [x] Tests can construct CLI with fakes.
+- [x] Full pytest suite passes.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest
+printf 'quit\n' | PYTHONDONTWRITEBYTECODE=1 python main.py
+rg -n "SQLiteConversationStore|ModelAdapter|ContextBuilder|ToolCallDetector" ai_assistant/cli/app.py
+```
+
+## Risks
+
+- M7 will still need to centralize configuration object.
+
+## Result report
+
+- Summary: Validated the M6 composition root, CLI injection path and independent read-only review.
+- Files changed: `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M6.md`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m integration`; `printf 'quit\n' | PYTHONDONTWRITEBYTECODE=1 python main.py`; `rg -n "SQLiteConversationStore|ModelAdapter|ContextBuilder|ToolCallDetector" ai_assistant/cli/app.py`.
+- Test results: full pytest passed with 22 tests; unit suite passed with 18 tests and 4 deselected; integration suite passed with 2 tests and 20 deselected; CLI smoke exited 0; CLI concrete-adapter import check found no matches.
+- Assumptions: M7 will replace direct environment reads in the bootstrap with centralized configuration.
+- Remaining issues: None for M6.
+- Recommended follow-up: Human review before starting M7.

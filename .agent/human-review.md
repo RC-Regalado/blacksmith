@@ -17,7 +17,8 @@ Generated changes are provisional until recorded here.
 | M2 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Revisado, pasa el M3". |
 | M3 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobado, pasa el M4". |
 | M4 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobado, pasa al siguiente milestone". |
-| M5 | implemented-awaiting-human-review | awaiting-review | — | 2026-07-29 | Explicit ports passed; review `.agent/reports/M5.md`. |
+| M5 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "aprobado, pasa al M6". |
+| M6 | implemented-awaiting-human-review | awaiting-review | — | 2026-07-29 | Composition root implemented and validated; review `.agent/reports/M6.md`. |
 
 ## Approval gates
 
