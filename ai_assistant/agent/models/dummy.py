@@ -1,7 +1,7 @@
 """Dummy model provider for local testing."""
 
+from ai_assistant.application.ports.models import ModelProvider
 from ai_assistant.agent.message import Message
-from ai_assistant.agent.models.provider import ModelProvider
 
 
 class DummyModel(ModelProvider):
@@ -14,4 +14,3 @@ class DummyModel(ModelProvider):
             raise ValueError("DummyModel requires at least one user message.")
 
         return Message(role="assistant", content=f"Echo: {last_user.content}")
-

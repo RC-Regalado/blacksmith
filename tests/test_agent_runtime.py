@@ -1,28 +1,27 @@
-"""Tests for the Phase 1 agent runtime and memory stores."""
-
-import sqlite3
-from pathlib import Path
+"""Tests for the Phase 1 agent runtime."""
 
 import pytest
 
 from ai_assistant.agent.context import ContextBuilder
-from ai_assistant.agent.memory import DEFAULT_SESSION_ID, InMemoryConversationStore
+from ai_assistant.application.ports.memory import (
+    ConversationMemory,
+    SessionId,
+)
+from ai_assistant.application.ports.models import ModelProvider
 from ai_assistant.agent.message import Message
-from ai_assistant.agent.models.dummy import DummyModel
 from ai_assistant.agent.planner import ToolCallDetector
 from ai_assistant.agent.runtime import AgentRuntime
-from ai_assistant.storage.sqlite_memory import SQLiteConversationStore
 
 
 pytestmark = pytest.mark.unit
 
 
 def test_runtime_persists_user_and_assistant_turn() -> None:
-    memory = InMemoryConversationStore()
+    memory = FakeConversationStore()
     runtime = AgentRuntime(
         context_builder=ContextBuilder(system_prompt="System prompt"),
         memory=memory,
-        model=DummyModel(),
+        model=FakeModel("Echo: Hello"),
         tool_detector=ToolCallDetector(),
         session_id="alpha",
     )
@@ -37,18 +36,20 @@ def test_runtime_persists_user_and_assistant_turn() -> None:
     assert memory.history("beta") == []
 
 
-def test_in_memory_store_isolates_sessions() -> None:
-    memory = InMemoryConversationStore()
+def test_runtime_persists_complete_turn_atomically() -> None:
+    memory = FailingTurnStore()
+    runtime = AgentRuntime(
+        context_builder=ContextBuilder(system_prompt="System prompt"),
+        memory=memory,
+        model=FakeModel("Echo: Hello"),
+        tool_detector=ToolCallDetector(),
+        session_id="alpha",
+    )
 
-    memory.append("alpha", Message(role="user", content="A"))
-    memory.append("beta", Message(role="user", content="B"))
+    with pytest.raises(RuntimeError, match="store failed"):
+        runtime.respond("Hello")
 
-    assert memory.history("alpha") == [
-        Message(role="user", content="A", session_id="alpha")
-    ]
-    assert memory.history("beta") == [
-        Message(role="user", content="B", session_id="beta")
-    ]
+    assert memory.history("alpha") == []
 
 
 def test_context_builder_merges_system_history_and_user_input() -> None:
@@ -64,56 +65,42 @@ def test_context_builder_merges_system_history_and_user_input() -> None:
     ]
 
 
-def test_sqlite_store_persists_messages_in_order(tmp_path: Path) -> None:
-    database_path = tmp_path / "assistant.sqlite3"
-    store = SQLiteConversationStore(database_path)
-    store.append("alpha", Message(role="user", content="Hello"))
-    store.append("alpha", Message(role="assistant", content="Echo: Hello"))
+class FailingTurnStore(ConversationMemory):
+    def __init__(self) -> None:
+        self._messages: list[Message] = []
 
-    restored = SQLiteConversationStore(database_path)
+    def append(self, session_id: SessionId, message: Message) -> None:
+        self.append_many(session_id, [message])
 
-    assert restored.history("alpha") == [
-        Message(role="user", content="Hello", session_id="alpha"),
-        Message(role="assistant", content="Echo: Hello", session_id="alpha"),
-    ]
+    def append_many(self, session_id: SessionId, messages: list[Message]) -> None:
+        raise RuntimeError("store failed")
 
-
-def test_sqlite_store_isolates_sessions(tmp_path: Path) -> None:
-    store = SQLiteConversationStore(tmp_path / "assistant.sqlite3")
-
-    store.append("alpha", Message(role="user", content="A"))
-    store.append("beta", Message(role="user", content="B"))
-
-    assert store.history("alpha") == [
-        Message(role="user", content="A", session_id="alpha")
-    ]
-    assert store.history("beta") == [
-        Message(role="user", content="B", session_id="beta")
-    ]
+    def history(self, session_id: SessionId) -> list[Message]:
+        return list(self._messages)
 
 
-def test_sqlite_store_migrates_existing_rows_to_default_session(
-    tmp_path: Path,
-) -> None:
-    database_path = tmp_path / "assistant.sqlite3"
-    with sqlite3.connect(database_path) as connection:
-        connection.execute(
-            """
-            CREATE TABLE messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                role TEXT NOT NULL,
-                content TEXT NOT NULL,
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-            """
-        )
-        connection.execute(
-            "INSERT INTO messages (role, content) VALUES (?, ?)",
-            ("user", "Legacy"),
+class FakeConversationStore(ConversationMemory):
+    def __init__(self) -> None:
+        self._messages: list[Message] = []
+
+    def append(self, session_id: SessionId, message: Message) -> None:
+        self.append_many(session_id, [message])
+
+    def append_many(self, session_id: SessionId, messages: list[Message]) -> None:
+        self._messages.extend(
+            Message(role=message.role, content=message.content, session_id=session_id)
+            for message in messages
         )
 
-    store = SQLiteConversationStore(database_path)
+    def history(self, session_id: SessionId) -> list[Message]:
+        return [
+            message for message in self._messages if message.session_id == session_id
+        ]
 
-    assert store.history(DEFAULT_SESSION_ID) == [
-        Message(role="user", content="Legacy", session_id=DEFAULT_SESSION_ID)
-    ]
+
+class FakeModel(ModelProvider):
+    def __init__(self, response: str) -> None:
+        self._response = response
+
+    def chat(self, messages: list[Message]) -> Message:
+        return Message(role="assistant", content=self._response)

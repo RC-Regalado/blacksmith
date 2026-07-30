@@ -27,6 +27,12 @@ The supervisor is the only agent permitted to update this file.
 | M3-T1 | M3 | Runtime implementer | Thread explicit session IDs through runtime and in-memory store | `ai_assistant/agent/memory.py`, `ai_assistant/agent/runtime.py`, `ai_assistant/cli/app.py`, `tests/test_agent_runtime.py` | M2 | implemented |
 | M3-T2 | M3 | Persistence implementer | Persist and filter SQLite history by session ID | `ai_assistant/storage/sqlite_memory.py`, `tests/test_agent_runtime.py` | M3-T1 | implemented |
 | M3-T3 | M3 | Integration validator | Validate explicit sessions and produce review artifacts | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M3.md` | M3-T2 | implemented |
+| M4-T1 | M4 | Persistence implementer | Add transactional append_many to conversation stores | `ai_assistant/agent/memory.py`, `ai_assistant/storage/sqlite_memory.py`, `tests/test_agent_runtime.py` | M3 | implemented |
+| M4-T2 | M4 | Runtime implementer | Persist complete turns through append_many | `ai_assistant/agent/runtime.py`, `tests/test_agent_runtime.py` | M4-T1 | implemented |
+| M4-T3 | M4 | Integration validator | Validate transactional persistence and produce review artifacts | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M4.md` | M4-T2 | implemented |
+| M5-T1 | M5 | Architect | Create explicit application ports for model and memory | `ai_assistant/application/ports/`, `ai_assistant/agent/models/provider.py`, `ai_assistant/agent/memory.py` | M4 | implemented |
+| M5-T2 | M5 | Runtime implementer | Update runtime/providers/tests to depend on ports and fakes | `ai_assistant/agent/runtime.py`, `ai_assistant/agent/models/*.py`, `ai_assistant/cli/app.py`, `tests/test_agent_runtime.py`, `tests/test_ports_contract.py` | M5-T1 | implemented |
+| M5-T3 | M5 | Integration validator | Validate explicit ports and produce review artifacts | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M5.md` | M5-T2 | implemented |
 
 ## Task records
 
@@ -827,3 +833,521 @@ AI_ASSISTANT_SESSION=alt PYTHONDONTWRITEBYTECODE=1 python -c "from ai_assistant.
 - Assumptions: Whitespace-preserving session IDs are acceptable until interactive session management exists.
 - Remaining issues: None for M3.
 - Recommended follow-up: Human review should verify M3 before M4 starts.
+
+### Task M4-T1 — Add Transactional append_many
+
+## Parent milestone
+
+M4
+
+## Status
+
+implemented
+
+## Owner role
+
+Persistence implementer
+
+## Objective
+
+Add `append_many` to conversation stores so multiple messages can be persisted atomically.
+
+## Scope
+
+- Add `append_many(session_id, messages)` to `ConversationMemory`.
+- Implement in-memory append with all-or-nothing validation.
+- Implement SQLite append in one transaction.
+- Add rollback test for SQLite.
+
+## Explicit exclusions
+
+- No session changes.
+- No WAL or advanced locking.
+- No retries or nested transaction API.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/agent/memory.py`
+- `ai_assistant/storage/sqlite_memory.py`
+- `tests/test_agent_runtime.py`
+
+### Read-only
+
+- `docs/adr/ADR-010-transactional-turn-persistence.md`
+- `docs/roadmap.md`
+
+### Forbidden
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M3 accepted.
+
+## Applicable ADRs
+
+- ADR-010 Transactional turn persistence
+- ADR-004 SQLite conversation persistence
+
+## Acceptance criteria
+
+- [x] `append_many` exists on the store contract.
+- [x] SQLite writes multiple messages in one transaction.
+- [x] SQLite rollback leaves no partial turn.
+- [x] In-memory store has equivalent all-or-nothing behavior.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit
+```
+
+## Risks
+
+- A rollback test may depend on SQLite constraints.
+
+## Result report
+
+- Summary: Added `append_many` to memory contract, in-memory store and SQLite store.
+- Files changed: `ai_assistant/agent/memory.py`, `ai_assistant/storage/sqlite_memory.py`, `tests/test_agent_runtime.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest`
+- Test results: unit and full pytest suites passed.
+- Assumptions: SQLite context manager transaction semantics are sufficient for Phase 1.
+- Remaining issues: Existing SQLite tables do not gain the new role `CHECK`; rollback behavior is still transactional for DB errors.
+- Recommended follow-up: M9 can normalize persistence errors.
+
+### Task M4-T2 — Runtime Uses append_many
+
+## Parent milestone
+
+M4
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Persist user and assistant messages as one complete turn.
+
+## Scope
+
+- Update `AgentRuntime._persist_turn()` to call `append_many`.
+- Preserve existing response behavior.
+- Add runtime test proving a failing second append leaves no user-only turn.
+
+## Explicit exclusions
+
+- No model retry behavior.
+- No error hierarchy.
+- No transaction implementation inside runtime.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/agent/runtime.py`
+- `tests/test_agent_runtime.py`
+
+### Read-only
+
+- `ai_assistant/agent/memory.py`
+- `docs/adr/ADR-010-transactional-turn-persistence.md`
+
+### Forbidden
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M4-T1
+
+## Applicable ADRs
+
+- ADR-010 Transactional turn persistence
+- ADR-006 ModelProvider port
+
+## Acceptance criteria
+
+- [x] Runtime persists complete turns through `append_many`.
+- [x] Runtime does not manually perform transaction logic.
+- [x] A store failure cannot leave a user-only turn through runtime.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit
+```
+
+## Risks
+
+- Test fake must not encode behavior unlike the store contract.
+
+## Result report
+
+- Summary: Updated runtime to persist user and assistant messages through one `append_many` call.
+- Files changed: `ai_assistant/agent/runtime.py`, `tests/test_agent_runtime.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit`
+- Test results: unit tests passed.
+- Assumptions: Store owns transaction semantics; runtime only calls the contract.
+- Remaining issues: None for this task.
+- Recommended follow-up: None.
+
+### Task M4-T3 — Validate Transactional Persistence
+
+## Parent milestone
+
+M4
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Verify all Milestone 4 acceptance criteria and prepare human review.
+
+## Scope
+
+- Run pytest validation.
+- Review combined diff.
+- Write `.agent/reports/M4.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M4 accepted.
+- Do not start M5.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M4.md`
+
+### Read-only
+
+- all project source files
+- tests
+- docs
+
+### Forbidden
+
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M4-T2
+
+## Applicable ADRs
+
+- ADR-010 Transactional turn persistence
+
+## Acceptance criteria
+
+- [x] User and assistant messages are written together.
+- [x] On error, neither message is persisted.
+- [x] Message order is preserved.
+- [x] Validation evidence is recorded for human review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m integration
+```
+
+## Risks
+
+- Full suite may expose unrelated integration issues.
+
+## Result report
+
+- Summary: Validated transactional persistence and independent read-only review.
+- Files changed: `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M4.md`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m integration`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_agent_runtime.py -q`
+- Test results: 18 passed; 16 unit passed; 2 integration passed; agent runtime tests 9 passed.
+- Assumptions: Existing migrated SQLite tables may not have the new role `CHECK`, but `append_many` remains transactional for DB errors.
+- Remaining issues: None for M4.
+- Recommended follow-up: Human review should verify M4 before M5 starts.
+
+### Task M5-T1 — Create Explicit Application Ports
+
+## Parent milestone
+
+M5
+
+## Status
+
+implemented
+
+## Owner role
+
+Architect
+
+## Objective
+
+Move model and memory contracts into explicit application ports.
+
+## Scope
+
+- Create `ai_assistant/application/ports/models.py`.
+- Create `ai_assistant/application/ports/memory.py`.
+- Keep compatibility imports for existing modules.
+
+## Explicit exclusions
+
+- No full layered repo reorganization.
+- No DI framework.
+- No provider behavior changes.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/application/`
+- `ai_assistant/agent/models/provider.py`
+- `ai_assistant/agent/memory.py`
+
+### Read-only
+
+- `docs/adr/ADR-001-ports-and-adapters.md`
+- `docs/adr/ADR-006-modelprovider-port.md`
+
+### Forbidden
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M4 accepted.
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-006 ModelProvider port
+
+## Acceptance criteria
+
+- [x] ModelProvider port lives under `application/ports`.
+- [x] ConversationMemory port lives under `application/ports`.
+- [x] Compatibility imports still work.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit
+```
+
+## Risks
+
+- Import cycles if ports import infrastructure.
+
+## Result report
+
+- Summary: Added explicit application ports for model and memory and compatibility re-exports.
+- Files changed: `ai_assistant/application/__init__.py`, `ai_assistant/application/ports/__init__.py`, `ai_assistant/application/ports/models.py`, `ai_assistant/application/ports/memory.py`, `ai_assistant/agent/models/provider.py`, `ai_assistant/agent/memory.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit`
+- Test results: unit tests passed.
+- Assumptions: `Message` remains in `agent` until M15 reorganizes domain/application layers.
+- Remaining issues: None for M5 scope.
+- Recommended follow-up: M15 can remove compatibility import modules if desired.
+
+### Task M5-T2 — Update Runtime and Tests to Ports
+
+## Parent milestone
+
+M5
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Make runtime and providers depend on explicit ports, and runtime tests use fakes.
+
+## Scope
+
+- Update runtime imports to application ports.
+- Update model providers/adapters imports to application ports.
+- Add fake model/store for runtime tests.
+- Preserve existing behavior.
+
+## Explicit exclusions
+
+- No composition root.
+- No moved infrastructure packages.
+- No public API removal.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/agent/runtime.py`
+- `ai_assistant/agent/models/adapter.py`
+- `ai_assistant/agent/models/dummy.py`
+- `ai_assistant/agent/models/openai_compatible.py`
+- `ai_assistant/agent/models/__init__.py`
+- `ai_assistant/cli/app.py`
+- `tests/test_agent_runtime.py`
+- `tests/test_ports_contract.py`
+
+### Read-only
+
+- `ai_assistant/storage/sqlite_memory.py`
+
+### Forbidden
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M5-T1
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-006 ModelProvider port
+
+## Acceptance criteria
+
+- [x] Runtime imports model and memory ports from `application/ports`.
+- [x] Runtime does not import SQLite, Ollama or OpenAI.
+- [x] Runtime tests use fakes for runtime behavior.
+- [x] Provider tests still pass.
+- [x] Basic port contract tests exist.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit
+PYTHONDONTWRITEBYTECODE=1 python -m pytest
+```
+
+## Risks
+
+- Backward-compatible re-exports may hide old imports.
+
+## Result report
+
+- Summary: Updated runtime/providers to use application ports and split runtime tests from store implementation tests.
+- Files changed: `ai_assistant/agent/runtime.py`, `ai_assistant/agent/models/adapter.py`, `ai_assistant/agent/models/dummy.py`, `ai_assistant/agent/models/openai_compatible.py`, `ai_assistant/agent/models/__init__.py`, `ai_assistant/cli/app.py`, `ai_assistant/storage/sqlite_memory.py`, `tests/test_agent_runtime.py`, `tests/test_memory_stores.py`, `tests/test_ports_contract.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m contract`; import `rg` checks.
+- Test results: full, unit and contract pytest suites passed; runtime import checks returned no matches.
+- Assumptions: Store implementation tests can import concrete SQLite store; runtime tests use fakes.
+- Remaining issues: None for M5 scope.
+- Recommended follow-up: M6 should move CLI construction into a composition root.
+
+### Task M5-T3 — Validate Explicit Ports
+
+## Parent milestone
+
+M5
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Verify M5 acceptance criteria and prepare human review.
+
+## Scope
+
+- Run pytest validation.
+- Inspect runtime imports.
+- Write `.agent/reports/M5.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M5 accepted.
+- Do not start M6.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.md`
+
+### Read-only
+
+- all project source files
+- tests
+- docs
+
+### Forbidden
+
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M5-T2
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-006 ModelProvider port
+
+## Acceptance criteria
+
+- [x] Runtime no longer imports concrete infrastructure ports.
+- [x] Runtime tests use fakes.
+- [x] Full pytest suite passes.
+- [x] Validation evidence is recorded for human review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit
+rg -n "from ai_assistant\\.(storage|agent\\.models\\.(dummy|openai_compatible|adapter))" ai_assistant/agent/runtime.py tests/test_agent_runtime.py
+```
+
+## Risks
+
+- Full ports/layers cleanup is deferred to M15.
+
+## Result report
+
+- Summary: Validated explicit ports and independent read-only review.
+- Files changed: `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M5.md`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m contract`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m integration`; runtime concrete-import `rg` check.
+- Test results: 20 passed; 16 unit passed; 2 contract passed; 2 integration passed; runtime import check found no matches.
+- Assumptions: `Message` remains under `agent` until M15 layered reorganization.
+- Remaining issues: None for M5.
+- Recommended follow-up: Human review should verify M5 before M6 starts.

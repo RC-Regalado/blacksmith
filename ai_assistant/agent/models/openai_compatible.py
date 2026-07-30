@@ -6,8 +6,8 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from ai_assistant.application.ports.models import ModelProvider
 from ai_assistant.agent.message import Message
-from ai_assistant.agent.models.provider import ModelProvider
 
 
 @dataclass(frozen=True, slots=True)

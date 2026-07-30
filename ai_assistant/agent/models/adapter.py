@@ -4,10 +4,10 @@ import os
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 
+from ai_assistant.application.ports.models import ModelProvider
 from ai_assistant.agent.message import Message
 from ai_assistant.agent.models.dummy import DummyModel
 from ai_assistant.agent.models.openai_compatible import OpenAICompatibleModel
-from ai_assistant.agent.models.provider import ModelProvider
 
 
 ProviderFactory = Callable[["ModelAdapterConfig"], ModelProvider]

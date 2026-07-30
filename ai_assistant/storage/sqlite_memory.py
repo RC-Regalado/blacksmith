@@ -3,7 +3,7 @@
 import sqlite3
 from pathlib import Path
 
-from ai_assistant.agent.memory import (
+from ai_assistant.application.ports.memory import (
     DEFAULT_SESSION_ID,
     ConversationMemory,
     SessionId,
@@ -18,11 +18,20 @@ class SQLiteConversationStore(ConversationMemory):
         self._initialize()
 
     def append(self, session_id: SessionId, message: Message) -> None:
+        self.append_many(session_id, [message])
+
+    def append_many(self, session_id: SessionId, messages: list[Message]) -> None:
         session_id = validate_session_id(session_id)
         with self._connect() as connection:
-            connection.execute(
-                "INSERT INTO messages (session_id, role, content) VALUES (?, ?, ?)",
-                (session_id, message.role, message.content),
+            connection.executemany(
+                """
+                INSERT INTO messages (session_id, role, content)
+                VALUES (?, ?, ?)
+                """,
+                [
+                    (session_id, message.role, message.content)
+                    for message in messages
+                ],
             )
 
     def history(self, session_id: SessionId) -> list[Message]:
@@ -50,7 +59,8 @@ class SQLiteConversationStore(ConversationMemory):
                 CREATE TABLE IF NOT EXISTS messages (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     session_id TEXT NOT NULL DEFAULT 'default',
-                    role TEXT NOT NULL,
+                    role TEXT NOT NULL
+                        CHECK (role IN ('system', 'user', 'assistant', 'tool')),
                     content TEXT NOT NULL,
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )

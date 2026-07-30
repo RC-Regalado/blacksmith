@@ -2,8 +2,8 @@
 
 import os
 
+from ai_assistant.application.ports.memory import DEFAULT_SESSION_ID
 from ai_assistant.agent.context import ContextBuilder
-from ai_assistant.agent.memory import DEFAULT_SESSION_ID
 from ai_assistant.agent.models.adapter import ModelAdapter
 from ai_assistant.agent.planner import ToolCallDetector
 from ai_assistant.agent.runtime import AgentRuntime

@@ -1,12 +1,5 @@
-"""Model provider interface."""
+"""Compatibility import for the model provider port."""
 
-from abc import ABC, abstractmethod
+from ai_assistant.application.ports.models import ModelProvider
 
-from ai_assistant.agent.message import Message
-
-
-class ModelProvider(ABC):
-    @abstractmethod
-    def chat(self, messages: list[Message]) -> Message:
-        raise NotImplementedError
-
+__all__ = ["ModelProvider"]

@@ -3,14 +3,14 @@
 from dataclasses import dataclass
 
 from ai_assistant.agent.context import ContextBuilder
-from ai_assistant.agent.memory import (
+from ai_assistant.application.ports.memory import (
     DEFAULT_SESSION_ID,
     ConversationMemory,
     SessionId,
     validate_session_id,
 )
 from ai_assistant.agent.message import Message
-from ai_assistant.agent.models.provider import ModelProvider
+from ai_assistant.application.ports.models import ModelProvider
 from ai_assistant.agent.planner import ToolCallDetector
 
 
@@ -36,8 +36,10 @@ class AgentRuntime:
         return response
 
     def _persist_turn(self, user_input: str, response: Message) -> None:
-        self.memory.append(
+        self.memory.append_many(
             self.session_id,
-            Message(role="user", content=user_input),
+            [
+                Message(role="user", content=user_input),
+                response,
+            ],
         )
-        self.memory.append(self.session_id, response)
