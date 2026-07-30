@@ -1,0 +1,134 @@
+# AI Assistant
+
+Local-first AI assistant core written in Python.
+
+Phase 1 provides a small CLI, framework-agnostic agent runtime, provider adapters, conversation memory, SQLite persistence, configuration, logging, typed errors, context budgeting, declarative tool-call detection and separated CI.
+
+## Requirements
+
+- Python 3.12+
+- `pytest` for development tests
+- Optional: Ollama for local model smoke tests
+
+Install development dependencies:
+
+```bash
+python -m pip install -r requirements-dev.txt
+```
+
+## Run
+
+Default provider is `dummy`, so the CLI works without external services:
+
+```bash
+python main.py
+```
+
+Exit with `quit`, `exit` or EOF.
+
+## Configuration
+
+Configuration is loaded once at bootstrap from environment variables.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `AI_ASSISTANT_PROVIDER` | `dummy` | `dummy`, `ollama`, `openai` or `chatgpt` |
+| `AI_ASSISTANT_MODEL` | empty | Provider model name |
+| `AI_ASSISTANT_BASE_URL` | provider-specific | Ollama or OpenAI-compatible base URL |
+| `AI_ASSISTANT_DATABASE` | `assistant.sqlite3` | SQLite database path |
+| `AI_ASSISTANT_SESSION` | `default` | Conversation session ID |
+| `AI_ASSISTANT_SYSTEM_PROMPT` | `You are a local AI assistant.` | System prompt |
+| `AI_ASSISTANT_LOG_LEVEL` | `INFO` | Python logging level |
+| `AI_ASSISTANT_REQUEST_TIMEOUT` | `60` | Provider request timeout in seconds |
+| `AI_ASSISTANT_CONTEXT_LIMIT` | `4096` | Simple character budget for context |
+| `OPENAI_API_KEY` | unset | API key for OpenAI-compatible providers |
+
+Example with Ollama:
+
+```bash
+AI_ASSISTANT_PROVIDER=ollama \
+AI_ASSISTANT_MODEL=gemma3:1b \
+AI_ASSISTANT_REQUEST_TIMEOUT=180 \
+python main.py
+```
+
+## Architecture
+
+The current Python core is layered:
+
+```text
+interfaces -> application -> domain
+infrastructure -> application ports
+infrastructure -> domain
+bootstrap -> all layers
+```
+
+Package responsibilities:
+
+- `ai_assistant/domain/`: messages, sessions, errors and declarative tool models.
+- `ai_assistant/application/`: runtime, context building, tool-call interpretation and ports.
+- `ai_assistant/infrastructure/`: model providers and memory stores.
+- `ai_assistant/interfaces/`: CLI adapter.
+- `ai_assistant/bootstrap/`: composition root and environment configuration.
+- `ai_assistant/agent/`, `ai_assistant/cli/`, `ai_assistant/storage/`: compatibility exports.
+
+More detail lives in `docs/architecture.md`.
+
+## Tests
+
+Run everything that does not require a real Ollama service:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -q
+```
+
+Separated suites:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit -q
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m integration -q
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m contract -q
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m smoke -q
+```
+
+Real Ollama smoke:
+
+```bash
+AI_ASSISTANT_MODEL=gemma3:1b \
+AI_ASSISTANT_REQUEST_TIMEOUT=180 \
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m ollama -q
+```
+
+CI mirrors these categories in `.github/workflows/ci.yml`.
+
+## Phase 1 Scope
+
+Implemented:
+
+- CLI via `python main.py`
+- Dummy provider
+- Native Ollama adapter
+- OpenAI-compatible adapter
+- Explicit sessions
+- SQLite persistence with transactional turn writes
+- Centralized configuration
+- Basic logging
+- Typed internal errors
+- Context budget
+- Declarative tool-call detection without execution
+- Pytest suite and separated CI
+- Layered architecture and ADR documentation
+
+Not implemented in Phase 1:
+
+- UI beyond CLI
+- External integrations
+- Tool execution
+- Embeddings or RAG
+- Streaming responses
+- Multi-agent runtime
+- Production C tool service integration
+
+## ADRs
+
+Architectural decisions are recorded in `docs/adr/`. Accepted and implemented ADRs are binding; changing one requires a superseding ADR and human approval.

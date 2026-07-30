@@ -63,6 +63,12 @@ The supervisor is the only agent permitted to update this file.
 | M15-T1 | M15 | Architect | Establish canonical domain, application, infrastructure and interfaces modules | `ai_assistant/domain/`, `ai_assistant/application/`, `ai_assistant/infrastructure/`, `ai_assistant/interfaces/`, legacy compatibility modules | M14 | implemented |
 | M15-T2 | M15 | Runtime implementer | Wire bootstrap and entry points to the layered modules without changing behavior | `ai_assistant/bootstrap/container.py`, `ai_assistant/main.py`, tests | M15-T1 | implemented |
 | M15-T3 | M15 | Integration validator | Validate layer dependency rules, CLI smoke and full tests | `tests/test_layering.py`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M15.md` | M15-T2 | implemented |
+| M16-T1 | M16 | Test agent | Add separated CI jobs for unit, integration, contract and smoke tests | `.github/workflows/ci.yml` | M15 | implemented |
+| M16-T2 | M16 | Test agent | Add isolated optional Ollama smoke job | `.github/workflows/ci.yml` | M16-T1 | implemented |
+| M16-T3 | M16 | Integration validator | Validate CI commands locally where possible and prepare M16 report | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M16.md` | M16-T2 | implemented |
+| M17-T1 | M17 | Documentation agent | Add developer README with setup, configuration, tests and limitations | `README.md`, `context-ai.md`, `docs/model-profiles.md` | M16 | implemented |
+| M17-T2 | M17 | Documentation agent | Close ADR index and statuses for implemented Phase 1 decisions | `docs/adr/*.md`, `docs/adr/README.md` | M17-T1 | implemented |
+| M17-T3 | M17 | Integration validator | Validate Phase 1 documentation and produce final report | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M17.md` | M17-T2 | implemented |
 
 ## Task records
 

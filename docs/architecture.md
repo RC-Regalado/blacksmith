@@ -24,11 +24,11 @@ El documento distingue explícitamente entre:
 
 ## 2. Estado actual
 
-### 2.1 Fase activa
+### 2.1 Fase actual
 
 **Phase 1: Python Core**
 
-El alcance actual busca consolidar un núcleo funcional en Python con:
+Phase 1 está implementada y lista para revisión final. El núcleo funcional en Python incluye:
 
 - Gateway delgado.
 - Runtime de agente framework-agnostic.

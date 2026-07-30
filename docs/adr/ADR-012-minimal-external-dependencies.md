@@ -1,6 +1,6 @@
 # ADR-012 — Minimal external dependencies
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-07-29
 - Deciders: Project owner
 - Supersedes:

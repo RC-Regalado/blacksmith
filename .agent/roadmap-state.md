@@ -10,8 +10,8 @@ Phase 1: Python Core
 
 ## Current milestone
 
-- ID: M15
-- Name: Layered repository reorganization
+- ID: M17
+- Name: Documentation and ADR closure
 - Status: implemented-awaiting-human-review
 - Source: `docs/roadmap.md`
 
@@ -42,9 +42,9 @@ Phase 1: Python Core
 | M12 | Context budget | accepted | — | `.agent/reports/M12.md` | approved |
 | M13 | Robust OpenAI-compatible adapter | accepted | — | `.agent/reports/M13.md` | approved |
 | M14 | Declarative tools | accepted | — | `.agent/reports/M14.md` | approved |
-| M15 | Layered repository reorganization | implemented-awaiting-human-review | — | `.agent/reports/M15.md` | awaiting-review |
-| M16 | CI | planned | M15 | — | — |
-| M17 | Documentation and ADR closure | planned | M16 | — | — |
+| M15 | Layered repository reorganization | accepted | — | `.agent/reports/M15.md` | approved |
+| M16 | CI | accepted | — | `.agent/reports/M16.md` | approved |
+| M17 | Documentation and ADR closure | implemented-awaiting-human-review | — | `.agent/reports/M17.md` | awaiting-review |
 
 ## Current baseline
 
@@ -62,5 +62,5 @@ Record after first inspection:
 ## Last supervisor update
 
 - Date: 2026-07-29
-- Summary: Milestone 15 implemented and validated. Canonical modules now live under domain, application, infrastructure and interfaces; legacy packages re-export for compatibility.
-- Next action: Await human review before starting Milestone 16.
+- Summary: Milestone 17 implemented and validated. Phase 1 is documented with README, updated architecture, roadmap completion checklist and implemented ADR statuses.
+- Next action: Await final human review for Phase 1 closure.

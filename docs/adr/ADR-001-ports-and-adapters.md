@@ -1,6 +1,6 @@
 # ADR-001 — Ports and Adapters
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-07-29
 - Deciders: Project owner
 - Supersedes:

@@ -1242,22 +1242,22 @@ docs(architecture): document phase one decisions
 La fase termina cuando:
 
 ```text
-[ ] CLI ejecutable con python main.py
-[ ] Dummy provider funcional
-[ ] Ollama provider funcional
-[ ] OpenAI-compatible provider estructuralmente estable
-[ ] Sesiones persistentes
-[ ] SQLite transaccional
-[ ] Configuración centralizada
-[ ] Logging básico
-[ ] Errores tipados
-[ ] Context budget
-[ ] Herramientas declarativas sin ejecución
-[ ] Pytest
-[ ] CI separado
-[ ] Arquitectura por capas
-[ ] ADR documentados
-[ ] Repositorio limpio
+[x] CLI ejecutable con python main.py
+[x] Dummy provider funcional
+[x] Ollama provider funcional
+[x] OpenAI-compatible provider estructuralmente estable
+[x] Sesiones persistentes
+[x] SQLite transaccional
+[x] Configuración centralizada
+[x] Logging básico
+[x] Errores tipados
+[x] Context budget
+[x] Herramientas declarativas sin ejecución
+[x] Pytest
+[x] CI separado
+[x] Arquitectura por capas
+[x] ADR documentados
+[x] Repositorio limpio
 ```
 
 ---

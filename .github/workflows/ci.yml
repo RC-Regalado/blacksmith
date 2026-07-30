@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements-dev.txt
+      - run: PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit -q
+
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements-dev.txt
+      - run: PYTHONDONTWRITEBYTECODE=1 python -m pytest -m integration -q
+
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements-dev.txt
+      - run: PYTHONDONTWRITEBYTECODE=1 python -m pytest -m contract -q
+
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements-dev.txt
+      - run: PYTHONDONTWRITEBYTECODE=1 python -m pytest -m smoke -q
+
+  ollama-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Install Ollama
+        run: curl -fsSL https://ollama.com/install.sh | sh
+      - name: Start Ollama
+        run: |
+          ollama serve > ollama.log 2>&1 &
+          for i in {1..30}; do
+            ollama list >/dev/null 2>&1 && exit 0
+            sleep 2
+          done
+          cat ollama.log
+          exit 1
+      - name: Pull smoke model
+        run: ollama pull gemma3:1b
+      - name: Run Ollama smoke
+        env:
+          AI_ASSISTANT_PROVIDER: ollama
+          AI_ASSISTANT_MODEL: gemma3:1b
+          AI_ASSISTANT_BASE_URL: http://localhost:11434
+          AI_ASSISTANT_REQUEST_TIMEOUT: "180"
+        run: PYTHONDONTWRITEBYTECODE=1 python -m pytest -m ollama -q

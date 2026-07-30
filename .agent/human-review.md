@@ -27,7 +27,9 @@ Generated changes are provisional until recorded here.
 | M12 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobado, inicia el M13". |
 | M13 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobado, inicia M14". |
 | M14 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobado, todo sigue funcionando correctamente. Inicia el M15". |
-| M15 | implemented-awaiting-human-review | awaiting-review | — | 2026-07-29 | Layered repository reorganization implemented and validated; review `.agent/reports/M15.md`. |
+| M15 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobado, finaliza la fase 1 con la documentación". |
+| M16 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User requested Phase 1 closure after M15 approval; CI implemented and core commands validated locally. |
+| M17 | implemented-awaiting-human-review | awaiting-review | — | 2026-07-29 | Phase 1 documentation and ADR closure implemented; review `.agent/reports/M17.md`. |
 
 ## Approval gates
 

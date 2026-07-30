@@ -1,6 +1,6 @@
 # ADR-014 — Non-streaming calls in Phase 1
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-07-29
 - Deciders: Project owner
 - Supersedes:

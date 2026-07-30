@@ -1,6 +1,6 @@
 # ADR-002 — Python 3.12+ core
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-07-29
 - Deciders: Project owner
 - Supersedes:

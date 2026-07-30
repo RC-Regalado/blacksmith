@@ -1,6 +1,6 @@
 # ADR-010 — Transactional turn persistence
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-07-29
 - Deciders: Project owner
 - Supersedes:
