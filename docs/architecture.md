@@ -1038,6 +1038,39 @@ ToolPolicy
 ToolExecutor
 ```
 
+## 18.1 Phase 2 Proposed Tool Policy
+
+Phase 2 is limited to read-only workspace inspection through exactly two productive tools:
+
+- `list_directory`
+- `read_file`
+
+The model may request a tool, but authorization is deterministic application policy. Productive execution remains blocked until ADR-016 through ADR-025 are accepted.
+
+Required invariants:
+
+- deny by default;
+- no shell, process execution, Git execution, network access or writes;
+- all paths are relative to `AI_ASSISTANT_WORKSPACE`;
+- external absolute paths, traversal, external symlinks, hidden paths, sensitive paths and special files are denied;
+- default and hard limits are enforced for timeout, bytes, directory entries, recursion depth, path length, request payload and response payload;
+- every allow, deny, success, timeout and failure outcome is audited with sanitized metadata;
+- prompts, model responses and file contents are not stored in audit or logs;
+- the runtime may perform at most one tool execution round per user turn.
+
+The proposed ADR package is:
+
+- ADR-016 Safe Tool Execution Pipeline
+- ADR-017 Deny-by-Default Tool Policy
+- ADR-018 Read-Only Tool Allowlist
+- ADR-019 Workspace Confinement and Path Resolution
+- ADR-020 Tool Execution Audit and Retention
+- ADR-021 Tool Timeouts and Resource Limits
+- ADR-022 Unix Socket Tool Executor
+- ADR-023 Error and Log Redaction
+- ADR-024 Bounded Single Tool Round per Turn
+- ADR-025 Sensitive File Deny Policy
+
 ### Interfaces
 
 ```text

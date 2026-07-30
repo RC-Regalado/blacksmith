@@ -6,14 +6,14 @@ AI Assistant
 
 ## Active phase
 
-Phase 1: Python Core
+Phase 2: Read-Only Workspace Tools
 
 ## Current milestone
 
-- ID: M17
-- Name: Documentation and ADR closure
-- Status: implemented-awaiting-human-review
-- Source: `docs/roadmap.md`
+- ID: M2.2
+- Name: Add tool execution domain models
+- Status: planned
+- Source: `docs/roadmap-phase-2.md`
 
 ## Milestone status vocabulary
 
@@ -44,7 +44,28 @@ Phase 1: Python Core
 | M14 | Declarative tools | accepted | — | `.agent/reports/M14.md` | approved |
 | M15 | Layered repository reorganization | accepted | — | `.agent/reports/M15.md` | approved |
 | M16 | CI | accepted | — | `.agent/reports/M16.md` | approved |
-| M17 | Documentation and ADR closure | implemented-awaiting-human-review | — | `.agent/reports/M17.md` | awaiting-review |
+| M17 | Documentation and ADR closure | accepted | — | `.agent/reports/M17.md` | approved |
+
+## Phase 2 Milestones
+
+| ID | Milestone | Status | Blocking reason | Automated report | Human review |
+|---|---|---|---|---|---|
+| M2.1 | Approve Phase 2 security decisions | accepted | — | `.agent/reports/M2.1.md` | approved |
+| M2.2 | Add tool execution domain models | planned | — | — | — |
+| M2.3 | Add application ports | planned | M2.2 | — | — |
+| M2.4 | Implement the static tool catalog | planned | M2.3 | — | — |
+| M2.5 | Implement workspace and path policy | planned | M2.4 | — | — |
+| M2.6 | Implement deny-by-default tool policy | planned | M2.5 | — | — |
+| M2.7 | Add fake and dry-run executors | planned | M2.6 | — | — |
+| M2.8 | Implement audit persistence | planned | M2.7 | — | — |
+| M2.9 | Implement LocalReadOnlyToolExecutor | planned | M2.8 | — | — |
+| M2.10 | Implement ToolExecutionCoordinator | planned | M2.9 | — | — |
+| M2.11 | Integrate one bounded tool round into runtime | planned | M2.10 | — | — |
+| M2.12 | Add configuration and CLI support | planned | M2.11 | — | — |
+| M2.13 | Extend protobuf and C tool service | planned | M2.12 | — | — |
+| M2.14 | Implement UnixSocketToolExecutor | planned | M2.13 | — | — |
+| M2.15 | Add adversarial security tests | planned | M2.14 | — | — |
+| M2.16 | Documentation and final manual review | planned | M2.15 | — | — |
 
 ## Current baseline
 
@@ -61,6 +82,6 @@ Record after first inspection:
 
 ## Last supervisor update
 
-- Date: 2026-07-29
-- Summary: Milestone 17 implemented and validated. Phase 1 is documented with README, updated architecture, roadmap completion checklist and implemented ADR statuses.
-- Next action: Await final human review for Phase 1 closure.
+- Date: 2026-07-30
+- Summary: ADR-016 through ADR-025 approved by human review and marked Accepted. M2.1 is accepted; M2.2 is now eligible.
+- Next action: Start M2.2 when requested.

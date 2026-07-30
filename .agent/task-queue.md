@@ -69,6 +69,10 @@ The supervisor is the only agent permitted to update this file.
 | M17-T1 | M17 | Documentation agent | Add developer README with setup, configuration, tests and limitations | `README.md`, `context-ai.md`, `docs/model-profiles.md` | M16 | implemented |
 | M17-T2 | M17 | Documentation agent | Close ADR index and statuses for implemented Phase 1 decisions | `docs/adr/*.md`, `docs/adr/README.md` | M17-T1 | implemented |
 | M17-T3 | M17 | Integration validator | Validate Phase 1 documentation and produce final report | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M17.md` | M17-T2 | implemented |
+| M2.1-T1 | M2.1 | Phase 2 architect | Draft Proposed ADR-016 through ADR-025 for Phase 2 read-only tool policy | `docs/adr/ADR-016-*.md` through `docs/adr/ADR-025-*.md`, `docs/adr/README.md` | Phase 1 accepted | implemented |
+| M2.1-T2 | M2.1 | Documentation agent | Update architecture with Phase 2 security policy and read-only tool contracts | `docs/architecture.md`, `docs/roadmap-phase-2.md`, `context-ai.md` | M2.1-T1 | implemented |
+| M2.1-T3 | M2.1 | Security reviewer | Review proposed policy for no shell, workspace confinement, sensitive files, audit and one-round bound | read-only repository review | M2.1-T2 | implemented |
+| M2.1-T4 | M2.1 | Integration validator | Validate M2.1 acceptance criteria and prepare human approval package | `.agent/reports/M2.1.md`, `.agent/human-review.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md` | M2.1-T3 | implemented |
 
 ## Task records
 
