@@ -18,7 +18,11 @@ Generated changes are provisional until recorded here.
 | M3 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobado, pasa el M4". |
 | M4 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobado, pasa al siguiente milestone". |
 | M5 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "aprobado, pasa al M6". |
-| M6 | implemented-awaiting-human-review | awaiting-review | — | 2026-07-29 | Composition root implemented and validated; review `.agent/reports/M6.md`. |
+| M6 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "aprobado". |
+| M7 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "aprobado, inicia el M8". |
+| M8 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "aprobado, pasa al M9". |
+| M9 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobado, inicia el M10". |
+| M10 | implemented-awaiting-human-review | awaiting-review | — | 2026-07-29 | Native Ollama adapter implemented and validated; review `.agent/reports/M10.md`. |
 
 ## Approval gates
 

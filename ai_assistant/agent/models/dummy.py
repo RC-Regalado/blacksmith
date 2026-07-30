@@ -1,5 +1,6 @@
 """Dummy model provider for local testing."""
 
+from ai_assistant.application.errors import InvalidMessageError
 from ai_assistant.application.ports.models import ModelProvider
 from ai_assistant.agent.message import Message
 
@@ -11,6 +12,6 @@ class DummyModel(ModelProvider):
             None,
         )
         if last_user is None:
-            raise ValueError("DummyModel requires at least one user message.")
+            raise InvalidMessageError("DummyModel requires at least one user message.")
 
         return Message(role="assistant", content=f"Echo: {last_user.content}")

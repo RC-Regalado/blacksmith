@@ -1,16 +1,19 @@
 """Model adapter service for selecting concrete model providers."""
 
-import os
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+import logging
 
+from ai_assistant.application.errors import ConfigurationError
 from ai_assistant.application.ports.models import ModelProvider
 from ai_assistant.agent.message import Message
 from ai_assistant.agent.models.dummy import DummyModel
+from ai_assistant.agent.models.ollama import OllamaModelProvider
 from ai_assistant.agent.models.openai_compatible import OpenAICompatibleModel
 
 
 ProviderFactory = Callable[["ModelAdapterConfig"], ModelProvider]
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,16 +31,6 @@ class ModelAdapter(ModelProvider):
         self._provider = provider
 
     @classmethod
-    def from_env(cls) -> "ModelAdapter":
-        config = ModelAdapterConfig(
-            provider=os.getenv("AI_ASSISTANT_MODEL_PROVIDER", "dummy"),
-            model=os.getenv("AI_ASSISTANT_MODEL", "gpt-5"),
-            base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
-            api_key=os.getenv("OPENAI_API_KEY"),
-        )
-        return cls.from_config(config)
-
-    @classmethod
     def from_config(
         cls,
         config: ModelAdapterConfig,
@@ -46,8 +39,13 @@ class ModelAdapter(ModelProvider):
         provider_key = config.provider.strip().lower()
         available_factories = factories or cls._default_factories()
         if provider_key not in available_factories:
-            raise ValueError(f"Unsupported model provider: {config.provider}")
+            raise ConfigurationError(f"Unsupported model provider: {config.provider}")
         provider = available_factories[provider_key](config)
+        logger.info(
+            "model provider selected provider=%s model=%s",
+            provider_key,
+            config.model,
+        )
         return cls(provider_name=provider_key, provider=provider)
 
     def chat(self, messages: list[Message]) -> Message:
@@ -57,6 +55,7 @@ class ModelAdapter(ModelProvider):
     def _default_factories() -> dict[str, ProviderFactory]:
         return {
             "dummy": lambda _config: DummyModel(),
+            "ollama": _build_ollama_provider,
             "openai": _build_openai_provider,
             "chatgpt": _build_openai_provider,
         }
@@ -66,6 +65,14 @@ def _build_openai_provider(config: ModelAdapterConfig) -> ModelProvider:
     return OpenAICompatibleModel(
         model=config.model,
         api_key=config.api_key,
+        base_url=config.base_url,
+        timeout_seconds=config.timeout_seconds,
+    )
+
+
+def _build_ollama_provider(config: ModelAdapterConfig) -> ModelProvider:
+    return OllamaModelProvider(
+        model=config.model,
         base_url=config.base_url,
         timeout_seconds=config.timeout_seconds,
     )

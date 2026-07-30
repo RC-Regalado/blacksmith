@@ -1,6 +1,13 @@
 """Minimal command line interface."""
 
+import logging
+import sys
+
+from ai_assistant.application.errors import AssistantError
 from ai_assistant.agent.runtime import AgentRuntime
+
+
+logger = logging.getLogger(__name__)
 
 
 class CliApplication:
@@ -19,8 +26,15 @@ class CliApplication:
             if not user_input:
                 continue
 
-            response = self._runtime.respond(user_input)
-            print(response.content)
+            try:
+                response = self._runtime.respond(user_input)
+                print(response.content)
+            except AssistantError as error:
+                logger.error(
+                    "expected assistant error type=%s",
+                    type(error).__name__,
+                )
+                print(f"Error: {error}", file=sys.stderr)
 
 
 def run_cli() -> None:

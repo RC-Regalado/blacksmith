@@ -1,22 +1,33 @@
 """Composition root for application dependencies."""
 
-import os
-
 from ai_assistant.agent.context import ContextBuilder
-from ai_assistant.agent.models.adapter import ModelAdapter
+from ai_assistant.agent.models.adapter import ModelAdapter, ModelAdapterConfig
 from ai_assistant.agent.planner import ToolCallDetector
 from ai_assistant.agent.runtime import AgentRuntime
-from ai_assistant.application.ports.memory import DEFAULT_SESSION_ID
+from ai_assistant.bootstrap.config import AppConfig, load_app_config
+from ai_assistant.bootstrap.logging import configure_logging
 from ai_assistant.cli.app import CliApplication
 from ai_assistant.storage.sqlite_memory import SQLiteConversationStore
 
 
-def create_application() -> CliApplication:
+def create_application(config: AppConfig | None = None) -> CliApplication:
+    app_config = config or load_app_config()
+    configure_logging(app_config.log_level)
     runtime = AgentRuntime(
-        context_builder=ContextBuilder(system_prompt="You are a local AI assistant."),
-        memory=SQLiteConversationStore("assistant.sqlite3"),
-        model=ModelAdapter.from_env(),
+        context_builder=ContextBuilder(system_prompt=app_config.system_prompt),
+        memory=SQLiteConversationStore(app_config.database),
+        model=ModelAdapter.from_config(_model_config(app_config)),
         tool_detector=ToolCallDetector(),
-        session_id=os.getenv("AI_ASSISTANT_SESSION", DEFAULT_SESSION_ID),
+        session_id=app_config.session,
     )
     return CliApplication(runtime)
+
+
+def _model_config(config: AppConfig) -> ModelAdapterConfig:
+    return ModelAdapterConfig(
+        provider=config.provider,
+        model=config.model,
+        base_url=config.base_url,
+        api_key=config.api_key,
+        timeout_seconds=config.request_timeout,
+    )

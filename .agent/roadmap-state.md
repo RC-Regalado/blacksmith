@@ -10,8 +10,8 @@ Phase 1: Python Core
 
 ## Current milestone
 
-- ID: M6
-- Name: Composition root
+- ID: M10
+- Name: Native Ollama adapter
 - Status: implemented-awaiting-human-review
 - Source: `docs/roadmap.md`
 
@@ -33,11 +33,11 @@ Phase 1: Python Core
 | M3 | Explicit sessions | accepted | — | `.agent/reports/M3.md` | approved |
 | M4 | Transactional persistence | accepted | — | `.agent/reports/M4.md` | approved |
 | M5 | Explicit ports | accepted | — | `.agent/reports/M5.md` | approved |
-| M6 | Composition root | implemented-awaiting-human-review | — | `.agent/reports/M6.md` | awaiting-review |
-| M7 | Centralized configuration | planned | M6 | — | — |
-| M8 | Basic logging | planned | M7 | — | — |
-| M9 | Typed internal errors | planned | M8 | — | — |
-| M10 | Native Ollama adapter | planned | M9 | — | — |
+| M6 | Composition root | accepted | — | `.agent/reports/M6.md` | approved |
+| M7 | Centralized configuration | accepted | — | `.agent/reports/M7.md` | approved |
+| M8 | Basic logging | accepted | — | `.agent/reports/M8.md` | approved |
+| M9 | Typed internal errors | accepted | — | `.agent/reports/M9.md` | approved |
+| M10 | Native Ollama adapter | implemented-awaiting-human-review | — | `.agent/reports/M10.md` | awaiting-review |
 | M11 | Model profiles | planned | M10 | — | — |
 | M12 | Context budget | planned | M11 | — | — |
 | M13 | Robust OpenAI-compatible adapter | planned | M12 | — | — |
@@ -62,5 +62,5 @@ Record after first inspection:
 ## Last supervisor update
 
 - Date: 2026-07-29
-- Summary: Milestone 6 implemented and validated. Runtime construction now lives in the bootstrap composition root, and the CLI can be constructed with fakes.
-- Next action: Await human review before starting Milestone 7.
+- Summary: Milestone 10 implemented and validated. Native Ollama chat provider is available through configuration and adapter selection.
+- Next action: Await human review before starting Milestone 11.

@@ -2,8 +2,10 @@
 
 import pytest
 
+from ai_assistant.application.errors import ConfigurationError
 from ai_assistant.agent.message import Message
 from ai_assistant.agent.models.adapter import ModelAdapter, ModelAdapterConfig
+from ai_assistant.agent.models.ollama import OllamaModelProvider
 from ai_assistant.agent.models.openai_compatible import OpenAICompatibleModel
 
 
@@ -25,8 +27,15 @@ def test_openai_provider_can_be_constructed_without_api_key() -> None:
     assert adapter.provider_name == "openai"
 
 
+def test_ollama_provider_can_be_constructed() -> None:
+    adapter = ModelAdapter.from_config(ModelAdapterConfig(provider="ollama"))
+
+    assert adapter.provider_name == "ollama"
+    assert isinstance(adapter._provider, OllamaModelProvider)
+
+
 def test_unknown_provider_fails_explicitly() -> None:
-    with pytest.raises(ValueError, match="Unsupported model provider"):
+    with pytest.raises(ConfigurationError, match="Unsupported model provider"):
         ModelAdapter.from_config(ModelAdapterConfig(provider="unknown"))
 
 

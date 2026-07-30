@@ -3,6 +3,8 @@
 from dataclasses import dataclass
 from typing import Literal
 
+from ai_assistant.application.errors import InvalidMessageError
+
 
 Role = Literal["system", "user", "assistant", "tool"]
 
@@ -17,4 +19,4 @@ class Message:
 
     def __post_init__(self) -> None:
         if not self.content:
-            raise ValueError("Message content cannot be empty.")
+            raise InvalidMessageError("Message content cannot be empty.")

@@ -2,12 +2,24 @@
 
 from dataclasses import dataclass
 import json
+import logging
+from time import perf_counter
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from ai_assistant.application.errors import (
+    InvalidMessageError,
+    ModelConnectionError,
+    ModelNotFoundError,
+    ModelProtocolError,
+    ModelTimeoutError,
+)
 from ai_assistant.application.ports.models import ModelProvider
 from ai_assistant.agent.message import Message
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,7 +31,7 @@ class OpenAICompatibleModel(ModelProvider):
 
     def chat(self, messages: list[Message]) -> Message:
         if not messages:
-            raise ValueError("OpenAICompatibleModel requires messages.")
+            raise InvalidMessageError("OpenAICompatibleModel requires messages.")
 
         payload = self._build_payload(messages)
         data = self._post_json("/responses", payload)
@@ -43,6 +55,7 @@ class OpenAICompatibleModel(ModelProvider):
         return {"role": message.role, "content": message.content}
 
     def _post_json(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
+        started = perf_counter()
         request = Request(
             url=f"{self.base_url.rstrip('/')}{path}",
             data=json.dumps(payload).encode("utf-8"),
@@ -51,11 +64,34 @@ class OpenAICompatibleModel(ModelProvider):
         )
         try:
             with urlopen(request, timeout=self.timeout_seconds) as response:
-                return json.loads(response.read().decode("utf-8"))
+                try:
+                    data = json.loads(response.read().decode("utf-8"))
+                except json.JSONDecodeError as exc:
+                    self._log_failure(started)
+                    raise ModelProtocolError("OpenAI response was not valid JSON.") from exc
         except HTTPError as error:
-            raise RuntimeError(self._http_error_message(error)) from error
+            self._log_failure(started, http_status=error.code)
+            raise self._http_error(error) from error
         except URLError as error:
-            raise RuntimeError(f"OpenAI request failed: {error.reason}") from error
+            self._log_failure(started)
+            raise self._url_error(error) from error
+        self._log_success(started)
+        return data
+
+    def _log_success(self, started: float) -> None:
+        logger.info(
+            "model request completed provider=openai model=%s duration_ms=%.2f",
+            self.model,
+            (perf_counter() - started) * 1000,
+        )
+
+    def _log_failure(self, started: float, http_status: int | None = None) -> None:
+        logger.error(
+            "model request failed provider=openai model=%s duration_ms=%.2f status=%s",
+            self.model,
+            (perf_counter() - started) * 1000,
+            http_status or "unavailable",
+        )
 
     def _headers(self) -> dict[str, str]:
         headers = {"Content-Type": "application/json"}
@@ -63,9 +99,15 @@ class OpenAICompatibleModel(ModelProvider):
             headers["Authorization"] = f"Bearer {self.api_key}"
         return headers
 
-    def _http_error_message(self, error: HTTPError) -> str:
-        body = error.read().decode("utf-8", errors="replace")
-        return f"OpenAI request failed with HTTP {error.code}: {body}"
+    def _http_error(self, error: HTTPError) -> Exception:
+        if error.code == 404:
+            return ModelNotFoundError("Configured OpenAI model was not found.")
+        return ModelProtocolError(f"OpenAI request failed with HTTP {error.code}.")
+
+    def _url_error(self, error: URLError) -> Exception:
+        if isinstance(error.reason, TimeoutError):
+            return ModelTimeoutError("OpenAI request timed out.")
+        return ModelConnectionError("OpenAI request failed.")
 
     def _extract_text(self, data: dict[str, Any]) -> str:
         output_text = data.get("output_text")
@@ -76,7 +118,7 @@ class OpenAICompatibleModel(ModelProvider):
             text = self._extract_item_text(item)
             if text:
                 return text
-        raise RuntimeError("OpenAI response did not include assistant text.")
+        raise ModelProtocolError("OpenAI response did not include assistant text.")
 
     def _extract_item_text(self, item: Any) -> str | None:
         if not isinstance(item, dict) or item.get("type") != "message":

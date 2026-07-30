@@ -36,6 +36,18 @@ The supervisor is the only agent permitted to update this file.
 | M6-T1 | M6 | Architect | Add bootstrap composition root | `ai_assistant/bootstrap/`, `ai_assistant/cli/app.py`, `tests/test_cli_app.py` | M5 | implemented |
 | M6-T2 | M6 | Runtime implementer | Move CLI runtime construction to bootstrap | `ai_assistant/bootstrap/container.py`, `ai_assistant/cli/app.py`, `ai_assistant/main.py`, `tests/test_cli_app.py` | M6-T1 | implemented |
 | M6-T3 | M6 | Integration validator | Validate composition root and produce review artifacts | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M6.md` | M6-T2 | implemented |
+| M7-T1 | M7 | Runtime implementer | Add immutable bootstrap AppConfig loader | `ai_assistant/bootstrap/config.py`, `tests/test_config.py` | M6 | implemented |
+| M7-T2 | M7 | Runtime implementer | Wire AppConfig through composition root and model adapter config | `ai_assistant/bootstrap/container.py`, `ai_assistant/agent/models/adapter.py`, `tests/test_cli_app.py`, `tests/test_model_adapter.py` | M7-T1 | implemented |
+| M7-T3 | M7 | Integration validator | Validate centralized configuration and produce review artifacts | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M7.md` | M7-T2 | implemented |
+| M8-T1 | M8 | Runtime implementer | Configure stdlib logging at bootstrap | `ai_assistant/bootstrap/logging.py`, `ai_assistant/bootstrap/container.py`, `ai_assistant/bootstrap/config.py`, `tests/test_logging.py`, `tests/test_config.py` | M7 | implemented |
+| M8-T2 | M8 | Runtime implementer | Add safe runtime and adapter log events | `ai_assistant/agent/runtime.py`, `ai_assistant/agent/models/adapter.py`, `ai_assistant/agent/models/openai_compatible.py`, `tests/test_logging.py` | M8-T1 | implemented |
+| M8-T3 | M8 | Integration validator | Validate basic logging and produce review artifacts | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M8.md` | M8-T2 | implemented |
+| M9-T1 | M9 | Runtime implementer | Define internal error hierarchy and map validation errors | `ai_assistant/application/errors.py`, `ai_assistant/agent/message.py`, `ai_assistant/application/ports/memory.py`, `ai_assistant/bootstrap/config.py`, `ai_assistant/bootstrap/logging.py`, `ai_assistant/agent/models/adapter.py`, `tests/test_errors.py`, `tests/test_config.py`, `tests/test_model_adapter.py`, `tests/test_memory_stores.py` | M8 | implemented |
+| M9-T2 | M9 | Runtime implementer | Map infrastructure failures and CLI messages | `ai_assistant/storage/sqlite_memory.py`, `ai_assistant/agent/models/openai_compatible.py`, `ai_assistant/cli/app.py`, `tests/test_errors.py`, `tests/test_logging.py`, `tests/test_cli_app.py` | M9-T1 | implemented |
+| M9-T3 | M9 | Integration validator | Validate typed errors and produce review artifacts | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M9.md` | M9-T2 | implemented |
+| M10-T1 | M10 | Model provider implementer | Add native Ollama chat provider | `ai_assistant/agent/models/ollama.py`, `tests/test_ollama_model.py` | M9 | implemented |
+| M10-T2 | M10 | Model provider implementer | Wire Ollama provider through config and adapter factory | `ai_assistant/bootstrap/config.py`, `ai_assistant/agent/models/adapter.py`, `ai_assistant/agent/models/__init__.py`, `tests/test_config.py`, `tests/test_model_adapter.py`, `tests/test_ollama_model.py`, `tests/test_ollama_smoke.py` | M10-T1 | implemented |
+| M10-T3 | M10 | Integration validator | Validate native Ollama adapter and produce review artifacts | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M10.md` | M10-T2 | implemented |
 
 ## Task records
 
@@ -1609,3 +1621,1078 @@ rg -n "SQLiteConversationStore|ModelAdapter|ContextBuilder|ToolCallDetector" ai_
 - Assumptions: M7 will replace direct environment reads in the bootstrap with centralized configuration.
 - Remaining issues: None for M6.
 - Recommended follow-up: Human review before starting M7.
+
+### Task M7-T1 — Add Bootstrap AppConfig
+
+## Parent milestone
+
+M7
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Create an immutable, validated configuration object loaded from environment-style mappings.
+
+## Scope
+
+- Define `AppConfig` in bootstrap.
+- Provide defaults for M7 environment variables.
+- Validate provider, timeout and context limit.
+- Add focused unit tests.
+
+## Explicit exclusions
+
+- No `.env`, TOML, YAML or Pydantic.
+- No model profiles.
+- No Ollama implementation.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/bootstrap/config.py`
+- `tests/test_config.py`
+
+### Read-only
+
+- `docs/roadmap.md`
+- `docs/architecture.md`
+- `docs/adr/ADR-007-configuration-at-bootstrap.md`
+
+### Forbidden
+
+- `.agent/roadmap-state.md`
+- `.agent/human-review.md`
+
+## Dependencies
+
+- M6 accepted
+
+## Applicable ADRs
+
+- ADR-007 Configuration at bootstrap
+- ADR-012 Minimal external dependencies
+- ADR-015 Configurable model profiles
+
+## Acceptance criteria
+
+- [x] `AppConfig` is immutable.
+- [x] Defaults are explicit and testable.
+- [x] Invalid provider raises a clear error.
+- [x] Invalid timeout raises a clear error.
+- [x] Invalid context limit raises a clear error.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_config.py -q
+```
+
+## Risks
+
+- Defaults may drift from existing CLI behavior.
+
+## Result report
+
+- Summary: Added immutable `AppConfig` and mapping-based loader with explicit defaults and validation.
+- Files changed: `ai_assistant/bootstrap/config.py`, `tests/test_config.py`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_config.py -q`.
+- Test results: 6 passed.
+- Assumptions: `OPENAI_API_KEY` remains provider-specific secret input because the existing OpenAI-compatible adapter requires it.
+- Remaining issues: None for this task.
+- Recommended follow-up: Wire config through bootstrap.
+
+### Task M7-T2 — Wire AppConfig Through Bootstrap
+
+## Parent milestone
+
+M7
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Use `AppConfig` in the composition root and remove model adapter environment reads.
+
+## Scope
+
+- Load configuration once in bootstrap.
+- Pass config values into context, SQLite, session and model adapter construction.
+- Remove `ModelAdapter.from_env()`.
+- Update tests.
+
+## Explicit exclusions
+
+- No DI framework.
+- No logging.
+- No new provider implementation.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/bootstrap/container.py`
+- `ai_assistant/agent/models/adapter.py`
+- `tests/test_cli_app.py`
+- `tests/test_model_adapter.py`
+
+### Read-only
+
+- `ai_assistant/cli/app.py`
+- `ai_assistant/agent/runtime.py`
+- `ai_assistant/storage/sqlite_memory.py`
+
+### Forbidden
+
+- Persistent SQLite schema
+
+## Dependencies
+
+- M7-T1
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-007 Configuration at bootstrap
+- ADR-012 Minimal external dependencies
+
+## Acceptance criteria
+
+- [x] Configuration is loaded once at bootstrap.
+- [x] No adapter reads environment variables.
+- [x] Existing CLI startup still works.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit
+printf 'quit\n' | PYTHONDONTWRITEBYTECODE=1 python main.py
+rg -n "os\\.getenv|os\\.environ|from_env" ai_assistant | rg -v "ai_assistant/bootstrap/config.py"
+```
+
+## Risks
+
+- Existing provider environment variable names may change.
+
+## Result report
+
+- Summary: Wired `AppConfig` through `create_application()` and removed `ModelAdapter.from_env()`.
+- Files changed: `ai_assistant/bootstrap/container.py`, `ai_assistant/agent/models/adapter.py`, `tests/test_cli_app.py`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit -q`; `rg -n "os\\.getenv|os\\.environ|from_env" ai_assistant`.
+- Test results: 24 passed, 4 deselected; only `ai_assistant/bootstrap/config.py` reads `os.environ`.
+- Assumptions: M10 will add Ollama as a supported provider; M7 validates only providers implemented today.
+- Remaining issues: None for this task.
+- Recommended follow-up: Full milestone validation.
+
+### Task M7-T3 — Validate Centralized Configuration
+
+## Parent milestone
+
+M7
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Verify M7 acceptance criteria and prepare human review.
+
+## Scope
+
+- Run unit and full pytest validation.
+- Run CLI smoke.
+- Write `.agent/reports/M7.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M7 accepted.
+- Do not start M8.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M7.md`
+
+### Read-only
+
+- all project source files
+- tests
+- docs
+
+### Forbidden
+
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M7-T2
+
+## Applicable ADRs
+
+- ADR-007 Configuration at bootstrap
+- ADR-012 Minimal external dependencies
+
+## Acceptance criteria
+
+- [x] Configuration is loaded once.
+- [x] Invalid configuration errors are clear.
+- [x] Runtime does not use `os.environ`.
+- [x] Full pytest suite passes.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest
+printf 'quit\n' | PYTHONDONTWRITEBYTECODE=1 python main.py
+rg -n "os\\.getenv|os\\.environ|from_env" ai_assistant | rg -v "ai_assistant/bootstrap/config.py"
+```
+
+## Risks
+
+- Environment-dependent tests may need isolated mappings.
+
+## Result report
+
+- Summary: Validated M7 acceptance criteria and produced the human review report.
+- Files changed: `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M7.md`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_config.py -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q`; `printf 'quit\n' | PYTHONDONTWRITEBYTECODE=1 python main.py`; `rg -n "os\\.getenv|os\\.environ|from_env" ai_assistant | rg -v "ai_assistant/bootstrap/config.py"`.
+- Test results: config tests passed with 6 tests; unit suite passed with 24 tests and 4 deselected; full suite passed with 28 tests; CLI smoke exited 0; no environment reads found outside bootstrap config.
+- Assumptions: `AI_ASSISTANT_PROVIDER` is the canonical provider variable from the roadmap.
+- Remaining issues: Future logging must not print `AppConfig` because it can include `OPENAI_API_KEY`.
+- Recommended follow-up: Human review before starting M8.
+
+### Task M8-T1 — Configure Stdlib Logging
+
+## Parent milestone
+
+M8
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Configure Python stdlib logging from bootstrap using the configured log level.
+
+## Scope
+
+- Add bootstrap logging setup.
+- Send logs to stderr.
+- Validate logging level.
+- Avoid duplicate handlers.
+- Hide API key from config repr.
+- Add focused tests.
+
+## Explicit exclusions
+
+- No JSON logging.
+- No rotating files.
+- No telemetry.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/bootstrap/logging.py`
+- `ai_assistant/bootstrap/container.py`
+- `ai_assistant/bootstrap/config.py`
+- `tests/test_logging.py`
+- `tests/test_config.py`
+
+### Read-only
+
+- `docs/roadmap.md`
+- `docs/architecture.md`
+
+### Forbidden
+
+- Provider behavior
+
+## Dependencies
+
+- M7 accepted
+
+## Applicable ADRs
+
+- ADR-007 Configuration at bootstrap
+- ADR-012 Minimal external dependencies
+
+## Acceptance criteria
+
+- [x] Logging is configured in bootstrap.
+- [x] Log level is configurable.
+- [x] Logs use stderr.
+- [x] Duplicate handlers are avoided.
+- [x] API key is not exposed through config repr.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_logging.py tests/test_config.py -q
+```
+
+## Risks
+
+- Pytest logging handlers can make handler-count assertions brittle.
+
+## Result report
+
+- Summary: Added stdlib logging setup at bootstrap, configurable level validation and API key redaction from config repr.
+- Files changed: `ai_assistant/bootstrap/logging.py`, `ai_assistant/bootstrap/container.py`, `ai_assistant/bootstrap/config.py`, `tests/test_logging.py`, `tests/test_config.py`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_logging.py tests/test_config.py -q`.
+- Test results: 9 passed.
+- Assumptions: Existing pytest logging handlers are acceptable; `basicConfig` avoids adding duplicate handlers when handlers already exist.
+- Remaining issues: None for this task.
+- Recommended follow-up: Add safe runtime and adapter log events.
+
+### Task M8-T2 — Add Safe Runtime and Adapter Events
+
+## Parent milestone
+
+M8
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Add diagnostic logs for runtime turns and model adapter calls without logging message content or secrets.
+
+## Scope
+
+- Log provider/model selection.
+- Log runtime request lifecycle.
+- Log model request duration.
+- Log adapter errors without request/response bodies.
+- Add tests that sensitive content is absent from logs.
+
+## Explicit exclusions
+
+- No typed errors.
+- No retry policy.
+- No logging of prompts, user input or assistant output.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/agent/runtime.py`
+- `ai_assistant/agent/models/adapter.py`
+- `ai_assistant/agent/models/openai_compatible.py`
+- `tests/test_logging.py`
+
+### Read-only
+
+- `ai_assistant/bootstrap/config.py`
+- `ai_assistant/bootstrap/container.py`
+- `ai_assistant/cli/app.py`
+
+### Forbidden
+
+- Persistent storage schema
+
+## Dependencies
+
+- M8-T1
+
+## Applicable ADRs
+
+- ADR-012 Minimal external dependencies
+- ADR-014 Non-streaming model calls in Phase 1
+
+## Acceptance criteria
+
+- [x] Provider and model are logged.
+- [x] Request duration is logged.
+- [x] Errors are logged without message content.
+- [x] CLI stdout remains assistant-only.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_logging.py -q
+printf 'quit\n' | PYTHONDONTWRITEBYTECODE=1 python main.py
+rg -n "print\\(" ai_assistant | rg -v "ai_assistant/cli/app.py"
+```
+
+## Risks
+
+- Exception details can contain provider response bodies if logged directly.
+
+## Result report
+
+- Summary: Added provider/model logs, runtime lifecycle logs and OpenAI-compatible request duration/error logs without prompt, response, API key or body content.
+- Files changed: `ai_assistant/agent/runtime.py`, `ai_assistant/agent/models/adapter.py`, `ai_assistant/agent/models/openai_compatible.py`, `tests/test_logging.py`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_logging.py -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit -q`; `printf 'quit\n' | PYTHONDONTWRITEBYTECODE=1 python main.py > /tmp/blacksmith-m8-stdout.txt 2> /tmp/blacksmith-m8-stderr.txt`; `rg -n "print\\(" ai_assistant | rg -v "ai_assistant/cli/app.py"`.
+- Test results: logging tests passed with 5 tests; unit suite passed with 30 tests and 4 deselected; CLI stdout contained only prompt; technical print check found no matches outside CLI response printing.
+- Assumptions: Provider/model names are operational metadata, not secrets.
+- Remaining issues: stderr includes INFO provider selection at default log level.
+- Recommended follow-up: Full milestone validation.
+
+### Task M8-T3 — Validate Basic Logging
+
+## Parent milestone
+
+M8
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Verify M8 acceptance criteria and prepare human review.
+
+## Scope
+
+- Run unit and full pytest validation.
+- Run CLI smoke.
+- Check technical prints.
+- Write `.agent/reports/M8.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M8 accepted.
+- Do not start M9.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M8.md`
+
+### Read-only
+
+- all project source files
+- tests
+- docs
+
+### Forbidden
+
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M8-T2
+
+## Applicable ADRs
+
+- ADR-007 Configuration at bootstrap
+- ADR-012 Minimal external dependencies
+
+## Acceptance criteria
+
+- [x] No technical prints exist.
+- [x] Log level is configurable.
+- [x] Secrets are not logged.
+- [x] CLI stdout remains clean.
+- [x] Full pytest suite passes.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest
+printf 'quit\n' | PYTHONDONTWRITEBYTECODE=1 python main.py
+rg -n "print\\(" ai_assistant | rg -v "ai_assistant/cli/app.py"
+```
+
+## Risks
+
+- Smoke output can include stderr logs even when stdout is clean.
+
+## Result report
+
+- Summary: Validated M8 acceptance criteria and produced the human review report.
+- Files changed: `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M8.md`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_logging.py tests/test_config.py -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q`; `printf 'quit\n' | PYTHONDONTWRITEBYTECODE=1 python main.py > /tmp/blacksmith-m8-stdout.txt 2> /tmp/blacksmith-m8-stderr.txt`; `rg -n "print\\(" ai_assistant | rg -v "ai_assistant/cli/app.py"`.
+- Test results: focused logging/config tests passed with 9 tests; unit suite passed with 30 tests and 4 deselected; full suite passed with 34 tests; CLI smoke exited 0 with clean stdout and logs on stderr; no technical prints found.
+- Assumptions: Session IDs are operational identifiers and should remain non-secret.
+- Remaining issues: M9 should sanitize public/provider error paths that still include HTTP response bodies in raised exceptions.
+- Recommended follow-up: Human review before starting M9.
+
+### Task M9-T1 — Define Internal Error Hierarchy
+
+## Parent milestone
+
+M9
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Define typed internal errors and map validation failures to them.
+
+## Scope
+
+- Add minimal error hierarchy.
+- Map config, logging level, provider selection, message and session validation.
+- Add focused tests.
+
+## Explicit exclusions
+
+- No broad domain package reorganization.
+- No new metadata fields.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/application/errors.py`
+- `ai_assistant/agent/message.py`
+- `ai_assistant/application/ports/memory.py`
+- `ai_assistant/bootstrap/config.py`
+- `ai_assistant/bootstrap/logging.py`
+- `ai_assistant/agent/models/adapter.py`
+- `tests/test_errors.py`
+- `tests/test_config.py`
+- `tests/test_model_adapter.py`
+- `tests/test_memory_stores.py`
+
+### Read-only
+
+- `docs/roadmap.md`
+- `docs/architecture.md`
+
+### Forbidden
+
+- Future domain reorganization
+
+## Dependencies
+
+- M8 accepted
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-012 Minimal external dependencies
+
+## Acceptance criteria
+
+- [x] Error hierarchy exists.
+- [x] Configuration errors are typed.
+- [x] Invalid messages are typed.
+- [x] Invalid sessions are typed.
+- [x] Provider selection errors are typed.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_errors.py tests/test_config.py tests/test_model_adapter.py tests/test_memory_stores.py -q
+```
+
+## Risks
+
+- Tests that expected built-in exceptions need contract updates.
+
+## Result report
+
+- Summary: Added typed internal errors and mapped validation paths.
+- Files changed: `ai_assistant/application/errors.py`, `ai_assistant/agent/message.py`, `ai_assistant/application/ports/memory.py`, `ai_assistant/bootstrap/config.py`, `ai_assistant/bootstrap/logging.py`, `ai_assistant/agent/models/adapter.py`, related tests.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_errors.py tests/test_config.py tests/test_model_adapter.py tests/test_memory_stores.py tests/test_logging.py -q`.
+- Test results: 28 passed after updating logging-level expectation.
+- Assumptions: `application/errors.py` is the current minimal shared location until M15 reorganization.
+- Remaining issues: None for this task.
+- Recommended follow-up: Map infrastructure failures and CLI output.
+
+### Task M9-T2 — Map Infrastructure Failures and CLI Messages
+
+## Parent milestone
+
+M9
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Translate SQLite and model provider failures to typed errors and make CLI handle expected errors without traceback.
+
+## Scope
+
+- Wrap SQLite failures as `ConversationStoreError`.
+- Map HTTP 404, URL failures, timeout, invalid JSON and missing text in OpenAI-compatible provider.
+- Catch `AssistantError` in CLI and print a readable stderr message.
+- Add tests for typed provider errors and CLI translation.
+
+## Explicit exclusions
+
+- No retry policy.
+- No user-facing error catalog.
+- No Ollama adapter.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/storage/sqlite_memory.py`
+- `ai_assistant/agent/models/openai_compatible.py`
+- `ai_assistant/cli/app.py`
+- `tests/test_errors.py`
+- `tests/test_logging.py`
+- `tests/test_cli_app.py`
+
+### Read-only
+
+- `ai_assistant/agent/runtime.py`
+- `ai_assistant/bootstrap/logging.py`
+
+### Forbidden
+
+- Persistent schema changes
+
+## Dependencies
+
+- M9-T1
+
+## Applicable ADRs
+
+- ADR-004 SQLite conversation persistence
+- ADR-012 Minimal external dependencies
+- ADR-014 Non-streaming model calls in Phase 1
+
+## Acceptance criteria
+
+- [x] SQLite errors are mapped.
+- [x] HTTP errors are mapped.
+- [x] JSON/protocol errors are mapped.
+- [x] CLI expected errors avoid traceback.
+- [x] Technical error type is logged.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_errors.py tests/test_logging.py tests/test_cli_app.py tests/test_memory_stores.py -q
+```
+
+## Risks
+
+- Unexpected exceptions still surface as tracebacks; that remains useful for non-typed bugs.
+
+## Result report
+
+- Summary: Mapped SQLite and OpenAI-compatible failures to typed errors and added CLI translation for expected assistant errors.
+- Files changed: `ai_assistant/storage/sqlite_memory.py`, `ai_assistant/agent/models/openai_compatible.py`, `ai_assistant/cli/app.py`, related tests.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m contract -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q`; CLI smoke.
+- Test results: unit passed with 35 tests and 4 deselected; contract passed with 2 tests and 37 deselected; full suite passed with 39 tests; CLI smoke exited 0.
+- Assumptions: Only `AssistantError` subclasses are expected user-readable errors.
+- Remaining issues: None for this task.
+- Recommended follow-up: Full milestone validation and review.
+
+### Task M9-T3 — Validate Typed Errors
+
+## Parent milestone
+
+M9
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Verify M9 acceptance criteria and prepare human review.
+
+## Scope
+
+- Run unit, contract and full pytest validation.
+- Run CLI smoke.
+- Write `.agent/reports/M9.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M9 accepted.
+- Do not start M10.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M9.md`
+
+### Read-only
+
+- all project source files
+- tests
+- docs
+
+### Forbidden
+
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M9-T2
+
+## Applicable ADRs
+
+- ADR-004 SQLite conversation persistence
+- ADR-012 Minimal external dependencies
+- ADR-014 Non-streaming model calls in Phase 1
+
+## Acceptance criteria
+
+- [x] CLI does not show traceback for expected errors.
+- [x] Tests validate error types.
+- [x] Technical errors remain in logs.
+- [x] Unit and contract suites pass.
+- [x] Full pytest suite passes.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m contract
+PYTHONDONTWRITEBYTECODE=1 python -m pytest
+printf 'quit\n' | PYTHONDONTWRITEBYTECODE=1 python main.py
+```
+
+## Risks
+
+- Over-sanitizing errors can hide provider diagnostics.
+
+## Result report
+
+- Summary: Validated M9 acceptance criteria and produced the human review report.
+- Files changed: `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M9.md`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_errors.py -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m contract -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q`; `printf 'quit\n' | PYTHONDONTWRITEBYTECODE=1 python main.py`.
+- Test results: error tests passed with 6 tests; unit suite passed with 36 tests and 4 deselected; contract suite passed with 2 tests and 38 deselected; full suite passed with 40 tests; CLI smoke exited 0.
+- Assumptions: Unexpected non-`AssistantError` exceptions should still fail loudly.
+- Remaining issues: None for M9 after independent review findings were corrected.
+- Recommended follow-up: Human review before starting M10.
+
+### Task M10-T1 — Add Native Ollama Chat Provider
+
+## Parent milestone
+
+M10
+
+## Status
+
+implemented
+
+## Owner role
+
+Model provider implementer
+
+## Objective
+
+Implement the native Ollama `/api/chat` provider using stdlib HTTP.
+
+## Scope
+
+- Build native Ollama request payload.
+- Send `stream=false`.
+- Use `urllib.request`.
+- Apply timeout.
+- Parse `message.content`.
+- Map connection, timeout, model-not-found and protocol errors.
+- Log request duration.
+- Add simulated unit tests.
+
+## Explicit exclusions
+
+- No streaming.
+- No SDK.
+- No daemon management.
+- No model downloads.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/agent/models/ollama.py`
+- `tests/test_ollama_model.py`
+
+### Read-only
+
+- `ai_assistant/agent/models/openai_compatible.py`
+- `ai_assistant/application/errors.py`
+- `docs/adr/ADR-011-native-ollama-adapter.md`
+- `docs/adr/ADR-014-non-streaming-calls-in-phase-1.md`
+
+### Forbidden
+
+- OpenAI-compatible provider behavior
+
+## Dependencies
+
+- M9 accepted
+
+## Applicable ADRs
+
+- ADR-011 Native Ollama API adapter
+- ADR-012 Minimal external dependencies
+- ADR-014 Non-streaming model calls in Phase 1
+
+## Acceptance criteria
+
+- [x] Request uses `/api/chat`.
+- [x] Request sends `stream=false`.
+- [x] Messages are translated to Ollama format.
+- [x] Response returns normalized assistant `Message`.
+- [x] Typed errors are raised for unavailable service, missing model and bad protocol.
+- [x] Unit tests do not require real Ollama.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_ollama_model.py -q
+```
+
+## Risks
+
+- Ollama error body formats may vary by version.
+
+## Result report
+
+- Summary: Added native `OllamaModelProvider` with stdlib HTTP, non-streaming requests, typed errors and duration logging.
+- Files changed: `ai_assistant/agent/models/ollama.py`, `tests/test_ollama_model.py`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_ollama_model.py -q`.
+- Test results: 7 passed.
+- Assumptions: HTTP 404 is sufficient for missing-model mapping in M10.
+- Remaining issues: Real Ollama validation is optional and environment-dependent.
+- Recommended follow-up: Wire provider through configuration and adapter factory.
+
+### Task M10-T2 — Wire Ollama Provider
+
+## Parent milestone
+
+M10
+
+## Status
+
+implemented
+
+## Owner role
+
+Model provider implementer
+
+## Objective
+
+Expose Ollama through configuration and the model adapter factory.
+
+## Scope
+
+- Allow `AI_ASSISTANT_PROVIDER=ollama`.
+- Default Ollama base URL to `http://localhost:11434`.
+- Register provider in `ModelAdapter`.
+- Export provider from model package.
+- Add adapter/config tests and simulated CLI path.
+- Add optional real Ollama smoke test.
+
+## Explicit exclusions
+
+- No model profiles.
+- No default model recommendations.
+- No real Ollama requirement in unit tests.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/bootstrap/config.py`
+- `ai_assistant/agent/models/adapter.py`
+- `ai_assistant/agent/models/__init__.py`
+- `tests/test_config.py`
+- `tests/test_model_adapter.py`
+- `tests/test_ollama_model.py`
+- `tests/test_ollama_smoke.py`
+
+### Read-only
+
+- `ai_assistant/bootstrap/container.py`
+- `ai_assistant/cli/app.py`
+
+### Forbidden
+
+- Logging policy changes
+
+## Dependencies
+
+- M10-T1
+
+## Applicable ADRs
+
+- ADR-007 Configuration at bootstrap
+- ADR-011 Native Ollama API adapter
+- ADR-013 Pytest testing strategy
+
+## Acceptance criteria
+
+- [x] Provider can be selected by config.
+- [x] Model remains configurable.
+- [x] CLI responds with simulated Ollama.
+- [x] Optional real-Ollama test is separable from default suite.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_ollama_model.py tests/test_model_adapter.py tests/test_config.py -q
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m ollama -q
+```
+
+## Risks
+
+- `AI_ASSISTANT_MODEL` is required for useful real Ollama execution.
+
+## Result report
+
+- Summary: Wired Ollama into config and adapter selection, added simulated CLI coverage and optional real smoke test.
+- Files changed: `ai_assistant/bootstrap/config.py`, `ai_assistant/agent/models/adapter.py`, `ai_assistant/agent/models/__init__.py`, related tests.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_ollama_model.py tests/test_model_adapter.py tests/test_config.py -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m ollama -q`.
+- Test results: focused tests passed with 19 tests before CLI coverage and 7 Ollama-provider tests after; optional Ollama suite skipped 1 test because no `AI_ASSISTANT_MODEL` was set.
+- Assumptions: M11 owns hardware/model profile defaults.
+- Remaining issues: Real Ollama was not exercised in this environment.
+- Recommended follow-up: Full milestone validation.
+
+### Task M10-T3 — Validate Native Ollama Adapter
+
+## Parent milestone
+
+M10
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Verify M10 acceptance criteria and prepare human review.
+
+## Scope
+
+- Run unit, contract, ollama-marker and full pytest validation.
+- Run CLI smoke.
+- Write `.agent/reports/M10.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M10 accepted.
+- Do not start M11.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M10.md`
+
+### Read-only
+
+- all project source files
+- tests
+- docs
+
+### Forbidden
+
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M10-T2
+
+## Applicable ADRs
+
+- ADR-011 Native Ollama API adapter
+- ADR-013 Pytest testing strategy
+- ADR-014 Non-streaming model calls in Phase 1
+
+## Acceptance criteria
+
+- [x] CLI responds with Ollama.
+- [x] Model is selected by variable/config.
+- [x] Service-down failures raise typed error.
+- [x] Missing-model failures raise typed error.
+- [x] Unit tests do not require Ollama.
+- [x] Unit and contract suites pass.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m contract
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m ollama
+PYTHONDONTWRITEBYTECODE=1 python -m pytest
+printf 'quit\n' | PYTHONDONTWRITEBYTECODE=1 python main.py
+```
+
+## Risks
+
+- Real Ollama validation depends on local daemon and installed model.
+
+## Result report
+
+- Summary: Validated M10 acceptance criteria and produced the human review report.
+- Files changed: `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M10.md`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_ollama_model.py -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m contract -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m ollama -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q`; CLI smoke.
+- Test results: Ollama provider tests passed with 8 tests; unit suite passed with 45 tests and 5 deselected; contract suite passed with 2 tests and 48 deselected; optional Ollama suite skipped 1 test because no `AI_ASSISTANT_MODEL` was set; full suite passed with 50 tests and 1 skipped; CLI smoke exited 0.
+- Assumptions: Real Ollama validation remains environment-dependent and optional.
+- Remaining issues: Real Ollama smoke was not executed in this environment.
+- Recommended follow-up: Human review before starting M11.

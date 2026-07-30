@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from ai_assistant.agent.memory import InMemoryConversationStore
+from ai_assistant.application.errors import ConversationStoreError, InvalidSessionError
 from ai_assistant.application.ports.memory import DEFAULT_SESSION_ID
 from ai_assistant.agent.message import Message
 from ai_assistant.storage.sqlite_memory import SQLiteConversationStore
@@ -31,7 +32,7 @@ def test_in_memory_store_isolates_sessions() -> None:
 def test_in_memory_append_many_is_all_or_nothing() -> None:
     memory = InMemoryConversationStore()
 
-    with pytest.raises(ValueError, match="Session ID cannot be empty"):
+    with pytest.raises(InvalidSessionError, match="Session ID cannot be empty"):
         memory.append_many(
             "",
             [
@@ -101,7 +102,7 @@ def test_sqlite_store_migrates_existing_rows_to_default_session(
 def test_sqlite_append_many_rolls_back_on_error(tmp_path: Path) -> None:
     store = SQLiteConversationStore(tmp_path / "assistant.sqlite3")
 
-    with pytest.raises(sqlite3.IntegrityError):
+    with pytest.raises(ConversationStoreError, match="Failed to persist"):
         store.append_many(
             "alpha",
             [
