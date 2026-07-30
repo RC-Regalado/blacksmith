@@ -35,3 +35,7 @@ class InvalidMessageError(AssistantError):
 
 class InvalidSessionError(AssistantError):
     """A session identifier failed validation."""
+
+
+class InvalidToolCallError(AssistantError):
+    """A declarative tool call failed validation."""

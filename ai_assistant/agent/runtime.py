@@ -1,6 +1,6 @@
 """Framework-agnostic agent runtime loop."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 from time import perf_counter
 
@@ -13,7 +13,7 @@ from ai_assistant.application.ports.memory import (
 )
 from ai_assistant.agent.message import Message
 from ai_assistant.application.ports.models import ModelProvider
-from ai_assistant.agent.planner import ToolCallDetector
+from ai_assistant.agent.planner import ToolCallDetector, ToolCallPlan
 
 
 logger = logging.getLogger(__name__)
@@ -26,6 +26,10 @@ class AgentRuntime:
     model: ModelProvider
     tool_detector: ToolCallDetector
     session_id: SessionId = DEFAULT_SESSION_ID
+    last_tool_plan: ToolCallPlan = field(
+        default_factory=lambda: ToolCallPlan(has_tool_call=False),
+        init=False,
+    )
 
     def __post_init__(self) -> None:
         self.session_id = validate_session_id(self.session_id)
@@ -40,7 +44,7 @@ class AgentRuntime:
         try:
             response = self.model.chat(context)
             self._persist_turn(user_input, response)
-            self.tool_detector.detect(response)
+            self.last_tool_plan = self.tool_detector.detect(response)
         except Exception:
             duration_ms = (perf_counter() - started) * 1000
             logger.error(

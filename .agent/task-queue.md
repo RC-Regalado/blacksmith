@@ -57,6 +57,9 @@ The supervisor is the only agent permitted to update this file.
 | M13-T1 | M13 | Model provider implementer | Harden OpenAI-compatible request and response mappers | `ai_assistant/agent/models/openai_compatible.py`, `tests/test_openai_compatible.py` | M12 | implemented |
 | M13-T2 | M13 | Model provider implementer | Verify OpenAI-compatible factory and port contract | `ai_assistant/agent/models/adapter.py`, `tests/test_model_adapter.py`, `tests/test_openai_compatible.py` | M13-T1 | implemented |
 | M13-T3 | M13 | Integration validator | Validate robust OpenAI-compatible adapter and produce review artifacts | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M13.md` | M13-T2 | implemented |
+| M14-T1 | M14 | Runtime implementer | Define declarative tool-call models and interpreter | `ai_assistant/agent/planner.py`, `ai_assistant/application/errors.py`, `tests/test_tools.py` | M13 | implemented |
+| M14-T2 | M14 | Runtime implementer | Preserve interpreted tool plan in runtime without execution | `ai_assistant/agent/runtime.py`, `tests/test_agent_runtime.py`, `tests/test_tools.py` | M14-T1 | implemented |
+| M14-T3 | M14 | Integration validator | Validate declarative tools and produce review artifacts | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M14.md` | M14-T2 | implemented |
 
 ## Task records
 
@@ -3469,3 +3472,260 @@ PYTHONDONTWRITEBYTECODE=1 python -m pytest
 - Assumptions: Responses API shape remains the OpenAI-compatible Phase 1 contract.
 - Remaining issues: No real OpenAI-compatible provider integration test in M13.
 - Recommended follow-up: Human review before starting M14.
+
+### Task M14-T1 — Define Declarative Tool Models
+
+## Parent milestone
+
+M14
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Add typed declarative tool definitions, calls and interpretation results.
+
+## Scope
+
+- Define `ToolDefinition`.
+- Define `ToolCall`.
+- Define typed `ToolCallPlan`.
+- Add `ToolCallInterpreter`.
+- Validate explicit `tool_call` JSON.
+- Add tests.
+
+## Explicit exclusions
+
+- No executor.
+- No shell.
+- No socket calls.
+- No multiple-tool planner.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/agent/planner.py`
+- `ai_assistant/application/errors.py`
+- `tests/test_tools.py`
+
+### Read-only
+
+- `docs/roadmap.md`
+- `docs/adr/ADR-008-declarative-tools-only-in-phase-1.md`
+
+### Forbidden
+
+- Tool execution adapters
+
+## Dependencies
+
+- M13 accepted
+
+## Applicable ADRs
+
+- ADR-008 Declarative tools only in Phase 1
+
+## Acceptance criteria
+
+- [x] `ToolDefinition` exists.
+- [x] `ToolCall` exists.
+- [x] Interpreter returns typed plan.
+- [x] Invalid explicit tool call raises typed error.
+- [x] Plain text is ignored.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_tools.py -q
+```
+
+## Risks
+
+- JSON format can become provider-coupled if expanded too early.
+
+## Result report
+
+- Summary: Added declarative tool-call dataclasses and JSON interpreter.
+- Files changed: `ai_assistant/agent/planner.py`, `ai_assistant/application/errors.py`, `tests/test_tools.py`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_tools.py tests/test_agent_runtime.py -q`.
+- Test results: 12 passed.
+- Assumptions: Phase 1 supports one explicit `tool_call` object per assistant message.
+- Remaining issues: No catalog or schema validation beyond basic object shape.
+- Recommended follow-up: Preserve interpreted plan in runtime.
+
+### Task M14-T2 — Preserve Tool Plan in Runtime
+
+## Parent milestone
+
+M14
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Let runtime identify and retain a typed tool-call plan without executing tools.
+
+## Scope
+
+- Store last interpreted tool plan on runtime.
+- Keep response behavior unchanged.
+- Add runtime test.
+
+## Explicit exclusions
+
+- No execution.
+- No CLI rendering changes.
+- No tool result persistence.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/agent/runtime.py`
+- `tests/test_agent_runtime.py`
+- `tests/test_tools.py`
+
+### Read-only
+
+- `ai_assistant/agent/planner.py`
+- `ai_assistant/cli/app.py`
+
+### Forbidden
+
+- Shell/socket execution
+
+## Dependencies
+
+- M14-T1
+
+## Applicable ADRs
+
+- ADR-008 Declarative tools only in Phase 1
+
+## Acceptance criteria
+
+- [x] Runtime can identify a tool call.
+- [x] Runtime keeps typed plan.
+- [x] No tool is executed.
+- [x] Existing response behavior remains unchanged.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_agent_runtime.py tests/test_tools.py -q
+```
+
+## Risks
+
+- Public runtime response still returns `Message`; plan is stored on runtime state.
+
+## Result report
+
+- Summary: Runtime now stores `last_tool_plan` after assistant response detection.
+- Files changed: `ai_assistant/agent/runtime.py`, `tests/test_agent_runtime.py`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_tools.py tests/test_agent_runtime.py -q`.
+- Test results: 12 passed.
+- Assumptions: `last_tool_plan` is enough for Phase 1's typed plan requirement.
+- Remaining issues: No first-class turn response object yet.
+- Recommended follow-up: Full validation.
+
+### Task M14-T3 — Validate Declarative Tools
+
+## Parent milestone
+
+M14
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Verify M14 acceptance criteria and prepare human review.
+
+## Scope
+
+- Run unit and full pytest validation.
+- Verify no executor/shell was introduced.
+- Write `.agent/reports/M14.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M14 accepted.
+- Do not start M15.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M14.md`
+
+### Read-only
+
+- all project source files
+- tests
+- docs
+
+### Forbidden
+
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M14-T2
+
+## Applicable ADRs
+
+- ADR-008 Declarative tools only in Phase 1
+- ADR-012 Minimal external dependencies
+
+## Acceptance criteria
+
+- [x] Runtime can identify a tool call.
+- [x] No tool is executed.
+- [x] Response path contains typed plan.
+- [x] Unit suite passes.
+- [x] Full pytest suite passes.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit
+PYTHONDONTWRITEBYTECODE=1 python -m pytest
+rg -n "ToolExecutor|execute\\(|subprocess|os\\.system|shell" ai_assistant/agent ai_assistant/tools tests/test_tools.py tests/test_agent_runtime.py
+```
+
+## Risks
+
+- `last_tool_plan` is stateful and may be replaced by a richer turn response later.
+
+## Result report
+
+- Summary: Validated declarative tool interpretation without execution.
+- Files changed: `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M14.md`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q`; executor/shell `rg`.
+- Test results: unit suite passed with 58 tests and 14 deselected; full suite passed with 72 tests; executor/shell search found no matches in M14 scope.
+- Assumptions: Single explicit JSON `tool_call` object is sufficient for Phase 1.
+- Remaining issues: No tool catalog or executor by design.
+- Recommended follow-up: Human review before starting M15.

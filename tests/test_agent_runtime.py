@@ -97,6 +97,21 @@ def test_context_builder_preserves_system_and_current_input_when_over_budget() -
     ]
 
 
+def test_runtime_stores_tool_call_plan_without_execution() -> None:
+    runtime = AgentRuntime(
+        context_builder=ContextBuilder(system_prompt="System prompt"),
+        memory=FakeConversationStore(),
+        model=FakeModel('{"tool_call":{"name":"search","arguments":{"q":"x"}}}'),
+        tool_detector=ToolCallDetector(),
+        session_id="alpha",
+    )
+
+    runtime.respond("Hello")
+
+    assert runtime.last_tool_plan.has_tool_call is True
+    assert runtime.last_tool_plan.tool_name == "search"
+
+
 class FailingTurnStore(ConversationMemory):
     def __init__(self) -> None:
         self._messages: list[Message] = []

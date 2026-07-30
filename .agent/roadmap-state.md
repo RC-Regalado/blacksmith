@@ -10,8 +10,8 @@ Phase 1: Python Core
 
 ## Current milestone
 
-- ID: M13
-- Name: Robust OpenAI-compatible adapter
+- ID: M14
+- Name: Declarative tools
 - Status: implemented-awaiting-human-review
 - Source: `docs/roadmap.md`
 
@@ -40,8 +40,8 @@ Phase 1: Python Core
 | M10 | Native Ollama adapter | accepted | — | `.agent/reports/M10.md` | approved |
 | M11 | Model profiles | accepted | — | `.agent/reports/M11.md` | approved |
 | M12 | Context budget | accepted | — | `.agent/reports/M12.md` | approved |
-| M13 | Robust OpenAI-compatible adapter | implemented-awaiting-human-review | — | `.agent/reports/M13.md` | awaiting-review |
-| M14 | Declarative tools | planned | M13 | — | — |
+| M13 | Robust OpenAI-compatible adapter | accepted | — | `.agent/reports/M13.md` | approved |
+| M14 | Declarative tools | implemented-awaiting-human-review | — | `.agent/reports/M14.md` | awaiting-review |
 | M15 | Layered repository reorganization | planned | M14 | — | — |
 | M16 | CI | planned | M15 | — | — |
 | M17 | Documentation and ADR closure | planned | M16 | — | — |
@@ -62,5 +62,5 @@ Record after first inspection:
 ## Last supervisor update
 
 - Date: 2026-07-29
-- Summary: Milestone 13 implemented and validated. OpenAI-compatible request, response, timeout and error contracts are covered by simulated tests.
-- Next action: Await human review before starting Milestone 14.
+- Summary: Milestone 14 implemented and validated. Runtime can identify declarative tool calls and store a typed plan without executing tools.
+- Next action: Await human review before starting Milestone 15.
