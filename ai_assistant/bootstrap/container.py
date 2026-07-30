@@ -14,7 +14,10 @@ def create_application(config: AppConfig | None = None) -> CliApplication:
     app_config = config or load_app_config()
     configure_logging(app_config.log_level)
     runtime = AgentRuntime(
-        context_builder=ContextBuilder(system_prompt=app_config.system_prompt),
+        context_builder=ContextBuilder(
+            system_prompt=app_config.system_prompt,
+            context_limit=app_config.context_limit,
+        ),
         memory=SQLiteConversationStore(app_config.database),
         model=ModelAdapter.from_config(_model_config(app_config)),
         tool_detector=ToolCallDetector(),

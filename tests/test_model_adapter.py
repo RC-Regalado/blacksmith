@@ -27,6 +27,13 @@ def test_openai_provider_can_be_constructed_without_api_key() -> None:
     assert adapter.provider_name == "openai"
 
 
+def test_chatgpt_alias_uses_openai_compatible_provider() -> None:
+    adapter = ModelAdapter.from_config(ModelAdapterConfig(provider="chatgpt"))
+
+    assert adapter.provider_name == "chatgpt"
+    assert isinstance(adapter._provider, OpenAICompatibleModel)
+
+
 def test_ollama_provider_can_be_constructed() -> None:
     adapter = ModelAdapter.from_config(ModelAdapterConfig(provider="ollama"))
 

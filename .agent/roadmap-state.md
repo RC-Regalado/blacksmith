@@ -10,8 +10,8 @@ Phase 1: Python Core
 
 ## Current milestone
 
-- ID: M10
-- Name: Native Ollama adapter
+- ID: M13
+- Name: Robust OpenAI-compatible adapter
 - Status: implemented-awaiting-human-review
 - Source: `docs/roadmap.md`
 
@@ -37,10 +37,10 @@ Phase 1: Python Core
 | M7 | Centralized configuration | accepted | — | `.agent/reports/M7.md` | approved |
 | M8 | Basic logging | accepted | — | `.agent/reports/M8.md` | approved |
 | M9 | Typed internal errors | accepted | — | `.agent/reports/M9.md` | approved |
-| M10 | Native Ollama adapter | implemented-awaiting-human-review | — | `.agent/reports/M10.md` | awaiting-review |
-| M11 | Model profiles | planned | M10 | — | — |
-| M12 | Context budget | planned | M11 | — | — |
-| M13 | Robust OpenAI-compatible adapter | planned | M12 | — | — |
+| M10 | Native Ollama adapter | accepted | — | `.agent/reports/M10.md` | approved |
+| M11 | Model profiles | accepted | — | `.agent/reports/M11.md` | approved |
+| M12 | Context budget | accepted | — | `.agent/reports/M12.md` | approved |
+| M13 | Robust OpenAI-compatible adapter | implemented-awaiting-human-review | — | `.agent/reports/M13.md` | awaiting-review |
 | M14 | Declarative tools | planned | M13 | — | — |
 | M15 | Layered repository reorganization | planned | M14 | — | — |
 | M16 | CI | planned | M15 | — | — |
@@ -62,5 +62,5 @@ Record after first inspection:
 ## Last supervisor update
 
 - Date: 2026-07-29
-- Summary: Milestone 10 implemented and validated. Native Ollama chat provider is available through configuration and adapter selection.
-- Next action: Await human review before starting Milestone 11.
+- Summary: Milestone 13 implemented and validated. OpenAI-compatible request, response, timeout and error contracts are covered by simulated tests.
+- Next action: Await human review before starting Milestone 14.

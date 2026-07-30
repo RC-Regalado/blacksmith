@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True, slots=True)
 class ModelAdapterConfig:
     provider: str = "dummy"
-    model: str = "gpt-5"
+    model: str = ""
     base_url: str = "https://api.openai.com/v1"
     api_key: str | None = None
     timeout_seconds: float = 60.0

@@ -48,6 +48,15 @@ The supervisor is the only agent permitted to update this file.
 | M10-T1 | M10 | Model provider implementer | Add native Ollama chat provider | `ai_assistant/agent/models/ollama.py`, `tests/test_ollama_model.py` | M9 | implemented |
 | M10-T2 | M10 | Model provider implementer | Wire Ollama provider through config and adapter factory | `ai_assistant/bootstrap/config.py`, `ai_assistant/agent/models/adapter.py`, `ai_assistant/agent/models/__init__.py`, `tests/test_config.py`, `tests/test_model_adapter.py`, `tests/test_ollama_model.py`, `tests/test_ollama_smoke.py` | M10-T1 | implemented |
 | M10-T3 | M10 | Integration validator | Validate native Ollama adapter and produce review artifacts | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M10.md` | M10-T2 | implemented |
+| M11-T1 | M11 | Documentation agent | Document local model profiles and evaluation guide | `docs/model-profiles.md`, `docs/architecture.md` | M10 | implemented |
+| M11-T2 | M11 | Runtime implementer | Keep model and context configurable without hardcoded model default | `ai_assistant/bootstrap/config.py`, `ai_assistant/agent/models/adapter.py`, `tests/test_config.py`, `tests/test_smoke.py` | M11-T1 | implemented |
+| M11-T3 | M11 | Integration validator | Validate model profiles and produce review artifacts | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M11.md` | M11-T2 | implemented |
+| M12-T1 | M12 | Runtime implementer | Add simple recent-history context budget policy | `ai_assistant/agent/context.py`, `tests/test_agent_runtime.py` | M11 | implemented |
+| M12-T2 | M12 | Runtime implementer | Wire configured context limit through bootstrap | `ai_assistant/bootstrap/container.py`, `tests/test_cli_app.py`, `tests/test_config.py` | M12-T1 | implemented |
+| M12-T3 | M12 | Integration validator | Validate context budget and produce review artifacts | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M12.md` | M12-T2 | implemented |
+| M13-T1 | M13 | Model provider implementer | Harden OpenAI-compatible request and response mappers | `ai_assistant/agent/models/openai_compatible.py`, `tests/test_openai_compatible.py` | M12 | implemented |
+| M13-T2 | M13 | Model provider implementer | Verify OpenAI-compatible factory and port contract | `ai_assistant/agent/models/adapter.py`, `tests/test_model_adapter.py`, `tests/test_openai_compatible.py` | M13-T1 | implemented |
+| M13-T3 | M13 | Integration validator | Validate robust OpenAI-compatible adapter and produce review artifacts | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M13.md` | M13-T2 | implemented |
 
 ## Task records
 
@@ -2696,3 +2705,767 @@ printf 'quit\n' | PYTHONDONTWRITEBYTECODE=1 python main.py
 - Assumptions: Real Ollama validation remains environment-dependent and optional.
 - Remaining issues: Real Ollama smoke was not executed in this environment.
 - Recommended follow-up: Human review before starting M11.
+
+### Task M11-T1 — Document Model Profiles
+
+## Parent milestone
+
+M11
+
+## Status
+
+implemented
+
+## Owner role
+
+Documentation agent
+
+## Objective
+
+Document recommended local model profiles for the reference 6 GB VRAM / 64 GB RAM machine.
+
+## Scope
+
+- Document development, validation and evaluation profiles.
+- Document context recommendations.
+- Add evaluation/smoke guidance.
+- Link architecture to the profile guide.
+
+## Explicit exclusions
+
+- No automatic GPU detection.
+- No downloads.
+- No benchmark framework.
+
+## File scope
+
+### Writable
+
+- `docs/model-profiles.md`
+- `docs/architecture.md`
+
+### Read-only
+
+- `docs/roadmap.md`
+- `docs/adr/ADR-015-configurable-model-profiles.md`
+
+### Forbidden
+
+- Runtime behavior
+
+## Dependencies
+
+- M10 accepted
+
+## Applicable ADRs
+
+- ADR-015 Configurable model profiles
+
+## Acceptance criteria
+
+- [x] Profiles are documented.
+- [x] Development model target is documented.
+- [x] Context 4096 is documented.
+- [x] Evaluation context 8192 guidance is documented.
+
+## Validation commands
+
+```bash
+rg -n "development|validation|evaluation|AI_ASSISTANT_CONTEXT_LIMIT|8192" docs/model-profiles.md docs/architecture.md
+```
+
+## Risks
+
+- Ollama tags may differ by registry and quantization.
+
+## Result report
+
+- Summary: Added model profile guide and architecture link.
+- Files changed: `docs/model-profiles.md`, `docs/architecture.md`.
+- Tests run: `rg -n "development|validation|evaluation|AI_ASSISTANT_CONTEXT_LIMIT|8192" docs/model-profiles.md docs/architecture.md`.
+- Test results: profile and context entries found.
+- Assumptions: Exact Ollama tags remain operator-selected because tags vary.
+- Remaining issues: None for this task.
+- Recommended follow-up: Validate config/smoke behavior.
+
+### Task M11-T2 — Keep Model and Context Configurable
+
+## Parent milestone
+
+M11
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Avoid a hardcoded model default and prove context/model are selected through config.
+
+## Scope
+
+- Remove the hardcoded model default from config and adapter config.
+- Verify 8192 context can be configured.
+- Add smoke test for configured model/context and active model logging.
+
+## Explicit exclusions
+
+- No context trimming.
+- No model profile resolver.
+- No automatic provider selection.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/bootstrap/config.py`
+- `ai_assistant/agent/models/adapter.py`
+- `tests/test_config.py`
+- `tests/test_smoke.py`
+
+### Read-only
+
+- `ai_assistant/bootstrap/container.py`
+- `ai_assistant/agent/runtime.py`
+
+### Forbidden
+
+- Provider HTTP behavior
+
+## Dependencies
+
+- M11-T1
+
+## Applicable ADRs
+
+- ADR-007 Configuration at bootstrap
+- ADR-015 Configurable model profiles
+
+## Acceptance criteria
+
+- [x] Runtime config does not hardcode a concrete model.
+- [x] Model is environment/config selected.
+- [x] Context 4096 remains default.
+- [x] Context 8192 is accepted by configuration.
+- [x] Active provider/model is logged.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_config.py tests/test_smoke.py tests/test_model_adapter.py -q
+```
+
+## Risks
+
+- Operators using real providers must set `AI_ASSISTANT_MODEL`.
+
+## Result report
+
+- Summary: Removed concrete model default and added config/smoke tests for model/context selection.
+- Files changed: `ai_assistant/bootstrap/config.py`, `ai_assistant/agent/models/adapter.py`, `tests/test_config.py`, `tests/test_smoke.py`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_config.py tests/test_smoke.py tests/test_model_adapter.py -q`.
+- Test results: 16 passed.
+- Assumptions: Dummy provider remains the no-model local default; real providers require configured model.
+- Remaining issues: None for this task.
+- Recommended follow-up: Full M11 validation.
+
+### Task M11-T3 — Validate Model Profiles
+
+## Parent milestone
+
+M11
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Verify M11 acceptance criteria and prepare human review.
+
+## Scope
+
+- Run smoke tests.
+- Run full pytest validation.
+- Write `.agent/reports/M11.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M11 accepted.
+- Do not start M12.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M11.md`
+
+### Read-only
+
+- all project source files
+- tests
+- docs
+
+### Forbidden
+
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M11-T2
+
+## Applicable ADRs
+
+- ADR-013 Pytest testing strategy
+- ADR-015 Configurable model profiles
+
+## Acceptance criteria
+
+- [x] Project does not fix a concrete model in runtime config.
+- [x] Documented default profile is suitable for reference hardware.
+- [x] Context is configurable.
+- [x] Smoke suite passes.
+- [x] Full pytest suite passes.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m smoke
+PYTHONDONTWRITEBYTECODE=1 python -m pytest
+```
+
+## Risks
+
+- Exact Ollama tags may differ locally.
+
+## Result report
+
+- Summary: Validated M11 acceptance criteria and produced the human review report.
+- Files changed: `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M11.md`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m smoke -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q`; profile documentation `rg`; hardcoded model default `rg`.
+- Test results: smoke passed with 1 test and 52 deselected; full suite passed with 53 tests; profile documentation entries found; no `gpt-5` runtime config default found.
+- Assumptions: Exact Ollama model tags are operator-selected and may differ locally.
+- Remaining issues: Real Ollama smoke remains optional and environment-dependent.
+- Recommended follow-up: Human review before starting M12.
+
+### Task M12-T1 — Add Recent-History Context Budget
+
+## Parent milestone
+
+M12
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Limit history sent to the model with a simple configurable budget.
+
+## Scope
+
+- Add `context_limit` to `ContextBuilder`.
+- Preserve system prompt.
+- Preserve current user input.
+- Select recent history in original order while budget remains.
+- Add order and truncation tests.
+
+## Explicit exclusions
+
+- No tokenizer.
+- No summaries.
+- No embeddings.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/agent/context.py`
+- `tests/test_agent_runtime.py`
+
+### Read-only
+
+- `docs/roadmap.md`
+- `docs/architecture.md`
+
+### Forbidden
+
+- Persistence behavior
+
+## Dependencies
+
+- M11 accepted
+
+## Applicable ADRs
+
+- ADR-015 Configurable model profiles
+
+## Acceptance criteria
+
+- [x] Context does not grow without limit.
+- [x] System prompt is always preserved.
+- [x] Current input is always preserved.
+- [x] Recent history has priority.
+- [x] Message order is preserved.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_agent_runtime.py -q
+```
+
+## Risks
+
+- Character count is only an approximation of token usage.
+
+## Result report
+
+- Summary: Added approximate character-budget context selection.
+- Files changed: `ai_assistant/agent/context.py`, `tests/test_agent_runtime.py`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_agent_runtime.py tests/test_cli_app.py -q`.
+- Test results: 8 passed.
+- Assumptions: Approximate content-length budget is acceptable until provider tokenizers exist.
+- Remaining issues: None for this task.
+- Recommended follow-up: Wire config limit through bootstrap.
+
+### Task M12-T2 — Wire Configured Context Limit
+
+## Parent milestone
+
+M12
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Pass `AppConfig.context_limit` into `ContextBuilder`.
+
+## Scope
+
+- Wire configured context limit in bootstrap.
+- Add bootstrap wiring test.
+
+## Explicit exclusions
+
+- No CLI flags.
+- No runtime mutation.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/bootstrap/container.py`
+- `tests/test_cli_app.py`
+- `tests/test_config.py`
+
+### Read-only
+
+- `ai_assistant/bootstrap/config.py`
+- `ai_assistant/agent/runtime.py`
+
+### Forbidden
+
+- Model provider behavior
+
+## Dependencies
+
+- M12-T1
+
+## Applicable ADRs
+
+- ADR-007 Configuration at bootstrap
+- ADR-015 Configurable model profiles
+
+## Acceptance criteria
+
+- [x] Configured context limit reaches `ContextBuilder`.
+- [x] Existing config validation remains intact.
+- [x] CLI bootstrap still works.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_cli_app.py tests/test_config.py -q
+```
+
+## Risks
+
+- Test reaches through `CliApplication._runtime` because there is no public diagnostic surface yet.
+
+## Result report
+
+- Summary: Wired `AppConfig.context_limit` into `ContextBuilder`.
+- Files changed: `ai_assistant/bootstrap/container.py`, `tests/test_cli_app.py`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_agent_runtime.py tests/test_cli_app.py -q`.
+- Test results: 8 passed.
+- Assumptions: Private runtime inspection in test is acceptable for narrow bootstrap wiring.
+- Remaining issues: None for this task.
+- Recommended follow-up: Full M12 validation.
+
+### Task M12-T3 — Validate Context Budget
+
+## Parent milestone
+
+M12
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Verify M12 acceptance criteria and prepare human review.
+
+## Scope
+
+- Run unit and full pytest validation.
+- Write `.agent/reports/M12.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M12 accepted.
+- Do not start M13.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M12.md`
+
+### Read-only
+
+- all project source files
+- tests
+- docs
+
+### Forbidden
+
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M12-T2
+
+## Applicable ADRs
+
+- ADR-007 Configuration at bootstrap
+- ADR-015 Configurable model profiles
+
+## Acceptance criteria
+
+- [x] Context does not grow without limit.
+- [x] Current message is always preserved.
+- [x] Recent history has priority.
+- [x] Unit suite passes.
+- [x] Full pytest suite passes.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit
+PYTHONDONTWRITEBYTECODE=1 python -m pytest
+```
+
+## Risks
+
+- Character count can differ from provider token counts.
+
+## Result report
+
+- Summary: Validated M12 acceptance criteria and produced the human review report.
+- Files changed: `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M12.md`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q`; CLI smoke with `python main.py`.
+- Test results: unit suite passed with 50 tests and 6 deselected; full suite passed with 56 tests; CLI smoke exited 0 and showed configured provider/model in stderr logs.
+- Assumptions: Character-count budget is the intended simple policy for M12.
+- Remaining issues: Token-accurate budgeting remains out of scope.
+- Recommended follow-up: Human review before starting M13.
+
+### Task M13-T1 — Harden OpenAI-Compatible Mappers
+
+## Parent milestone
+
+M13
+
+## Status
+
+implemented
+
+## Owner role
+
+Model provider implementer
+
+## Objective
+
+Strengthen request and response contracts for the OpenAI-compatible provider.
+
+## Scope
+
+- Verify Responses API payload mapping.
+- Verify `/responses` request path and timeout.
+- Validate response JSON is an object.
+- Verify direct and nested response text extraction.
+- Preserve typed protocol errors.
+
+## Explicit exclusions
+
+- No SDK.
+- No streaming.
+- No tools.
+- No multimodal support.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/agent/models/openai_compatible.py`
+- `tests/test_openai_compatible.py`
+
+### Read-only
+
+- `ai_assistant/agent/models/ollama.py`
+- `docs/roadmap.md`
+- `docs/adr/ADR-014-non-streaming-calls-in-phase-1.md`
+
+### Forbidden
+
+- Ollama provider behavior
+
+## Dependencies
+
+- M12 accepted
+
+## Applicable ADRs
+
+- ADR-006 ModelProvider port
+- ADR-012 Minimal external dependencies
+- ADR-014 Non-streaming model calls in Phase 1
+
+## Acceptance criteria
+
+- [x] Request mapper is tested.
+- [x] Response mapper is tested.
+- [x] Timeout is passed to HTTP call.
+- [x] Invalid provider JSON maps to typed protocol error.
+- [x] Unit/contract tests use no real network.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_openai_compatible.py -q
+```
+
+## Risks
+
+- Compatible providers may vary in exact response shapes.
+
+## Result report
+
+- Summary: Added simulated contract coverage and object JSON validation for OpenAI-compatible responses.
+- Files changed: `ai_assistant/agent/models/openai_compatible.py`, `tests/test_openai_compatible.py`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_openai_compatible.py -q`.
+- Test results: 8 passed.
+- Assumptions: Responses API shape remains the Phase 1 OpenAI-compatible contract.
+- Remaining issues: No real provider integration test in M13.
+- Recommended follow-up: Verify factory and full contracts.
+
+### Task M13-T2 — Verify Factory and Port Contract
+
+## Parent milestone
+
+M13
+
+## Status
+
+implemented
+
+## Owner role
+
+Model provider implementer
+
+## Objective
+
+Confirm OpenAI-compatible provider remains separate from Ollama and implements the shared port.
+
+## Scope
+
+- Verify `OpenAICompatibleModel` implements `ModelProvider`.
+- Verify `openai` factory path.
+- Verify `chatgpt` alias path.
+- Preserve Ollama factory separation.
+
+## Explicit exclusions
+
+- No provider auto-detection.
+- No provider renaming.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/agent/models/adapter.py`
+- `tests/test_model_adapter.py`
+- `tests/test_openai_compatible.py`
+
+### Read-only
+
+- `ai_assistant/agent/models/ollama.py`
+- `ai_assistant/bootstrap/config.py`
+
+### Forbidden
+
+- Configuration variable changes
+
+## Dependencies
+
+- M13-T1
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-006 ModelProvider port
+- ADR-011 Native Ollama API adapter
+
+## Acceptance criteria
+
+- [x] Ollama and OpenAI-compatible are separate adapters.
+- [x] Both implement the same port.
+- [x] Factory selects OpenAI-compatible provider.
+- [x] Factory tests use no real network.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_model_adapter.py tests/test_openai_compatible.py -q
+```
+
+## Risks
+
+- Test reaches into adapter internals to verify concrete provider selection.
+
+## Result report
+
+- Summary: Added factory coverage for `chatgpt` alias and port contract coverage for OpenAI-compatible provider.
+- Files changed: `tests/test_model_adapter.py`, `tests/test_openai_compatible.py`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_model_adapter.py -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m contract -q`.
+- Test results: model adapter tests passed with 7 tests; contract suite passed with 10 tests and 54 deselected.
+- Assumptions: Internal provider inspection is acceptable for narrow factory verification.
+- Remaining issues: None for this task.
+- Recommended follow-up: Full M13 validation.
+
+### Task M13-T3 — Validate OpenAI-Compatible Adapter
+
+## Parent milestone
+
+M13
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Verify M13 acceptance criteria and prepare human review.
+
+## Scope
+
+- Run contract and full pytest validation.
+- Write `.agent/reports/M13.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M13 accepted.
+- Do not start M14.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M13.md`
+
+### Read-only
+
+- all project source files
+- tests
+- docs
+
+### Forbidden
+
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M13-T2
+
+## Applicable ADRs
+
+- ADR-006 ModelProvider port
+- ADR-011 Native Ollama API adapter
+- ADR-012 Minimal external dependencies
+- ADR-014 Non-streaming model calls in Phase 1
+
+## Acceptance criteria
+
+- [x] Ollama and OpenAI-compatible are separate adapters.
+- [x] Both implement the same port.
+- [x] Unit/contract tests do not use real network.
+- [x] Contract suite passes.
+- [x] Full pytest suite passes.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m contract
+PYTHONDONTWRITEBYTECODE=1 python -m pytest
+```
+
+## Risks
+
+- Future compatible providers may need different response mapping.
+
+## Result report
+
+- Summary: Validated M13 acceptance criteria and produced the human review report.
+- Files changed: `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M13.md`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_openai_compatible.py -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_model_adapter.py -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -m contract -q`; `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q`.
+- Test results: OpenAI-compatible tests passed with 8 tests; model adapter tests passed with 7 tests; contract suite passed with 10 tests and 55 deselected; full suite passed with 65 tests.
+- Assumptions: Responses API shape remains the OpenAI-compatible Phase 1 contract.
+- Remaining issues: No real OpenAI-compatible provider integration test in M13.
+- Recommended follow-up: Human review before starting M14.

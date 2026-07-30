@@ -106,6 +106,8 @@ Debe configurarse mediante:
 AI_ASSISTANT_MODEL
 ```
 
+La guía operativa de perfiles vive en `docs/model-profiles.md`.
+
 ---
 
 ## 4. Principios arquitectónicos
@@ -806,7 +808,7 @@ Variables:
 
 ```text
 AI_ASSISTANT_PROVIDER=ollama
-AI_ASSISTANT_MODEL=gemma4
+AI_ASSISTANT_MODEL=<installed-ollama-tag>
 AI_ASSISTANT_BASE_URL=http://localhost:11434
 AI_ASSISTANT_DATABASE=assistant.sqlite3
 AI_ASSISTANT_SESSION=default

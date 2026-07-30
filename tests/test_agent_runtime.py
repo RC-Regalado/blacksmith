@@ -65,6 +65,38 @@ def test_context_builder_merges_system_history_and_user_input() -> None:
     ]
 
 
+def test_context_builder_prefers_recent_history_within_budget() -> None:
+    builder = ContextBuilder(system_prompt="S", context_limit=9)
+    history = [
+        Message(role="user", content="old"),
+        Message(role="assistant", content="mid"),
+        Message(role="assistant", content="new"),
+    ]
+
+    context = builder.build(history=history, user_input="U")
+
+    assert context == [
+        Message(role="system", content="S"),
+        Message(role="assistant", content="mid"),
+        Message(role="assistant", content="new"),
+        Message(role="user", content="U"),
+    ]
+
+
+def test_context_builder_preserves_system_and_current_input_when_over_budget() -> None:
+    builder = ContextBuilder(system_prompt="system", context_limit=1)
+
+    context = builder.build(
+        history=[Message(role="assistant", content="history")],
+        user_input="current",
+    )
+
+    assert context == [
+        Message(role="system", content="system"),
+        Message(role="user", content="current"),
+    ]
+
+
 class FailingTurnStore(ConversationMemory):
     def __init__(self) -> None:
         self._messages: list[Message] = []

@@ -59,6 +59,12 @@ def test_ollama_provider_defaults_to_local_base_url() -> None:
     assert config.base_url == "http://localhost:11434"
 
 
+def test_context_limit_allows_8192() -> None:
+    config = load_app_config({"AI_ASSISTANT_CONTEXT_LIMIT": "8192"})
+
+    assert config.context_limit == 8192
+
+
 def test_app_config_repr_hides_api_key() -> None:
     assert "secret" not in repr(AppConfig(api_key="secret"))
 

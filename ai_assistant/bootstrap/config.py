@@ -12,7 +12,7 @@ SUPPORTED_PROVIDERS = frozenset({"dummy", "ollama", "openai", "chatgpt"})
 @dataclass(frozen=True, slots=True)
 class AppConfig:
     provider: str = "dummy"
-    model: str = "gpt-5"
+    model: str = ""
     base_url: str = "https://api.openai.com/v1"
     database: str = "assistant.sqlite3"
     session: str = "default"
@@ -28,7 +28,7 @@ def load_app_config(env: Mapping[str, str] | None = None) -> AppConfig:
     provider = _provider(source.get("AI_ASSISTANT_PROVIDER", "dummy"))
     return AppConfig(
         provider=provider,
-        model=source.get("AI_ASSISTANT_MODEL", "gpt-5"),
+        model=source.get("AI_ASSISTANT_MODEL", ""),
         base_url=source.get("AI_ASSISTANT_BASE_URL", _default_base_url(provider)),
         database=source.get("AI_ASSISTANT_DATABASE", "assistant.sqlite3"),
         session=source.get("AI_ASSISTANT_SESSION", "default"),

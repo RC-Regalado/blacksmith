@@ -32,6 +32,14 @@ def test_bootstrap_creates_cli_application(tmp_path: Path) -> None:
     assert isinstance(create_application(config), CliApplication)
 
 
+def test_bootstrap_wires_context_limit(tmp_path: Path) -> None:
+    config = AppConfig(database=str(tmp_path / "test.sqlite3"), context_limit=123)
+
+    app = create_application(config)
+
+    assert app._runtime.context_builder.context_limit == 123
+
+
 class FakeRuntime:
     def respond(self, user_input: str) -> Message:
         return Message(role="assistant", content="ok")

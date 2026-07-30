@@ -22,7 +22,10 @@ Generated changes are provisional until recorded here.
 | M7 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "aprobado, inicia el M8". |
 | M8 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "aprobado, pasa al M9". |
 | M9 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobado, inicia el M10". |
-| M10 | implemented-awaiting-human-review | awaiting-review | — | 2026-07-29 | Native Ollama adapter implemented and validated; review `.agent/reports/M10.md`. |
+| M10 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed Ollama responds; first cold start may require higher timeout. |
+| M11 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobadom inicia el M12". |
+| M12 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobado, inicia el M13". |
+| M13 | implemented-awaiting-human-review | awaiting-review | — | 2026-07-29 | OpenAI-compatible adapter hardened and validated; review `.agent/reports/M13.md`. |
 
 ## Approval gates
 

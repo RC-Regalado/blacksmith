@@ -46,6 +46,7 @@ class OpenAICompatibleModel(ModelProvider):
             "model": self.model,
             "input": [self._input_item(message) for message in input_messages],
             "store": False,
+            "stream": False,
         }
         if system_messages:
             payload["instructions"] = "\n\n".join(system_messages)
@@ -69,6 +70,9 @@ class OpenAICompatibleModel(ModelProvider):
                 except json.JSONDecodeError as exc:
                     self._log_failure(started)
                     raise ModelProtocolError("OpenAI response was not valid JSON.") from exc
+                if not isinstance(data, dict):
+                    self._log_failure(started)
+                    raise ModelProtocolError("OpenAI response JSON must be an object.")
         except HTTPError as error:
             self._log_failure(started, http_status=error.code)
             raise self._http_error(error) from error
