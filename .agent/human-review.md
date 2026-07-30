@@ -26,7 +26,8 @@ Generated changes are provisional until recorded here.
 | M11 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobadom inicia el M12". |
 | M12 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobado, inicia el M13". |
 | M13 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobado, inicia M14". |
-| M14 | implemented-awaiting-human-review | awaiting-review | — | 2026-07-29 | Declarative tools implemented and validated; review `.agent/reports/M14.md`. |
+| M14 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobado, todo sigue funcionando correctamente. Inicia el M15". |
+| M15 | implemented-awaiting-human-review | awaiting-review | — | 2026-07-29 | Layered repository reorganization implemented and validated; review `.agent/reports/M15.md`. |
 
 ## Approval gates
 

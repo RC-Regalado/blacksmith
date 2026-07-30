@@ -7,7 +7,7 @@ from urllib.error import HTTPError, URLError
 import pytest
 
 from ai_assistant.agent.message import Message
-from ai_assistant.agent.models.openai_compatible import OpenAICompatibleModel
+from ai_assistant.infrastructure.models.openai_compatible import OpenAICompatibleModel
 from ai_assistant.application.errors import (
     ModelConnectionError,
     ModelNotFoundError,
@@ -57,7 +57,7 @@ def test_openai_chat_posts_to_responses_with_timeout(
         return FakeResponse({"output_text": "ok"})
 
     monkeypatch.setattr(
-        "ai_assistant.agent.models.openai_compatible.urlopen",
+        "ai_assistant.infrastructure.models.openai_compatible.urlopen",
         fake_urlopen,
     )
 
@@ -97,7 +97,7 @@ def test_openai_non_object_json_maps_to_protocol_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "ai_assistant.agent.models.openai_compatible.urlopen",
+        "ai_assistant.infrastructure.models.openai_compatible.urlopen",
         lambda *_args, **_kwargs: RawResponse(b"[]"),
     )
 
@@ -107,7 +107,7 @@ def test_openai_non_object_json_maps_to_protocol_error(
 
 def test_openai_timeout_maps_to_typed_error(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "ai_assistant.agent.models.openai_compatible.urlopen",
+        "ai_assistant.infrastructure.models.openai_compatible.urlopen",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(URLError(TimeoutError())),
     )
 
@@ -119,7 +119,7 @@ def test_openai_missing_model_maps_to_typed_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "ai_assistant.agent.models.openai_compatible.urlopen",
+        "ai_assistant.infrastructure.models.openai_compatible.urlopen",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             HTTPError("url", 404, "not found", None, BytesIO(b"body"))
         ),
@@ -133,7 +133,7 @@ def test_openai_connection_error_maps_to_typed_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "ai_assistant.agent.models.openai_compatible.urlopen",
+        "ai_assistant.infrastructure.models.openai_compatible.urlopen",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(URLError("down")),
     )
 

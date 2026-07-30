@@ -9,7 +9,7 @@ from urllib.error import HTTPError, URLError
 import pytest
 
 from ai_assistant.agent.message import Message
-from ai_assistant.agent.models.ollama import OllamaModelProvider
+from ai_assistant.infrastructure.models.ollama import OllamaModelProvider
 from ai_assistant.application.errors import (
     ModelConnectionError,
     ModelNotFoundError,
@@ -39,7 +39,7 @@ def test_ollama_chat_returns_assistant_message(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "ai_assistant.agent.models.ollama.urlopen",
+        "ai_assistant.infrastructure.models.ollama.urlopen",
         lambda *_args, **_kwargs: FakeResponse(
             {"message": {"role": "assistant", "content": "hola"}}
         ),
@@ -62,7 +62,7 @@ def test_ollama_posts_to_api_chat_with_timeout(
         captured["timeout"] = timeout
         return FakeResponse({"message": {"content": "ok"}})
 
-    monkeypatch.setattr("ai_assistant.agent.models.ollama.urlopen", fake_urlopen)
+    monkeypatch.setattr("ai_assistant.infrastructure.models.ollama.urlopen", fake_urlopen)
 
     OllamaModelProvider(
         model="gemma",
@@ -80,7 +80,7 @@ def test_ollama_missing_model_maps_to_typed_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "ai_assistant.agent.models.ollama.urlopen",
+        "ai_assistant.infrastructure.models.ollama.urlopen",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             HTTPError("url", 404, "not found", None, BytesIO(b"body"))
         ),
@@ -94,7 +94,7 @@ def test_ollama_connection_failure_maps_to_typed_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "ai_assistant.agent.models.ollama.urlopen",
+        "ai_assistant.infrastructure.models.ollama.urlopen",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(URLError("down")),
     )
 
@@ -106,7 +106,7 @@ def test_ollama_timeout_maps_to_typed_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "ai_assistant.agent.models.ollama.urlopen",
+        "ai_assistant.infrastructure.models.ollama.urlopen",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(URLError(TimeoutError())),
     )
 
@@ -118,7 +118,7 @@ def test_ollama_empty_response_maps_to_protocol_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "ai_assistant.agent.models.ollama.urlopen",
+        "ai_assistant.infrastructure.models.ollama.urlopen",
         lambda *_args, **_kwargs: FakeResponse({"message": {"content": ""}}),
     )
 
@@ -132,7 +132,7 @@ def test_cli_responds_with_simulated_ollama(
     tmp_path: Path,
 ) -> None:
     monkeypatch.setattr(
-        "ai_assistant.agent.models.ollama.urlopen",
+        "ai_assistant.infrastructure.models.ollama.urlopen",
         lambda *_args, **_kwargs: FakeResponse(
             {"message": {"role": "assistant", "content": "ollama ok"}}
         ),

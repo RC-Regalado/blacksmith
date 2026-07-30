@@ -723,6 +723,18 @@ ai_assistant/
 
 ## 10. Dependencias permitidas
 
+La estructura por capas ya existe en el repositorio:
+
+- `ai_assistant/domain/`: mensajes, sesiones, errores y modelos declarativos de herramientas.
+- `ai_assistant/application/`: runtime, context builder, tool-call interpreter y puertos.
+- `ai_assistant/infrastructure/`: adaptadores de modelo y stores de memoria.
+- `ai_assistant/interfaces/`: CLI como adaptador primario.
+- `ai_assistant/bootstrap/`: composition root.
+
+Los paquetes `ai_assistant/agent/`, `ai_assistant/cli/` y
+`ai_assistant/storage/` permanecen como fachadas de compatibilidad durante
+Phase 1.
+
 | Origen | Domain | Application | Infrastructure | Interfaces |
 |---|---:|---:|---:|---:|
 | Domain | Sí | No | No | No |

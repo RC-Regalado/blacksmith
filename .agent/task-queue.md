@@ -60,6 +60,9 @@ The supervisor is the only agent permitted to update this file.
 | M14-T1 | M14 | Runtime implementer | Define declarative tool-call models and interpreter | `ai_assistant/agent/planner.py`, `ai_assistant/application/errors.py`, `tests/test_tools.py` | M13 | implemented |
 | M14-T2 | M14 | Runtime implementer | Preserve interpreted tool plan in runtime without execution | `ai_assistant/agent/runtime.py`, `tests/test_agent_runtime.py`, `tests/test_tools.py` | M14-T1 | implemented |
 | M14-T3 | M14 | Integration validator | Validate declarative tools and produce review artifacts | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M14.md` | M14-T2 | implemented |
+| M15-T1 | M15 | Architect | Establish canonical domain, application, infrastructure and interfaces modules | `ai_assistant/domain/`, `ai_assistant/application/`, `ai_assistant/infrastructure/`, `ai_assistant/interfaces/`, legacy compatibility modules | M14 | implemented |
+| M15-T2 | M15 | Runtime implementer | Wire bootstrap and entry points to the layered modules without changing behavior | `ai_assistant/bootstrap/container.py`, `ai_assistant/main.py`, tests | M15-T1 | implemented |
+| M15-T3 | M15 | Integration validator | Validate layer dependency rules, CLI smoke and full tests | `tests/test_layering.py`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M15.md` | M15-T2 | implemented |
 
 ## Task records
 
@@ -3729,3 +3732,211 @@ rg -n "ToolExecutor|execute\\(|subprocess|os\\.system|shell" ai_assistant/agent 
 - Assumptions: Single explicit JSON `tool_call` object is sufficient for Phase 1.
 - Remaining issues: No tool catalog or executor by design.
 - Recommended follow-up: Human review before starting M15.
+
+### Task M15-T1 — Establish Layered Modules
+
+## Parent milestone
+
+M15
+
+## Status
+
+implemented
+
+## Owner role
+
+Architect
+
+## Objective
+
+Create canonical layer packages for domain, application, infrastructure and interfaces.
+
+## Scope
+
+- Move message, session, error and tool data types to `ai_assistant/domain/`.
+- Move runtime, context builder and tool-call interpretation to `ai_assistant/application/`.
+- Move providers and stores to `ai_assistant/infrastructure/`.
+- Move CLI adapter to `ai_assistant/interfaces/cli/`.
+- Keep legacy packages as compatibility exports.
+
+## Explicit exclusions
+
+- No public protocol changes.
+- No database schema migration.
+- No new dependencies.
+- No tool execution.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/domain/`
+- `ai_assistant/application/`
+- `ai_assistant/infrastructure/`
+- `ai_assistant/interfaces/`
+- `ai_assistant/agent/`
+- `ai_assistant/cli/`
+- `ai_assistant/storage/`
+
+### Forbidden
+
+- Persistent user data.
+
+## Dependencies
+
+- M14 accepted.
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-003 Provider-neutral Message model
+- ADR-006 ModelProvider port
+- ADR-008 Declarative tools only in Phase 1
+- ADR-012 Minimal external dependencies
+
+## Acceptance criteria
+
+- [x] Domain no importa infraestructura.
+- [x] Application no importa adaptadores.
+- [x] Legacy imports remain compatible.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_layering.py -q
+```
+
+## Result report
+
+- Summary: Added canonical layered modules and compatibility exports.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_layering.py -q`.
+- Test results: 3 passed.
+- Remaining issues: Legacy packages can be removed in a later dedicated cleanup.
+
+### Task M15-T2 — Wire Bootstrap To Layers
+
+## Parent milestone
+
+M15
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Use canonical layer modules from bootstrap and entry points without changing runtime behavior.
+
+## Scope
+
+- Update `ai_assistant/bootstrap/container.py` imports.
+- Update `ai_assistant/main.py` to use the composition root directly.
+- Update tests that monkeypatch provider internals to target canonical infrastructure modules.
+
+## Explicit exclusions
+
+- No CLI feature changes.
+- No logging policy changes.
+- No provider behavior changes.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/bootstrap/container.py`
+- `ai_assistant/main.py`
+- provider tests
+
+## Dependencies
+
+- M15-T1
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-007 Configuration at bootstrap
+- ADR-011 Native Ollama adapter
+
+## Acceptance criteria
+
+- [x] CLI no construye dependencias.
+- [x] `python main.py` funciona.
+
+## Validation commands
+
+```bash
+printf 'hello\nquit\n' | AI_ASSISTANT_PROVIDER=dummy AI_ASSISTANT_MODEL= PYTHONDONTWRITEBYTECODE=1 python main.py
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit -q
+```
+
+## Result report
+
+- Summary: Bootstrap now assembles canonical application, infrastructure and interface modules.
+- Test results: CLI smoke exited 0 and printed `Echo: hello`; unit suite passed with 61 tests and 14 deselected.
+
+### Task M15-T3 — Validate Layered Reorganization
+
+## Parent milestone
+
+M15
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate all M15 acceptance criteria and prepare manual review artifacts.
+
+## Scope
+
+- Add layer dependency tests.
+- Run full pytest suite.
+- Update architecture documentation.
+- Produce `.agent/reports/M15.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M15 accepted.
+- Do not start M16.
+
+## Dependencies
+
+- M15-T2
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-012 Minimal external dependencies
+- ADR-013 Pytest testing strategy
+
+## Acceptance criteria
+
+- [x] Domain no importa infraestructura.
+- [x] Application no importa adaptadores.
+- [x] CLI no construye dependencias.
+- [x] `python main.py` funciona.
+- [x] Full pytest suite passes.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest tests/test_layering.py -q
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit -q
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -q
+printf 'hello\nquit\n' | AI_ASSISTANT_PROVIDER=dummy AI_ASSISTANT_MODEL= PYTHONDONTWRITEBYTECODE=1 python main.py
+```
+
+## Result report
+
+- Summary: Validated M15 and prepared human review.
+- Test results: layering passed with 3 tests; unit passed with 61 tests and 14 deselected; full suite passed with 75 tests; CLI smoke exited 0.

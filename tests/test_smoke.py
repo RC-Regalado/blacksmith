@@ -4,7 +4,7 @@ import logging
 
 import pytest
 
-from ai_assistant.agent.models.adapter import ModelAdapter, ModelAdapterConfig
+from ai_assistant.infrastructure.models.adapter import ModelAdapter, ModelAdapterConfig
 from ai_assistant.bootstrap.config import load_app_config
 
 

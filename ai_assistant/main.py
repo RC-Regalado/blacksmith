@@ -1,12 +1,11 @@
 """Package main entry point."""
 
-from ai_assistant.cli.app import run_cli
+from ai_assistant.bootstrap.container import create_application
 
 
 def main() -> None:
-    run_cli()
+    create_application().run()
 
 
 if __name__ == "__main__":
     main()
-

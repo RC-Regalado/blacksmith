@@ -1,13 +1,13 @@
 """Composition root for application dependencies."""
 
-from ai_assistant.agent.context import ContextBuilder
-from ai_assistant.agent.models.adapter import ModelAdapter, ModelAdapterConfig
-from ai_assistant.agent.planner import ToolCallDetector
-from ai_assistant.agent.runtime import AgentRuntime
+from ai_assistant.application.context import ContextBuilder
+from ai_assistant.application.runtime import AgentRuntime
+from ai_assistant.application.tool_calls import ToolCallDetector
 from ai_assistant.bootstrap.config import AppConfig, load_app_config
 from ai_assistant.bootstrap.logging import configure_logging
-from ai_assistant.cli.app import CliApplication
-from ai_assistant.storage.sqlite_memory import SQLiteConversationStore
+from ai_assistant.infrastructure.models.adapter import ModelAdapter, ModelAdapterConfig
+from ai_assistant.infrastructure.storage.sqlite_memory import SQLiteConversationStore
+from ai_assistant.interfaces.cli.app import CliApplication
 
 
 def create_application(config: AppConfig | None = None) -> CliApplication:

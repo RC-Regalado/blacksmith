@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 
-from ai_assistant.agent.message import Message
+from ai_assistant.domain.message import Message
 
 
 class ModelProvider(ABC):

@@ -9,8 +9,8 @@ import pytest
 from ai_assistant.application.errors import ConfigurationError, ModelProtocolError
 from ai_assistant.agent.context import ContextBuilder
 from ai_assistant.agent.message import Message
-from ai_assistant.agent.models.adapter import ModelAdapter, ModelAdapterConfig
-from ai_assistant.agent.models.openai_compatible import OpenAICompatibleModel
+from ai_assistant.infrastructure.models.adapter import ModelAdapter, ModelAdapterConfig
+from ai_assistant.infrastructure.models.openai_compatible import OpenAICompatibleModel
 from ai_assistant.agent.planner import ToolCallDetector
 from ai_assistant.agent.runtime import AgentRuntime
 from ai_assistant.application.ports.memory import ConversationMemory, SessionId
@@ -82,7 +82,7 @@ def test_openai_error_log_omits_response_body_and_api_key(
 
     caplog.set_level(logging.ERROR)
     monkeypatch.setattr(
-        "ai_assistant.agent.models.openai_compatible.urlopen",
+        "ai_assistant.infrastructure.models.openai_compatible.urlopen",
         fail_request,
     )
     model = OpenAICompatibleModel(

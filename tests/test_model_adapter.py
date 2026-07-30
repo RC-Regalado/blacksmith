@@ -4,9 +4,9 @@ import pytest
 
 from ai_assistant.application.errors import ConfigurationError
 from ai_assistant.agent.message import Message
-from ai_assistant.agent.models.adapter import ModelAdapter, ModelAdapterConfig
-from ai_assistant.agent.models.ollama import OllamaModelProvider
-from ai_assistant.agent.models.openai_compatible import OpenAICompatibleModel
+from ai_assistant.infrastructure.models.adapter import ModelAdapter, ModelAdapterConfig
+from ai_assistant.infrastructure.models.ollama import OllamaModelProvider
+from ai_assistant.infrastructure.models.openai_compatible import OpenAICompatibleModel
 
 
 pytestmark = pytest.mark.unit

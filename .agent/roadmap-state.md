@@ -10,8 +10,8 @@ Phase 1: Python Core
 
 ## Current milestone
 
-- ID: M14
-- Name: Declarative tools
+- ID: M15
+- Name: Layered repository reorganization
 - Status: implemented-awaiting-human-review
 - Source: `docs/roadmap.md`
 
@@ -41,8 +41,8 @@ Phase 1: Python Core
 | M11 | Model profiles | accepted | — | `.agent/reports/M11.md` | approved |
 | M12 | Context budget | accepted | — | `.agent/reports/M12.md` | approved |
 | M13 | Robust OpenAI-compatible adapter | accepted | — | `.agent/reports/M13.md` | approved |
-| M14 | Declarative tools | implemented-awaiting-human-review | — | `.agent/reports/M14.md` | awaiting-review |
-| M15 | Layered repository reorganization | planned | M14 | — | — |
+| M14 | Declarative tools | accepted | — | `.agent/reports/M14.md` | approved |
+| M15 | Layered repository reorganization | implemented-awaiting-human-review | — | `.agent/reports/M15.md` | awaiting-review |
 | M16 | CI | planned | M15 | — | — |
 | M17 | Documentation and ADR closure | planned | M16 | — | — |
 
@@ -62,5 +62,5 @@ Record after first inspection:
 ## Last supervisor update
 
 - Date: 2026-07-29
-- Summary: Milestone 14 implemented and validated. Runtime can identify declarative tool calls and store a typed plan without executing tools.
-- Next action: Await human review before starting Milestone 15.
+- Summary: Milestone 15 implemented and validated. Canonical modules now live under domain, application, infrastructure and interfaces; legacy packages re-export for compatibility.
+- Next action: Await human review before starting Milestone 16.
