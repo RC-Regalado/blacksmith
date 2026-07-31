@@ -31,6 +31,9 @@ Generated changes are provisional until recorded here.
 | M16 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User requested Phase 1 closure after M15 approval; CI implemented and core commands validated locally. |
 | M17 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobado. Valida los datos necesarios para pasar a la fase 2". |
 | M2.1 | implemented-awaiting-human-review | approved | User | 2026-07-30 | User confirmed: "aprobados los ADR-016 a ADR-025." |
+| M2.2 | implemented-awaiting-human-review | approved | User | 2026-07-30 | User confirmed: "Aprobado, inicia el M2.3". |
+| M2.3 | implemented-awaiting-human-review | approved | User | 2026-07-30 | User confirmed: "Aprobado, pasa al M2.4". |
+| M2.4 | implemented-awaiting-human-review | awaiting-review | — | 2026-07-30 | Static read-only tool catalog implemented and validated; review `.agent/reports/M2.4.md`. |
 
 ## Approval gates
 

@@ -1,0 +1,46 @@
+"""Tool execution application ports."""
+
+from abc import ABC, abstractmethod
+
+from ai_assistant.domain.tools import (
+    ToolAuditEvent,
+    ToolDefinition,
+    ToolExecutionContext,
+    ToolExecutionRequest,
+    ToolExecutionResult,
+    ToolPolicyDecision,
+)
+
+
+class ToolCatalog(ABC):
+    @abstractmethod
+    def definition_for(self, tool_name: str) -> ToolDefinition:
+        raise NotImplementedError
+
+
+class ToolPolicy(ABC):
+    @abstractmethod
+    def decide(
+        self, request: ToolExecutionRequest, definition: ToolDefinition
+    ) -> ToolPolicyDecision:
+        raise NotImplementedError
+
+
+class PathPolicy(ABC):
+    @abstractmethod
+    def validate(
+        self, request: ToolExecutionRequest, definition: ToolDefinition
+    ) -> ToolExecutionContext:
+        raise NotImplementedError
+
+
+class ToolExecutor(ABC):
+    @abstractmethod
+    def execute(self, context: ToolExecutionContext) -> ToolExecutionResult:
+        raise NotImplementedError
+
+
+class AuditRecorder(ABC):
+    @abstractmethod
+    def record(self, event: ToolAuditEvent) -> None:
+        raise NotImplementedError

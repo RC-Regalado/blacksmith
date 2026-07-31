@@ -14,7 +14,20 @@ from ai_assistant.domain.errors import (
 )
 from ai_assistant.domain.message import Message, Role
 from ai_assistant.domain.session import DEFAULT_SESSION_ID, SessionId, validate_session_id
-from ai_assistant.domain.tools import ToolCall, ToolCallPlan, ToolDefinition
+from ai_assistant.domain.tools import (
+    PolicyDecisionKind,
+    SanitizedToolError,
+    ToolAuditEvent,
+    ToolCall,
+    ToolCallPlan,
+    ToolDefinition,
+    ToolExecutionContext,
+    ToolExecutionRequest,
+    ToolExecutionResult,
+    ToolExecutionStatus,
+    ToolPermission,
+    ToolPolicyDecision,
+)
 
 __all__ = [
     "AssistantError",
@@ -30,9 +43,18 @@ __all__ = [
     "ModelProtocolError",
     "ModelTimeoutError",
     "Role",
+    "PolicyDecisionKind",
+    "SanitizedToolError",
     "SessionId",
+    "ToolAuditEvent",
     "ToolCall",
     "ToolCallPlan",
     "ToolDefinition",
+    "ToolExecutionContext",
+    "ToolExecutionRequest",
+    "ToolExecutionResult",
+    "ToolExecutionStatus",
+    "ToolPermission",
+    "ToolPolicyDecision",
     "validate_session_id",
 ]

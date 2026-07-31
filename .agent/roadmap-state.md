@@ -10,9 +10,9 @@ Phase 2: Read-Only Workspace Tools
 
 ## Current milestone
 
-- ID: M2.2
-- Name: Add tool execution domain models
-- Status: planned
+- ID: M2.4
+- Name: Implement the static tool catalog
+- Status: implemented-awaiting-human-review
 - Source: `docs/roadmap-phase-2.md`
 
 ## Milestone status vocabulary
@@ -51,9 +51,9 @@ Phase 2: Read-Only Workspace Tools
 | ID | Milestone | Status | Blocking reason | Automated report | Human review |
 |---|---|---|---|---|---|
 | M2.1 | Approve Phase 2 security decisions | accepted | — | `.agent/reports/M2.1.md` | approved |
-| M2.2 | Add tool execution domain models | planned | — | — | — |
-| M2.3 | Add application ports | planned | M2.2 | — | — |
-| M2.4 | Implement the static tool catalog | planned | M2.3 | — | — |
+| M2.2 | Add tool execution domain models | accepted | — | `.agent/reports/M2.2.md` | approved |
+| M2.3 | Add application ports | accepted | — | `.agent/reports/M2.3.md` | approved |
+| M2.4 | Implement the static tool catalog | implemented-awaiting-human-review | — | `.agent/reports/M2.4.md` | awaiting-review |
 | M2.5 | Implement workspace and path policy | planned | M2.4 | — | — |
 | M2.6 | Implement deny-by-default tool policy | planned | M2.5 | — | — |
 | M2.7 | Add fake and dry-run executors | planned | M2.6 | — | — |
@@ -83,5 +83,5 @@ Record after first inspection:
 ## Last supervisor update
 
 - Date: 2026-07-30
-- Summary: ADR-016 through ADR-025 approved by human review and marked Accepted. M2.1 is accepted; M2.2 is now eligible.
-- Next action: Start M2.2 when requested.
+- Summary: M2.4 implemented and validated. Static catalog exposes only `list_directory` and `read_file` with immutable read-only metadata.
+- Next action: Await human review before starting M2.5.

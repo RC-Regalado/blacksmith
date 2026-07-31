@@ -73,6 +73,15 @@ The supervisor is the only agent permitted to update this file.
 | M2.1-T2 | M2.1 | Documentation agent | Update architecture with Phase 2 security policy and read-only tool contracts | `docs/architecture.md`, `docs/roadmap-phase-2.md`, `context-ai.md` | M2.1-T1 | implemented |
 | M2.1-T3 | M2.1 | Security reviewer | Review proposed policy for no shell, workspace confinement, sensitive files, audit and one-round bound | read-only repository review | M2.1-T2 | implemented |
 | M2.1-T4 | M2.1 | Integration validator | Validate M2.1 acceptance criteria and prepare human approval package | `.agent/reports/M2.1.md`, `.agent/human-review.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md` | M2.1-T3 | implemented |
+| M2.2-T1 | M2.2 | Phase 2 architect | Add provider-neutral execution request, decision, context, result, audit and sanitized error models | `ai_assistant/domain/tools.py`, `ai_assistant/domain/__init__.py`, `ai_assistant/agent/planner.py` | M2.1 | implemented |
+| M2.2-T2 | M2.2 | Test agent | Cover invalid construction and explicit IDs for tool execution domain models | `tests/test_tools.py` | M2.2-T1 | implemented |
+| M2.2-T3 | M2.2 | Integration validator | Validate M2.2 acceptance criteria and produce report | `.agent/reports/M2.2.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M2.2-T2 | implemented |
+| M2.3-T1 | M2.3 | Phase 2 architect | Define tool execution application ports without concrete adapters | `ai_assistant/application/ports/tools.py`, `ai_assistant/application/ports/__init__.py` | M2.2 | implemented |
+| M2.3-T2 | M2.3 | Test agent | Prove local fakes can implement each tool execution port | `tests/test_ports_contract.py` | M2.3-T1 | implemented |
+| M2.3-T3 | M2.3 | Integration validator | Validate M2.3 acceptance criteria and produce report | `.agent/reports/M2.3.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M2.3-T2 | implemented |
+| M2.4-T1 | M2.4 | Runtime implementer | Add static read-only catalog with immutable tool metadata | `ai_assistant/application/tool_catalog.py`, `ai_assistant/domain/tools.py` | M2.3 | implemented |
+| M2.4-T2 | M2.4 | Test agent | Cover exact-name lookup, unknown rejection and immutable catalog metadata | `tests/test_tool_catalog.py`, `tests/test_tools.py` | M2.4-T1 | implemented |
+| M2.4-T3 | M2.4 | Integration validator | Validate M2.4 acceptance criteria and produce report | `.agent/reports/M2.4.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M2.4-T2 | implemented |
 
 ## Task records
 
@@ -3950,3 +3959,516 @@ printf 'hello\nquit\n' | AI_ASSISTANT_PROVIDER=dummy AI_ASSISTANT_MODEL= PYTHOND
 
 - Summary: Validated M15 and prepared human review.
 - Test results: layering passed with 3 tests; unit passed with 61 tests and 14 deselected; full suite passed with 75 tests; CLI smoke exited 0.
+
+### Task M2.3-T1 — Define Tool Ports
+
+## Parent milestone
+
+M2.3
+
+## Status
+
+implemented
+
+## Owner role
+
+Phase 2 architect
+
+## Objective
+
+Define application-layer ports for catalog, policy, path policy, executor and audit recording.
+
+## Scope
+
+- Add ABC contracts for `ToolCatalog`, `ToolPolicy`, `PathPolicy`, `ToolExecutor` and `AuditRecorder`.
+- Export the ports from `ai_assistant.application.ports`.
+- Keep contracts provider-neutral and infrastructure-free.
+
+## Explicit exclusions
+
+- No concrete catalog.
+- No concrete policy.
+- No path resolution implementation.
+- No tool execution.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/application/ports/tools.py`
+- `ai_assistant/application/ports/__init__.py`
+
+### Read-only
+
+- `ai_assistant/domain/tools.py`
+- `docs/roadmap-phase-2.md`
+- accepted Phase 2 ADRs
+
+### Forbidden
+
+- concrete infrastructure adapters
+- runtime behavior
+
+## Dependencies
+
+- M2.2 accepted.
+
+## Applicable ADRs
+
+- ADR-016 Safe Tool Execution Pipeline
+- ADR-017 Deny-by-Default Tool Policy
+- ADR-019 Workspace Confinement and Path Resolution
+- ADR-020 Tool Execution Audit and Retention
+- ADR-021 Tool Timeouts and Resource Limits
+- ADR-023 Error and Log Redaction
+
+## Acceptance criteria
+
+- [x] Application imports no concrete infrastructure adapters.
+- [x] Executor cannot authorize.
+- [x] Policy performs no external effects.
+- [x] Fakes can implement every port.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_ports_contract.py tests/test_layering.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Risks
+
+- Defining methods too concretely before M2.4-M2.10 implementation.
+
+## Result report
+
+- Summary: Added `ToolCatalog`, `ToolPolicy`, `PathPolicy`, `ToolExecutor` and `AuditRecorder` application ports.
+- Files changed: `ai_assistant/application/ports/tools.py`, `ai_assistant/application/ports/__init__.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_ports_contract.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: contract/layering passed with 7 tests; full suite passed with 85 tests and 1 skipped; diff check passed.
+- Assumptions: `ToolExecutor.execute()` accepting `ToolExecutionContext` is the narrow contract proving authorization happens before execution.
+- Remaining issues: No concrete implementations by design.
+- Recommended follow-up: Implement static catalog in M2.4.
+
+### Task M2.3-T2 — Tool Port Contract Fakes
+
+## Parent milestone
+
+M2.3
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Prove local fakes can implement every new tool execution port.
+
+## Scope
+
+- Add contract tests using in-test fakes.
+- Verify executor receives an authorized context, not an authorization request.
+
+## Explicit exclusions
+
+- No concrete adapters.
+- No filesystem access.
+- No SQLite audit persistence.
+
+## File scope
+
+### Writable
+
+- `tests/test_ports_contract.py`
+
+### Read-only
+
+- `ai_assistant/application/ports/tools.py`
+- `ai_assistant/domain/tools.py`
+
+### Forbidden
+
+- production adapters
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M2.3-T1
+
+## Applicable ADRs
+
+- ADR-016 Safe Tool Execution Pipeline
+- ADR-017 Deny-by-Default Tool Policy
+
+## Acceptance criteria
+
+- [x] Fakes can implement every port.
+- [x] Executor cannot authorize by port contract shape.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_ports_contract.py -q
+```
+
+## Risks
+
+- Tests may over-specify future coordinator behavior.
+
+## Result report
+
+- Summary: Added contract tests with in-test fakes for all new tool execution ports.
+- Files changed: `tests/test_ports_contract.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_ports_contract.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`
+- Test results: contract/layering passed with 7 tests; full suite passed with 85 tests and 1 skipped.
+- Assumptions: Contract tests should verify port shape, not future coordinator sequencing.
+- Remaining issues: None for M2.3.
+- Recommended follow-up: Keep concrete fake/dry-run executors for M2.7.
+
+### Task M2.3-T3 — Validate M2.3
+
+## Parent milestone
+
+M2.3
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate M2.3 acceptance criteria and prepare manual review artifacts.
+
+## Scope
+
+- Run contract, layering and full test suites.
+- Produce `.agent/reports/M2.3.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M2.3 accepted.
+- Do not start M2.4.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M2.3.md`
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+### Read-only
+
+- repository diff
+
+### Forbidden
+
+- source behavior changes during validation
+
+## Dependencies
+
+- M2.3-T2
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-013 Pytest Testing Strategy
+- ADR-016 Safe Tool Execution Pipeline
+
+## Acceptance criteria
+
+- [x] Application imports no concrete infrastructure adapters.
+- [x] Executor cannot authorize.
+- [x] Policy performs no external effects.
+- [x] Fakes can implement every port.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_ports_contract.py tests/test_layering.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Risks
+
+- Existing unrelated workspace changes may appear in full diff.
+
+## Result report
+
+- Summary: Validated M2.3 and prepared manual review artifacts.
+- Files changed: `.agent/reports/M2.3.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_ports_contract.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: contract/layering passed with 7 tests; full suite passed with 85 tests and 1 skipped; diff check passed.
+- Assumptions: No architecture documentation update is required for pure port declaration; existing Phase 2 architecture already names these ports.
+- Remaining issues: M2.3 awaits manual review.
+- Recommended follow-up: Start M2.4 after approval.
+
+### Task M2.4-T1 — Static Tool Catalog
+
+## Parent milestone
+
+M2.4
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Add a static read-only catalog for the two approved productive tools.
+
+## Scope
+
+- Register only `list_directory` and `read_file`.
+- Add immutable permission, default and limit metadata to tool definitions.
+- Reject unknown names explicitly.
+
+## Explicit exclusions
+
+- No concrete execution.
+- No path validation.
+- No deny-by-default policy implementation.
+- No `noop` production registration.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/application/tool_catalog.py`
+- `ai_assistant/domain/tools.py`
+
+### Read-only
+
+- `ai_assistant/application/ports/tools.py`
+- `docs/roadmap-phase-2.md`
+- `docs/adr/ADR-018-read-only-tool-allowlist.md`
+- `docs/adr/ADR-021-tool-timeouts-and-resource-limits.md`
+
+### Forbidden
+
+- concrete infrastructure adapters
+- runtime execution flow
+
+## Dependencies
+
+- M2.3 accepted.
+
+## Applicable ADRs
+
+- ADR-016 Safe Tool Execution Pipeline
+- ADR-018 Read-Only Tool Allowlist
+- ADR-021 Tool Timeouts and Resource Limits
+
+## Acceptance criteria
+
+- [x] Exact-name lookup only.
+- [x] Unknown names are rejected.
+- [x] Limits and permission metadata are immutable from model input.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py tests/test_tools.py tests/test_ports_contract.py tests/test_layering.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Risks
+
+- Over-specifying future policy behavior inside the catalog.
+
+## Result report
+
+- Summary: Added `StaticToolCatalog` and immutable metadata on `ToolDefinition`.
+- Files changed: `ai_assistant/application/tool_catalog.py`, `ai_assistant/domain/tools.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py tests/test_tools.py tests/test_ports_contract.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: scoped suite passed with 30 tests; full suite passed with 93 tests and 1 skipped; diff check passed.
+- Assumptions: Catalog metadata can expose limits/defaults without enforcing them until policy milestones.
+- Remaining issues: No path or argument policy yet by roadmap.
+- Recommended follow-up: Implement workspace and path policy in M2.5 after approval.
+
+### Task M2.4-T2 — Catalog Contract Tests
+
+## Parent milestone
+
+M2.4
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Cover exact-name lookup, unknown rejection and immutable metadata.
+
+## Scope
+
+- Add catalog tests for approved names only.
+- Test alias, case variant, `noop` and trailing-space rejection.
+- Test mutation of defaults, limits and schema fails.
+
+## Explicit exclusions
+
+- No filesystem fixtures.
+- No executor tests.
+- No policy argument validation tests.
+
+## File scope
+
+### Writable
+
+- `tests/test_tool_catalog.py`
+- `tests/test_tools.py`
+
+### Read-only
+
+- `ai_assistant/application/tool_catalog.py`
+- `ai_assistant/domain/tools.py`
+
+### Forbidden
+
+- concrete infrastructure adapters
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M2.4-T1
+
+## Applicable ADRs
+
+- ADR-018 Read-Only Tool Allowlist
+- ADR-021 Tool Timeouts and Resource Limits
+
+## Acceptance criteria
+
+- [x] Exact-name lookup only.
+- [x] Unknown names are rejected.
+- [x] Limits and permission metadata are immutable from model input.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py -q
+```
+
+## Risks
+
+- Tests can accidentally encode policy behavior that belongs to M2.6.
+
+## Result report
+
+- Summary: Added focused catalog tests.
+- Files changed: `tests/test_tool_catalog.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py tests/test_tools.py tests/test_ports_contract.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`
+- Test results: scoped suite passed with 30 tests; full suite passed with 93 tests and 1 skipped.
+- Assumptions: Immutability is checked at the public `ToolDefinition` boundary.
+- Remaining issues: None for M2.4.
+- Recommended follow-up: Add adversarial path tests in M2.5/M2.15.
+
+### Task M2.4-T3 — Validate M2.4
+
+## Parent milestone
+
+M2.4
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate M2.4 acceptance criteria and prepare manual review artifacts.
+
+## Scope
+
+- Run scoped and full validation.
+- Produce `.agent/reports/M2.4.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M2.4 accepted.
+- Do not start M2.5.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M2.4.md`
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+### Read-only
+
+- repository diff
+
+### Forbidden
+
+- source behavior changes during validation
+
+## Dependencies
+
+- M2.4-T2
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-013 Pytest Testing Strategy
+- ADR-018 Read-Only Tool Allowlist
+
+## Acceptance criteria
+
+- [x] Exact-name lookup only.
+- [x] Unknown names are rejected.
+- [x] Limits and permission metadata are immutable from model input.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py tests/test_tools.py tests/test_ports_contract.py tests/test_layering.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Risks
+
+- Existing unrelated workspace changes remain visible in git status.
+
+## Result report
+
+- Summary: Validated M2.4 and prepared manual review.
+- Files changed: `.agent/reports/M2.4.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py tests/test_tools.py tests/test_ports_contract.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: scoped suite passed with 30 tests; full suite passed with 93 tests and 1 skipped; diff check passed.
+- Assumptions: M2.4 does not require documentation updates because architecture and ADR-018 already define the allowlist.
+- Remaining issues: M2.4 awaits manual review.
+- Recommended follow-up: Start M2.5 after approval.
