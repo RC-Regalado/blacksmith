@@ -4,11 +4,14 @@ Local-first AI assistant core written in Python.
 
 Phase 1 provides a small CLI, framework-agnostic agent runtime, provider adapters, conversation memory, SQLite persistence, configuration, logging, typed errors, context budgeting, declarative tool-call detection and separated CI.
 
+Phase 2 adds bounded read-only workspace tools behind policy, path validation, audit and executor ports.
+
 ## Requirements
 
 - Python 3.12+
 - `pytest` for development tests
 - Optional: Ollama for local model smoke tests
+- Optional: `protoc`, `protoc-gen-c` and `protobuf-c` for C toolserver contract tests
 
 Install development dependencies:
 
@@ -59,6 +62,29 @@ AI_ASSISTANT_REQUEST_TIMEOUT=180 \
 python main.py
 ```
 
+Example with read-only tools:
+
+```bash
+ollama create blacksmith-tools -f Modelfile
+
+AI_ASSISTANT_PROVIDER=ollama \
+AI_ASSISTANT_MODEL=blacksmith-tools \
+AI_ASSISTANT_WORKSPACE="$PWD" \
+AI_ASSISTANT_TOOL_EXECUTION=true \
+AI_ASSISTANT_CONTEXT_LIMIT=2048 \
+python main.py
+```
+
+When tools are enabled, bootstrap appends the local tool-call contract to the system prompt. For deterministic manual testing, paste a tool call directly:
+
+```json
+{"tool_call":{"name":"list_directory","arguments":{"path":"."}}}
+```
+
+```json
+{"tool_call":{"name":"read_file","arguments":{"path":"README.md","max_bytes":1200}}}
+```
+
 ## Architecture
 
 The current Python core is layered:
@@ -75,6 +101,7 @@ Package responsibilities:
 - `ai_assistant/domain/`: messages, sessions, errors and declarative tool models.
 - `ai_assistant/application/`: runtime, context building, tool-call interpretation and ports.
 - `ai_assistant/infrastructure/`: model providers and memory stores.
+- `ai_assistant/infrastructure/tools/`: read-only tool executors.
 - `ai_assistant/interfaces/`: CLI adapter.
 - `ai_assistant/bootstrap/`: composition root and environment configuration.
 - `ai_assistant/agent/`, `ai_assistant/cli/`, `ai_assistant/storage/`: compatibility exports.
@@ -108,6 +135,20 @@ PYTHONDONTWRITEBYTECODE=1 python -m pytest -m ollama -q
 
 CI mirrors these categories in `.github/workflows/ci.yml`.
 
+Core suite without Ollama or C toolserver:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m "not ollama and not toolserver" -q
+```
+
+C toolserver contracts when `protobuf-c` is installed locally:
+
+```bash
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig \
+LD_LIBRARY_PATH=/home/rc-regalado/.local/lib \
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m toolserver -q
+```
+
 ## Phase 1 Scope
 
 Implemented:
@@ -135,6 +176,27 @@ Not implemented in Phase 1:
 - Streaming responses
 - Multi-agent runtime
 - Production C tool service integration
+
+## Phase 2 Scope
+
+Implemented:
+
+- Static allowlist for `list_directory` and `read_file`
+- Deny-by-default tool policy
+- Workspace path confinement and sensitive-file denial
+- SQLite tool audit store with redaction
+- Local read-only executor
+- Bounded one-tool-round runtime integration
+- Optional Unix socket executor and C toolserver read-only actions
+- Adversarial security tests
+- Automatic tool-call prompt when tools are enabled
+- Direct operator tool-call JSON for deterministic manual validation
+
+Still out of scope:
+
+- File writes, shell/process execution, Git commands and network tools
+- Multi-step autonomous tool chains
+- Dynamic plugins, embeddings, RAG, streaming and UIs beyond CLI
 
 ## ADRs
 

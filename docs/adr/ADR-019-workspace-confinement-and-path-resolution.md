@@ -1,6 +1,6 @@
 # ADR-019 — Workspace Confinement and Path Resolution
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-07-30
 - Deciders: Project owner
 - Supersedes:

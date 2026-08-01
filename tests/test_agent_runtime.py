@@ -168,6 +168,36 @@ def test_runtime_uses_tool_result_for_final_answer() -> None:
     ]
 
 
+def test_runtime_executes_operator_tool_json_without_model_call() -> None:
+    model = SequenceModel(["should not be used"])
+    coordinator = FakeToolCoordinator(
+        ToolExecutionResult(
+            request_id="alpha:list_directory",
+            tool_name="list_directory",
+            status=ToolExecutionStatus.SUCCESS,
+            content={"entries": []},
+        )
+    )
+    runtime = AgentRuntime(
+        context_builder=ContextBuilder(system_prompt="System prompt"),
+        memory=FakeConversationStore(),
+        model=model,
+        tool_detector=ToolCallDetector(),
+        tool_coordinator=coordinator,
+        session_id="alpha",
+    )
+
+    response = runtime.respond(
+        '{"tool_call":{"name":"list_directory","arguments":{"path":"."}}}'
+    )
+
+    assert model.calls == []
+    assert coordinator.requests[0].tool_name == "list_directory"
+    assert response.content == (
+        '{"content": {"entries": []}, "status": "success", "truncated": false}'
+    )
+
+
 def test_runtime_uses_configured_tool_timeout() -> None:
     coordinator = FakeToolCoordinator(
         ToolExecutionResult(

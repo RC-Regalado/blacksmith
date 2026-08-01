@@ -1,6 +1,6 @@
 # ADR-016 — Safe Tool Execution Pipeline
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-07-30
 - Deciders: Project owner
 - Supersedes:

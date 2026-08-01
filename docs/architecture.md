@@ -1038,16 +1038,16 @@ ToolPolicy
 ToolExecutor
 ```
 
-## 18.1 Phase 2 Proposed Tool Policy
+## 18.1 Phase 2 Read-Only Tool Policy
 
 Phase 2 is limited to read-only workspace inspection through exactly two productive tools:
 
 - `list_directory`
 - `read_file`
 
-The model may request a tool, but authorization is deterministic application policy. Productive execution remains blocked until ADR-016 through ADR-025 are accepted.
+The model may request a tool, but authorization is deterministic application policy. Productive execution is implemented through application ports and concrete read-only executors.
 
-Required invariants:
+Implemented invariants:
 
 - deny by default;
 - no shell, process execution, Git execution, network access or writes;
@@ -1059,7 +1059,13 @@ Required invariants:
 - `read_file` decodes bounded bytes as UTF-8 with replacement for invalid binary sequences;
 - the runtime may perform at most one tool execution round per user turn.
 
-The proposed ADR package is:
+Implemented adapters:
+
+- `LocalReadOnlyToolExecutor` for direct local filesystem reads after authorization.
+- `UnixSocketToolExecutor` for authorized requests sent to the C toolserver over Unix domain sockets.
+- C toolserver actions for `list_directory` and `read_file`, with independent path and limit validation.
+
+The implemented ADR package is:
 
 - ADR-016 Safe Tool Execution Pipeline
 - ADR-017 Deny-by-Default Tool Policy

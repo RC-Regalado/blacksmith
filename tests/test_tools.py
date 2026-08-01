@@ -53,6 +53,36 @@ def test_interpreter_detects_explicit_tool_call() -> None:
     assert plan.tool_name == "search"
 
 
+def test_interpreter_detects_json_markdown_fenced_tool_call() -> None:
+    message = Message(
+        role="assistant",
+        content='```json\n{"tool_call":{"name":"list_directory","arguments":{"path":"."}}}\n```',
+    )
+
+    plan = ToolCallInterpreter().interpret(message)
+
+    assert plan.has_tool_call is True
+    assert plan.tool_call == ToolCall(
+        name="list_directory",
+        arguments={"path": "."},
+    )
+
+
+def test_interpreter_detects_fenced_tool_call_with_trailing_garbage() -> None:
+    message = Message(
+        role="assistant",
+        content='```json\n{"tool_call":{"name":"list_directory","arguments":{"path":"."}}}\n}\n```',
+    )
+
+    plan = ToolCallInterpreter().interpret(message)
+
+    assert plan.has_tool_call is True
+    assert plan.tool_call == ToolCall(
+        name="list_directory",
+        arguments={"path": "."},
+    )
+
+
 def test_interpreter_ignores_plain_assistant_text() -> None:
     message = Message(role="assistant", content="no tools")
 

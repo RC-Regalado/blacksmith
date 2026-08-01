@@ -47,6 +47,19 @@ class AgentRuntime:
             user_input,
         )
         try:
+            direct_plan = self.tool_detector.detect(
+                Message(role="assistant", content=user_input)
+            )
+            if direct_plan.has_tool_call and self.tool_coordinator:
+                self.last_tool_plan = direct_plan
+                response = Message(
+                    role="assistant",
+                    content=_tool_result_content(
+                        self.tool_coordinator.execute(self._tool_request())
+                    ),
+                )
+                self._persist_turn(user_input, response)
+                return response
             response = self.model.chat(context)
             self.last_tool_plan = self.tool_detector.detect(response)
             if self.last_tool_plan.has_tool_call and self.tool_coordinator:

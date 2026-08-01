@@ -1,6 +1,6 @@
 # ADR-017 — Deny-by-Default Tool Policy
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-07-30
 - Deciders: Project owner
 - Supersedes:

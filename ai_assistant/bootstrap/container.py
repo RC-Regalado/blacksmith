@@ -21,7 +21,7 @@ def create_application(config: AppConfig | None = None) -> CliApplication:
     configure_logging(app_config.log_level)
     runtime = AgentRuntime(
         context_builder=ContextBuilder(
-            system_prompt=app_config.system_prompt,
+            system_prompt=_system_prompt(app_config),
             context_limit=app_config.context_limit,
         ),
         memory=SQLiteConversationStore(app_config.database),
@@ -32,6 +32,18 @@ def create_application(config: AppConfig | None = None) -> CliApplication:
         session_id=app_config.session,
     )
     return CliApplication(runtime)
+
+
+def _system_prompt(config: AppConfig) -> str:
+    if not config.tool_execution or not config.workspace:
+        return config.system_prompt
+    return (
+        f"{config.system_prompt}\n"
+        "When the user asks to inspect local files, reply only with JSON.\n"
+        'For listing files: {"tool_call":{"name":"list_directory","arguments":{"path":"."}}}\n'
+        'For reading a file: {"tool_call":{"name":"read_file","arguments":{"path":"README.md","max_bytes":2048}}}\n'
+        "Use only list_directory and read_file. After a tool result, answer normally."
+    )
 
 
 def _model_config(config: AppConfig) -> ModelAdapterConfig:

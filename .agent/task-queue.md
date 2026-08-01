@@ -106,6 +106,18 @@ The supervisor is the only agent permitted to update this file.
 | M2.12-T1 | M2.12 | Runtime implementer | Add read-only tool configuration values | `ai_assistant/bootstrap/config.py`, `tests/test_config.py` | M2.11 | implemented |
 | M2.12-T2 | M2.12 | Runtime implementer | Wire configured local tool coordinator through bootstrap | `ai_assistant/bootstrap/container.py`, `ai_assistant/application/runtime.py`, `ai_assistant/application/tool_catalog.py`, `tests/test_cli_app.py`, `tests/test_agent_runtime.py`, `tests/test_tool_catalog.py`, `README.md` | M2.12-T1 | implemented |
 | M2.12-T3 | M2.12 | Integration validator | Validate M2.12 acceptance criteria and produce report | `.agent/reports/M2.12.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M2.12-T2 | implemented |
+| M2.13-T1 | M2.13 | C toolserver engineer | Replace prototype C actions with read-only list_directory and read_file | `c_toolserver/src/actions.c`, `c_toolserver/include/actions.h`, `c_toolserver/src/server.c`, `c_toolserver/README.md` | M2.12 | implemented |
+| M2.13-T2 | M2.13 | Test agent | Add Python/C contract tests for read-only actions and malformed protobuf | `tests/test_c_toolserver_contract.py`, `tests/integration_c_toolserver.py`, `pytest.ini` | M2.13-T1 | implemented |
+| M2.13-T3 | M2.13 | Integration validator | Validate M2.13 acceptance criteria and produce report | `.agent/reports/M2.13.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M2.13-T2 | implemented |
+| M2.14-T1 | M2.14 | Runtime implementer | Add UnixSocketToolExecutor and protobuf request/response mapping | `ai_assistant/infrastructure/tools/unix_socket.py`, `ai_assistant/infrastructure/tools/__init__.py` | M2.13 | implemented |
+| M2.14-T2 | M2.14 | Test agent | Cover missing socket, timeout, malformed response, oversized response, ID mismatch and C integration | `tests/test_unix_socket_tool_executor.py`, `tests/test_c_toolserver_contract.py` | M2.14-T1 | implemented |
+| M2.14-T3 | M2.14 | Integration validator | Validate M2.14 acceptance criteria and produce report | `.agent/reports/M2.14.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M2.14-T2 | implemented |
+| M2.15-T1 | M2.15 | Test agent | Add adversarial boundary checklist tests for policy, path, audit and runtime | `tests/test_adversarial_security.py`, existing tests read-only | M2.14 | implemented |
+| M2.15-T2 | M2.15 | Test agent | Add Unix socket disconnect adversarial coverage | `tests/test_unix_socket_tool_executor.py` | M2.15-T1 | implemented |
+| M2.15-T3 | M2.15 | Integration validator | Validate M2.15 acceptance criteria and produce report | `.agent/reports/M2.15.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M2.15-T2 | implemented |
+| M2.16-T1 | M2.16 | Documentation agent | Update Phase 2 architecture, README and context documentation | `docs/architecture.md`, `README.md`, `context-ai.md` | M2.15 | implemented |
+| M2.16-T2 | M2.16 | Documentation agent | Mark Phase 2 ADRs implemented and sync ADR index | `docs/adr/ADR-016-*.md` through `docs/adr/ADR-025-*.md`, `docs/adr/README.md` | M2.16-T1 | implemented |
+| M2.16-T3 | M2.16 | Integration validator | Validate Phase 2 final documentation and produce report | `.agent/reports/M2.16.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M2.16-T2 | implemented |
 
 ## Task records
 
@@ -6574,3 +6586,826 @@ git diff --check
 - Assumptions: M2.12 does not require C service wiring.
 - Remaining issues: M2.12 awaits manual review.
 - Recommended follow-up: Start M2.13 after approval.
+
+### Task M2.13-T1 — C Read-Only Actions
+
+## Parent milestone
+
+M2.13
+
+## Status
+
+implemented
+
+## Owner role
+
+C toolserver engineer
+
+## Objective
+
+Replace prototype C actions with `list_directory` and `read_file`.
+
+## Scope
+
+- Implement read-only action dispatch.
+- Enforce workspace confinement, traversal rejection and response bounds.
+- Keep tool execution inside the C server limited to filesystem reads.
+
+## Explicit exclusions
+
+- No shell execution.
+- No Python executor wiring.
+- No incompatible protobuf changes.
+
+## File scope
+
+### Writable
+
+- `c_toolserver/Makefile`
+- `c_toolserver/include/actions.h`
+- `c_toolserver/src/actions.c`
+- `c_toolserver/src/server.c`
+- `c_toolserver/README.md`
+
+## Dependencies
+
+- M2.12
+
+## Acceptance criteria
+
+- [x] Only allowlisted C actions exist.
+- [x] C rejects traversal and external symlinks.
+- [x] C enforces response limits.
+- [x] Malformed protobuf fails safely.
+
+## Validation commands
+
+```bash
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig make -C c_toolserver clean all
+```
+
+## Result report
+
+- Summary: Implemented bounded read-only C actions and safe invalid-protobuf response.
+- Test results: C build passed.
+
+### Task M2.13-T2 — C Toolserver Contracts
+
+## Parent milestone
+
+M2.13
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Add Python/C contract coverage for C read-only actions.
+
+## Scope
+
+- Cover bounded file reads, directory listing, traversal, external symlink denial, permission denial and malformed protobuf.
+
+## Explicit exclusions
+
+- No production Python executor wiring.
+- No broad CI changes.
+
+## File scope
+
+### Writable
+
+- `tests/test_c_toolserver_contract.py`
+- `tests/integration_c_toolserver.py`
+- `pytest.ini`
+
+## Dependencies
+
+- M2.13-T1
+
+## Acceptance criteria
+
+- [x] Python/C contract tests pass.
+
+## Validation commands
+
+```bash
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_c_toolserver_contract.py -q
+```
+
+## Result report
+
+- Summary: Added executable contract tests for the C toolserver.
+- Test results: 5 passed.
+
+### Task M2.13-T3 — M2.13 Validation
+
+## Parent milestone
+
+M2.13
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate M2.13 acceptance criteria and prepare manual review artifacts.
+
+## Scope
+
+- Run C build, contract tests, full tests, diff check and no-shell scan.
+- Update supervisor state.
+
+## Explicit exclusions
+
+- Do not mark M2.13 accepted.
+- Do not start M2.14.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M2.13.md`
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+## Dependencies
+
+- M2.13-T2
+
+## Acceptance criteria
+
+- [x] C build passes.
+- [x] Contract tests pass.
+- [x] Full suite passes.
+- [x] No shell process APIs are introduced.
+
+## Validation commands
+
+```bash
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig make -C c_toolserver clean all
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_c_toolserver_contract.py -q
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+rg -n "system\\(|popen\\(|exec[lvpe]*\\(|fork\\(" c_toolserver || true
+```
+
+## Result report
+
+- Summary: Validated M2.13 and prepared manual review.
+- Test results: C build passed; contract tests passed with 5 tests; full suite passed with 172 passed and 1 skipped; diff check passed; no forbidden process APIs found.
+- Remaining issues: M2.13 was approved by user before M2.14 started.
+
+### Task M2.14-T1 — Unix Socket Executor
+
+## Parent milestone
+
+M2.14
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Add a `ToolExecutor` adapter that sends already-authorized requests to the C toolserver over a Unix socket.
+
+## Scope
+
+- Encode `ToolExecutionContext` as `ToolRequest`.
+- Decode `ToolResponse` into `ToolExecutionResult`.
+- Map socket, timeout, malformed, oversized and ID mismatch failures to sanitized results.
+
+## Explicit exclusions
+
+- No TCP transport.
+- No bootstrap default switch from the local executor.
+- No protobuf schema changes.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/infrastructure/tools/unix_socket.py`
+- `ai_assistant/infrastructure/tools/__init__.py`
+
+## Dependencies
+
+- M2.13
+
+## Applicable ADRs
+
+- ADR-016 Safe Tool Execution Pipeline
+- ADR-021 Tool Timeouts and Resource Limits
+- ADR-022 Unix Socket Tool Executor
+- ADR-023 Error and Log Redaction
+
+## Acceptance criteria
+
+- [x] Only authorized requests are transmitted by accepting only `ToolExecutionContext`.
+- [x] Missing socket and timeout become typed errors.
+- [x] Malformed and oversized responses are rejected.
+- [x] Request and response IDs correlate.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_unix_socket_tool_executor.py -q
+```
+
+## Risks
+
+- Manual protobuf parsing can accidentally accept malformed payloads.
+
+## Result report
+
+- Summary: Added `UnixSocketToolExecutor` and minimal protobuf request/response mapping.
+- Files changed: `ai_assistant/infrastructure/tools/unix_socket.py`, `ai_assistant/infrastructure/tools/__init__.py`
+- Tests run: M2.14 scoped validation.
+- Test results: included in M2.14 scoped validation.
+- Assumptions: Bootstrap continues using the local executor unless a later milestone wires socket selection.
+- Remaining issues: None for this task.
+- Recommended follow-up: Keep C service usage explicit.
+
+### Task M2.14-T2 — Unix Socket Contracts
+
+## Parent milestone
+
+M2.14
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Prove the Unix socket executor handles protocol failures and C toolserver integration.
+
+## Scope
+
+- Unit/integration tests for missing socket, timeout, malformed response, oversized response and response ID mismatch.
+- Contract test using the real C toolserver.
+
+## Explicit exclusions
+
+- No Ollama tests.
+- No adversarial matrix from M2.15.
+
+## File scope
+
+### Writable
+
+- `tests/test_unix_socket_tool_executor.py`
+- `tests/test_c_toolserver_contract.py`
+
+## Dependencies
+
+- M2.14-T1
+
+## Applicable ADRs
+
+- ADR-022 Unix Socket Tool Executor
+
+## Acceptance criteria
+
+- [x] Contract and integration tests pass.
+
+## Validation commands
+
+```bash
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_unix_socket_tool_executor.py tests/test_c_toolserver_contract.py -q
+```
+
+## Risks
+
+- C build dependencies are environment-specific.
+
+## Result report
+
+- Summary: Added fake socket failure coverage and real C toolserver executor contract.
+- Files changed: `tests/test_unix_socket_tool_executor.py`, `tests/test_c_toolserver_contract.py`
+- Tests run: `PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_unix_socket_tool_executor.py tests/test_c_toolserver_contract.py -q`
+- Test results: 12 passed.
+- Assumptions: Local `protobuf-c` stays available through the recorded environment variables.
+- Remaining issues: None for this task.
+- Recommended follow-up: M2.15 adversarial matrix.
+
+### Task M2.14-T3 — M2.14 Validation
+
+## Parent milestone
+
+M2.14
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate M2.14 and prepare manual review artifacts.
+
+## Scope
+
+- Run scoped tests, full suite, C contract, diff check and no-network/TCP review.
+- Update supervisor state and report.
+
+## Explicit exclusions
+
+- Do not mark M2.14 accepted.
+- Do not start M2.15.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M2.14.md`
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+## Dependencies
+
+- M2.14-T2
+
+## Applicable ADRs
+
+- ADR-013 Pytest Testing Strategy
+- ADR-022 Unix Socket Tool Executor
+
+## Acceptance criteria
+
+- [x] All M2.14 acceptance criteria have command evidence.
+
+## Validation commands
+
+```bash
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_unix_socket_tool_executor.py tests/test_c_toolserver_contract.py -q
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Risks
+
+- Existing uncommitted M2.13 changes remain part of the working tree.
+
+## Result report
+
+- Summary: Validated M2.14 and prepared manual review.
+- Files changed: `.agent/reports/M2.14.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`
+- Tests run: scoped M2.14 tests; full pytest suite; `git diff --check`; Unix socket transport scan.
+- Test results: scoped tests 12 passed; full suite 179 passed, 1 skipped; diff check passed; scan found no TCP usage in the new executor.
+- Assumptions: M2.14 does not require CLI/bootstrap selection for the socket executor.
+- Remaining issues: M2.14 awaits manual review.
+- Recommended follow-up: Start M2.15 after approval.
+
+### Task M2.15-T1 — Adversarial Boundary Checklist
+
+## Parent milestone
+
+M2.15
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Add automated adversarial tests for policy, path, audit and runtime boundary cases.
+
+## Scope
+
+- Cover the mandatory M2.15 cases not already directly asserted in focused tests.
+- Add a checklist test mapping each mandatory case to automated coverage.
+
+## Explicit exclusions
+
+- No new production capability.
+- No Ollama-dependent validation.
+- No C-service dependency in core security tests.
+
+## File scope
+
+### Writable
+
+- `tests/test_adversarial_security.py`
+
+### Read-only
+
+- existing tests
+- Phase 2 ADRs
+
+## Dependencies
+
+- M2.14
+
+## Applicable ADRs
+
+- ADR-016 Safe Tool Execution Pipeline
+- ADR-017 Deny-by-Default Tool Policy
+- ADR-019 Workspace Confinement and Path Resolution
+- ADR-020 Tool Execution Audit and Retention
+- ADR-023 Error and Log Redaction
+- ADR-024 Bounded Single Tool Round per Turn
+- ADR-025 Sensitive File Deny Policy
+
+## Acceptance criteria
+
+- [x] Every mandatory case has automated coverage.
+- [x] Every denial has a stable reason code.
+- [x] Logs and audit records contain no sensitive content.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_adversarial_security.py -q
+```
+
+## Risks
+
+- Duplicating too much existing coverage.
+
+## Result report
+
+- Summary: Added adversarial tests for unknown/shell-like tools, path attacks, limit denials, audit failure, audit/log redaction and runtime regressions.
+- Files changed: `tests/test_adversarial_security.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_adversarial_security.py tests/test_unix_socket_tool_executor.py -q`
+- Test results: 22 passed.
+- Assumptions: Existing focused tests remain the behavioral source for C malformed protobuf and local binary-file handling.
+- Remaining issues: None for this task.
+- Recommended follow-up: M2.16 documentation should summarize the security matrix.
+
+### Task M2.15-T2 — Socket Disconnect Coverage
+
+## Parent milestone
+
+M2.15
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Add adversarial socket disconnect coverage for the Unix socket executor.
+
+## Scope
+
+- Simulate a server closing before a complete frame is returned.
+- Assert sanitized typed error.
+
+## Explicit exclusions
+
+- No C service changes.
+- No TCP transport.
+
+## File scope
+
+### Writable
+
+- `tests/test_unix_socket_tool_executor.py`
+
+## Dependencies
+
+- M2.15-T1
+
+## Applicable ADRs
+
+- ADR-022 Unix Socket Tool Executor
+- ADR-023 Error and Log Redaction
+
+## Acceptance criteria
+
+- [x] Socket disconnect has automated coverage.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_unix_socket_tool_executor.py -q
+```
+
+## Risks
+
+- Threaded socket test timing.
+
+## Result report
+
+- Summary: Added Unix socket disconnect coverage.
+- Files changed: `tests/test_unix_socket_tool_executor.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_adversarial_security.py tests/test_unix_socket_tool_executor.py -q`
+- Test results: 22 passed.
+- Assumptions: Socket disconnect maps to sanitized `malformed_response`.
+- Remaining issues: None for this task.
+- Recommended follow-up: None.
+
+### Task M2.15-T3 — M2.15 Validation
+
+## Parent milestone
+
+M2.15
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate M2.15 and prepare manual review artifacts.
+
+## Scope
+
+- Run adversarial tests, relevant unit/integration tests, full suite and diff checks.
+- Confirm core validation does not require Ollama or the C service.
+
+## Explicit exclusions
+
+- Do not mark M2.15 accepted.
+- Do not start M2.16.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M2.15.md`
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+## Dependencies
+
+- M2.15-T2
+
+## Applicable ADRs
+
+- ADR-013 Pytest Testing Strategy
+- ADR-016 through ADR-025
+
+## Acceptance criteria
+
+- [x] Every mandatory M2.15 criterion has command evidence.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_adversarial_security.py tests/test_unix_socket_tool_executor.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -m "not ollama and not toolserver" -q
+git diff --check
+```
+
+## Risks
+
+- Existing uncommitted M2.13/M2.14 changes remain part of the working tree.
+
+## Result report
+
+- Summary: Validated M2.15 and prepared manual review.
+- Files changed: `.agent/reports/M2.15.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`
+- Tests run: adversarial scope; full suite; core suite excluding `ollama` and `toolserver`; `git diff --check`.
+- Test results: adversarial scope 22 passed; full suite 195 passed, 1 skipped; core suite 189 passed, 7 deselected; diff check passed.
+- Assumptions: Optional `toolserver` tests remain separable from core CI.
+- Remaining issues: M2.15 awaits manual review.
+- Recommended follow-up: Start M2.16 after approval.
+
+### Task M2.16-T1 — Phase 2 Documentation
+
+## Parent milestone
+
+M2.16
+
+## Status
+
+implemented
+
+## Owner role
+
+Documentation agent
+
+## Objective
+
+Update user and architecture documentation to match implemented Phase 2 behavior.
+
+## Scope
+
+- Update architecture policy wording from proposed to implemented.
+- Update README with Phase 2 scope and validation commands.
+- Update `context-ai.md` with Phase 2 closure and Phase 3 handoff data.
+
+## Explicit exclusions
+
+- No production behavior changes.
+- No Phase 3 feature design beyond listed open decisions.
+
+## File scope
+
+### Writable
+
+- `docs/architecture.md`
+- `README.md`
+- `context-ai.md`
+
+## Dependencies
+
+- M2.15
+
+## Applicable ADRs
+
+- ADR-016 through ADR-025
+
+## Acceptance criteria
+
+- [x] Architecture matches code.
+- [x] Tool contracts, configuration and operator validation are documented.
+- [x] Phase 3 boundary is documented.
+
+## Validation commands
+
+```bash
+rg -n "Phase 2 Proposed|Productive execution remains blocked|Decisiones faltantes para Phase 2|Servicio C prototipo" docs/architecture.md context-ai.md README.md || true
+```
+
+## Result report
+
+- Summary: Updated Phase 2 architecture, README and context handoff docs.
+- Files changed: `docs/architecture.md`, `README.md`, `context-ai.md`
+- Tests run: documentation stale-text scan.
+- Test results: no stale Phase 2 proposal text remained.
+- Assumptions: `context-ai.md` should describe the current repository state, not historical pre-Phase-2 planning.
+- Remaining issues: Final human review pending.
+- Recommended follow-up: Phase 3 planning after approval.
+
+### Task M2.16-T2 — Phase 2 ADR Closure
+
+## Parent milestone
+
+M2.16
+
+## Status
+
+implemented
+
+## Owner role
+
+Documentation agent
+
+## Objective
+
+Mark Phase 2 ADRs as implemented and sync the ADR index.
+
+## Scope
+
+- Set ADR-016 through ADR-025 status to `Implemented`.
+- Update `docs/adr/README.md`.
+
+## Explicit exclusions
+
+- No ADR rewriting or superseding.
+- No decision changes.
+
+## File scope
+
+### Writable
+
+- `docs/adr/ADR-016-*.md` through `docs/adr/ADR-025-*.md`
+- `docs/adr/README.md`
+
+## Dependencies
+
+- M2.16-T1
+
+## Applicable ADRs
+
+- ADR-016 through ADR-025
+
+## Acceptance criteria
+
+- [x] All Phase 2 ADRs are `Implemented`.
+
+## Validation commands
+
+```bash
+rg -n "Status: Accepted|ADR-0(16|17|18|19|20|21|22|23|24|25).*Accepted" docs/adr || true
+```
+
+## Result report
+
+- Summary: Marked Phase 2 ADRs implemented and synced the index.
+- Files changed: `docs/adr/ADR-016-*.md` through `docs/adr/ADR-025-*.md`, `docs/adr/README.md`
+- Tests run: ADR status scan.
+- Test results: no accepted Phase 2 ADR statuses remained.
+- Assumptions: Status changes reflect completed implementation from M2.1 through M2.15.
+- Remaining issues: Final human review pending.
+- Recommended follow-up: None.
+
+### Task M2.16-T3 — Phase 2 Final Validation
+
+## Parent milestone
+
+M2.16
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate Phase 2 documentation closure and prepare final manual review.
+
+## Scope
+
+- Run required suites.
+- Record optional environment-specific outcomes.
+- Produce `.agent/reports/M2.16.md`.
+- Update supervisor state.
+
+## Explicit exclusions
+
+- Do not mark M2.16 accepted.
+- Do not start Phase 3.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M2.16.md`
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+## Dependencies
+
+- M2.16-T2
+
+## Applicable ADRs
+
+- ADR-013
+- ADR-016 through ADR-025
+
+## Acceptance criteria
+
+- [x] Every roadmap criterion has evidence.
+- [x] Security review has no blocker.
+- [x] Final manual review queue is recorded.
+- [x] Phase status becomes accepted after manual approval.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -m unit -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -m integration -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -m contract -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -m smoke -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -m "not ollama and not toolserver" -q
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -m toolserver -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -m ollama -q
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Result report
+
+- Summary: Validated Phase 2 closure and prepared final review.
+- Files changed: `.agent/reports/M2.16.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`
+- Tests run: unit, integration, contract, smoke, core without external deps, toolserver, ollama optional, full suite, diff check.
+- Test results: unit 154 passed; integration 22 passed; contract 12 passed; smoke 1 passed; core 195 passed and 7 deselected after post-review fixes; toolserver 6 passed; ollama passed with `blacksmith-tools`; full suite 201 passed, 1 skipped with `AI_ASSISTANT_MODEL` unset; diff check passed.
+- Assumptions: Manual approval was provided by the user after real `gemma4:latest` validation.
+- Remaining issues: None for Phase 2.
+- Recommended follow-up: Plan Phase 3 separately.
