@@ -97,8 +97,8 @@ static int send_response(int client_fd,
     response.request_id = request->request_id;
     response.status = result->status;
     response.message = (char *)result->message;
-    response.stdout_data.len = strlen(result->stdout_text);
-    response.stdout_data.data = (uint8_t *)result->stdout_text;
+    response.stdout_data.len = result->stdout_len;
+    response.stdout_data.data = result->stdout_data;
     response.exit_code = result->status == TOOLSERVER__V1__TOOL_STATUS__TOOL_STATUS_OK
                              ? 0
                              : 1;
@@ -121,6 +121,22 @@ static int send_response(int client_fd,
     return status == FRAME_STATUS_OK ? 0 : -1;
 }
 
+static int send_invalid_request_response(int client_fd)
+{
+    ActionResult result = {
+        .status = TOOLSERVER__V1__TOOL_STATUS__TOOL_STATUS_INVALID_ARGUMENT,
+        .message = "invalid protobuf",
+        .stdout_data = NULL,
+        .stdout_len = 0U,
+        .error_code = "invalid_protobuf",
+        .error_detail = "request payload could not be decoded",
+    };
+    Toolserver__V1__ToolRequest request = TOOLSERVER__V1__TOOL_REQUEST__INIT;
+    request.request_id = "";
+    int status = send_response(client_fd, &request, &result);
+    return status;
+}
+
 static int handle_client(int client_fd)
 {
     uint8_t *payload = NULL;
@@ -134,12 +150,13 @@ static int handle_client(int client_fd)
         toolserver__v1__tool_request__unpack(NULL, payload_len, payload);
     free(payload);
     if (request == NULL) {
-        return -1;
+        return send_invalid_request_response(client_fd);
     }
 
     ActionResult result;
     handle_tool_request(request, &result);
     int status = send_response(client_fd, request, &result);
+    free_action_result(&result);
     toolserver__v1__tool_request__free_unpacked(request, NULL);
     return status;
 }
@@ -175,4 +192,3 @@ int run_server(const ServerConfig *config)
     unlink(config->socket_path);
     return 0;
 }
-

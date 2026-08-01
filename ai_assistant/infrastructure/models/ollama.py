@@ -43,6 +43,8 @@ class OllamaModelProvider(ModelProvider):
         }
 
     def _message_item(self, message: Message) -> dict[str, str]:
+        if message.role == "tool":
+            return {"role": "user", "content": f"Tool result:\n{message.content}"}
         return {"role": message.role, "content": message.content}
 
     def _post_json(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -74,6 +76,11 @@ class OllamaModelProvider(ModelProvider):
         if not isinstance(message, dict):
             raise ModelProtocolError("Ollama response did not include a message.")
         content = message.get("content")
+        if isinstance(content, str) and content:
+            return content
+        tool_call = _tool_call_text(message)
+        if tool_call:
+            return tool_call
         if not isinstance(content, str) or not content:
             raise ModelProtocolError("Ollama response did not include assistant text.")
         return content
@@ -102,3 +109,19 @@ class OllamaModelProvider(ModelProvider):
             (perf_counter() - started) * 1000,
             http_status or "unavailable",
         )
+
+
+def _tool_call_text(message: dict[str, Any]) -> str | None:
+    tool_calls = message.get("tool_calls")
+    if not isinstance(tool_calls, list) or not tool_calls:
+        return None
+    function = tool_calls[0].get("function") if isinstance(tool_calls[0], dict) else None
+    if not isinstance(function, dict) or not isinstance(function.get("name"), str):
+        return None
+    arguments = function.get("arguments", {})
+    if not isinstance(arguments, dict):
+        arguments = {}
+    return json.dumps(
+        {"tool_call": {"name": function["name"], "arguments": arguments}},
+        sort_keys=True,
+    )

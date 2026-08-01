@@ -20,7 +20,8 @@ OBJ := $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRC)) \
 	$(BUILD_DIR)/toolserver.pb-c.o
 
 CPPFLAGS += -Iinclude -I$(GEN_DIR)
-CFLAGS += -std=c11 -D_POSIX_C_SOURCE=200809L -Wall -Wextra -Werror -pedantic
+CPPFLAGS += $(shell $(PKG_CONFIG) --cflags libprotobuf-c 2>/dev/null)
+CFLAGS += -std=c11 -D_XOPEN_SOURCE=700 -Wall -Wextra -Werror -pedantic
 LDLIBS += $(shell $(PKG_CONFIG) --libs libprotobuf-c 2>/dev/null || echo -lprotobuf-c)
 
 .PHONY: all clean proto check-deps
@@ -30,7 +31,7 @@ all: check-deps $(TARGET)
 check-deps:
 	@command -v $(PROTOC) >/dev/null || { echo "missing protoc"; exit 1; }
 	@command -v protoc-gen-c >/dev/null || { echo "missing protoc-gen-c"; exit 1; }
-	@printf '#include <protobuf-c/protobuf-c.h>\n' | $(CC) -E - >/dev/null
+	@printf '#include <protobuf-c/protobuf-c.h>\n' | $(CC) $(CPPFLAGS) -E - >/dev/null
 
 proto: $(PROTO_GEN_C)
 

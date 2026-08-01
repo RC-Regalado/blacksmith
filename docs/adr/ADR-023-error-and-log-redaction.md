@@ -1,6 +1,6 @@
 # ADR-023 — Error and Log Redaction
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-07-30
 - Deciders: Project owner
 - Supersedes:

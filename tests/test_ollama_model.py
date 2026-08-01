@@ -35,6 +35,18 @@ def test_ollama_builds_native_chat_payload() -> None:
     }
 
 
+def test_ollama_maps_tool_result_messages_to_user_payload() -> None:
+    provider = OllamaModelProvider(model="gemma")
+
+    payload = provider._build_payload(
+        [Message(role="tool", content='{"content":{"entries":[]}}')]
+    )
+
+    assert payload["messages"] == [
+        {"role": "user", "content": 'Tool result:\n{"content":{"entries":[]}}'}
+    ]
+
+
 def test_ollama_chat_returns_assistant_message(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -50,6 +62,38 @@ def test_ollama_chat_returns_assistant_message(
     )
 
     assert response == Message(role="assistant", content="hola")
+
+
+def test_ollama_tool_call_response_maps_to_internal_json(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "ai_assistant.infrastructure.models.ollama.urlopen",
+        lambda *_args, **_kwargs: FakeResponse(
+            {
+                "message": {
+                    "role": "assistant",
+                    "content": "",
+                    "tool_calls": [
+                        {
+                            "function": {
+                                "name": "list_directory",
+                                "arguments": {"path": "."},
+                            }
+                        }
+                    ],
+                }
+            }
+        ),
+    )
+
+    response = OllamaModelProvider(model="gemma").chat(
+        [Message(role="user", content="list files")]
+    )
+
+    assert json.loads(response.content) == {
+        "tool_call": {"name": "list_directory", "arguments": {"path": "."}}
+    }
 
 
 def test_ollama_posts_to_api_chat_with_timeout(

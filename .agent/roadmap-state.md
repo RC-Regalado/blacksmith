@@ -10,9 +10,9 @@ Phase 2: Read-Only Workspace Tools
 
 ## Current milestone
 
-- ID: M2.2
-- Name: Add tool execution domain models
-- Status: planned
+- ID: M2.16
+- Name: Documentation and final manual review
+- Status: accepted
 - Source: `docs/roadmap-phase-2.md`
 
 ## Milestone status vocabulary
@@ -51,21 +51,21 @@ Phase 2: Read-Only Workspace Tools
 | ID | Milestone | Status | Blocking reason | Automated report | Human review |
 |---|---|---|---|---|---|
 | M2.1 | Approve Phase 2 security decisions | accepted | — | `.agent/reports/M2.1.md` | approved |
-| M2.2 | Add tool execution domain models | planned | — | — | — |
-| M2.3 | Add application ports | planned | M2.2 | — | — |
-| M2.4 | Implement the static tool catalog | planned | M2.3 | — | — |
-| M2.5 | Implement workspace and path policy | planned | M2.4 | — | — |
-| M2.6 | Implement deny-by-default tool policy | planned | M2.5 | — | — |
-| M2.7 | Add fake and dry-run executors | planned | M2.6 | — | — |
-| M2.8 | Implement audit persistence | planned | M2.7 | — | — |
-| M2.9 | Implement LocalReadOnlyToolExecutor | planned | M2.8 | — | — |
-| M2.10 | Implement ToolExecutionCoordinator | planned | M2.9 | — | — |
-| M2.11 | Integrate one bounded tool round into runtime | planned | M2.10 | — | — |
-| M2.12 | Add configuration and CLI support | planned | M2.11 | — | — |
-| M2.13 | Extend protobuf and C tool service | planned | M2.12 | — | — |
-| M2.14 | Implement UnixSocketToolExecutor | planned | M2.13 | — | — |
-| M2.15 | Add adversarial security tests | planned | M2.14 | — | — |
-| M2.16 | Documentation and final manual review | planned | M2.15 | — | — |
+| M2.2 | Add tool execution domain models | accepted | — | `.agent/reports/M2.2.md` | approved |
+| M2.3 | Add application ports | accepted | — | `.agent/reports/M2.3.md` | approved |
+| M2.4 | Implement the static tool catalog | accepted | — | `.agent/reports/M2.4.md` | approved |
+| M2.5 | Implement workspace and path policy | accepted | — | `.agent/reports/M2.5.md` | approved |
+| M2.6 | Implement deny-by-default tool policy | accepted | — | `.agent/reports/M2.6.md` | approved |
+| M2.7 | Add fake and dry-run executors | accepted | — | `.agent/reports/M2.7.md` | approved |
+| M2.8 | Implement audit persistence | accepted | — | `.agent/reports/M2.8.md` | approved |
+| M2.9 | Implement LocalReadOnlyToolExecutor | accepted | — | `.agent/reports/M2.9.md` | approved |
+| M2.10 | Implement ToolExecutionCoordinator | accepted | — | `.agent/reports/M2.10.md` | approved |
+| M2.11 | Integrate one bounded tool round into runtime | accepted | — | `.agent/reports/M2.11.md` | approved |
+| M2.12 | Add configuration and CLI support | accepted | — | `.agent/reports/M2.12.md` | approved |
+| M2.13 | Extend protobuf and C tool service | accepted | — | `.agent/reports/M2.13.md` | approved |
+| M2.14 | Implement UnixSocketToolExecutor | accepted | — | `.agent/reports/M2.14.md` | approved |
+| M2.15 | Add adversarial security tests | accepted | — | `.agent/reports/M2.15.md` | approved |
+| M2.16 | Documentation and final manual review | accepted | — | `.agent/reports/M2.16.md` | approved |
 
 ## Current baseline
 
@@ -82,6 +82,6 @@ Record after first inspection:
 
 ## Last supervisor update
 
-- Date: 2026-07-30
-- Summary: ADR-016 through ADR-025 approved by human review and marked Accepted. M2.1 is accepted; M2.2 is now eligible.
-- Next action: Start M2.2 when requested.
+- Date: 2026-08-01
+- Summary: Phase 2 approved after manual validation with `gemma4:latest`; post-review fixes added for Ollama tool-call formats and deterministic direct tool JSON.
+- Next action: Commit Phase 2 closure.

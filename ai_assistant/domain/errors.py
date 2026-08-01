@@ -29,6 +29,10 @@ class ConversationStoreError(AssistantError):
     """Conversation persistence failed."""
 
 
+class ToolAuditStoreError(AssistantError):
+    """Tool audit persistence failed."""
+
+
 class InvalidMessageError(AssistantError):
     """A message failed validation."""
 

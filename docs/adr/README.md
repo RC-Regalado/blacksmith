@@ -38,13 +38,13 @@ Historical ADRs are never deleted or silently rewritten.
 | ADR-013 | Pytest testing strategy | Implemented |
 | ADR-014 | Non-streaming model calls in Phase 1 | Implemented |
 | ADR-015 | Configurable model profiles for limited hardware | Implemented |
-| ADR-016 | Safe Tool Execution Pipeline | Accepted |
-| ADR-017 | Deny-by-Default Tool Policy | Accepted |
-| ADR-018 | Read-Only Tool Allowlist | Accepted |
-| ADR-019 | Workspace Confinement and Path Resolution | Accepted |
-| ADR-020 | Tool Execution Audit and Retention | Accepted |
-| ADR-021 | Tool Timeouts and Resource Limits | Accepted |
-| ADR-022 | Unix Socket Tool Executor | Accepted |
-| ADR-023 | Error and Log Redaction | Accepted |
-| ADR-024 | Bounded Single Tool Round per Turn | Accepted |
-| ADR-025 | Sensitive File Deny Policy | Accepted |
+| ADR-016 | Safe Tool Execution Pipeline | Implemented |
+| ADR-017 | Deny-by-Default Tool Policy | Implemented |
+| ADR-018 | Read-Only Tool Allowlist | Implemented |
+| ADR-019 | Workspace Confinement and Path Resolution | Implemented |
+| ADR-020 | Tool Execution Audit and Retention | Implemented |
+| ADR-021 | Tool Timeouts and Resource Limits | Implemented |
+| ADR-022 | Unix Socket Tool Executor | Implemented |
+| ADR-023 | Error and Log Redaction | Implemented |
+| ADR-024 | Bounded Single Tool Round per Turn | Implemented |
+| ADR-025 | Sensitive File Deny Policy | Implemented |

@@ -1,6 +1,6 @@
 # ADR-021 — Tool Timeouts and Resource Limits
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-07-30
 - Deciders: Project owner
 - Supersedes:

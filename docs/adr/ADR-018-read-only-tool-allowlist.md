@@ -1,6 +1,6 @@
 # ADR-018 — Read-Only Tool Allowlist
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-07-30
 - Deciders: Project owner
 - Supersedes:
@@ -27,7 +27,7 @@ Productive Phase 2 allowlist contains exactly:
 - `list_directory`
 - `read_file`
 
-`noop` may exist only in tests. `echo` and `list_tools` from the C prototype are not productive assistant tools unless a later ADR approves them.
+`noop` may exist only in tests. Historical `echo` and `list_tools` actions are not productive assistant tools unless a later ADR approves them.
 
 ## Consequences
 
