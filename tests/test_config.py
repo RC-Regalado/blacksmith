@@ -36,6 +36,13 @@ def test_load_app_config_reads_supported_environment_values() -> None:
             "AI_ASSISTANT_LOG_LEVEL": "debug",
             "AI_ASSISTANT_REQUEST_TIMEOUT": "2.5",
             "AI_ASSISTANT_CONTEXT_LIMIT": "128",
+            "AI_ASSISTANT_WORKSPACE": " /tmp/workspace ",
+            "AI_ASSISTANT_TOOL_EXECUTION": "yes",
+            "AI_ASSISTANT_TOOL_TIMEOUT": "4.5",
+            "AI_ASSISTANT_MAX_READ_BYTES": "2048",
+            "AI_ASSISTANT_MAX_DIRECTORY_ENTRIES": "25",
+            "AI_ASSISTANT_MAX_DIRECTORY_DEPTH": "2",
+            "AI_ASSISTANT_AUDIT_DATABASE": "audit.sqlite3",
             "OPENAI_API_KEY": "secret",
         }
     )
@@ -49,6 +56,13 @@ def test_load_app_config_reads_supported_environment_values() -> None:
     assert config.log_level == "DEBUG"
     assert config.request_timeout == 2.5
     assert config.context_limit == 128
+    assert config.workspace == "/tmp/workspace"
+    assert config.tool_execution is True
+    assert config.tool_timeout == 4.5
+    assert config.max_read_bytes == 2048
+    assert config.max_directory_entries == 25
+    assert config.max_directory_depth == 2
+    assert config.audit_database == "audit.sqlite3"
     assert config.api_key == "secret"
 
 
@@ -82,3 +96,13 @@ def test_invalid_timeout_fails_clearly() -> None:
 def test_invalid_context_limit_fails_clearly() -> None:
     with pytest.raises(ConfigurationError, match="AI_ASSISTANT_CONTEXT_LIMIT"):
         load_app_config({"AI_ASSISTANT_CONTEXT_LIMIT": "nope"})
+
+
+def test_invalid_tool_execution_flag_fails_clearly() -> None:
+    with pytest.raises(ConfigurationError, match="AI_ASSISTANT_TOOL_EXECUTION"):
+        load_app_config({"AI_ASSISTANT_TOOL_EXECUTION": "maybe"})
+
+
+def test_invalid_tool_limits_fail_clearly() -> None:
+    with pytest.raises(ConfigurationError, match="AI_ASSISTANT_MAX_DIRECTORY_DEPTH"):
+        load_app_config({"AI_ASSISTANT_MAX_DIRECTORY_DEPTH": "-1"})

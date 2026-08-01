@@ -11,6 +11,7 @@ from ai_assistant.domain.errors import (
     ModelNotFoundError,
     ModelProtocolError,
     ModelTimeoutError,
+    ToolAuditStoreError,
 )
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "ModelNotFoundError",
     "ModelProtocolError",
     "ModelTimeoutError",
+    "ToolAuditStoreError",
 ]

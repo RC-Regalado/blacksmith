@@ -2,30 +2,44 @@
 
 ## Fin del proyecto
 
-Construir un asistente de IA local-first, modular, seguro y extensible. El core de Python coordina el runtime del agente, memoria, configuración, proveedores de modelo y CLI. La ejecución de herramientas de bajo nivel queda separada y fuera de Phase 1.
+Construir un asistente de IA local-first, modular, seguro y extensible.
+
+El core de Python coordina runtime, memoria, configuración, modelos, CLI y herramientas. Todo sistema externo debe vivir detrás de puertos/adaptadores. Las herramientas productivas requieren política determinística, validación de paths, límites, auditoría y errores sanitizados.
 
 ## Estado actual
 
-Phase 1: Python Core está implementada y lista para revisión final.
+Phase 1 y Phase 2 están implementadas y listas para revisión final de Phase 2.
 
-Incluye:
+Phase 1 entregó el core Python:
 
-- CLI mínima con `python main.py`.
+- CLI con `python main.py`.
 - Runtime framework-agnostic.
-- Modelo interno `Message` neutral al proveedor.
+- `Message` neutral al proveedor.
 - Context builder con presupuesto simple.
-- Puertos explícitos para modelo y memoria.
+- Puertos para modelo y memoria.
 - Providers `dummy`, Ollama nativo y OpenAI-compatible.
-- Memoria en memoria y persistencia SQLite transaccional.
+- Persistencia SQLite transaccional.
 - Sesiones explícitas.
-- Configuración centralizada en bootstrap.
+- Configuración centralizada.
 - Logging básico.
-- Errores internos tipados.
-- Tool calls declarativos sin ejecución.
-- Pytest con marcadores separados.
-- CI separado para core y Ollama smoke.
+- Errores tipados.
+- Tool calls declarativos.
+- Pytest y CI separado.
 - Arquitectura por capas.
-- ADRs de Phase 1 documentados.
+
+Phase 2 entregó herramientas read-only:
+
+- Allowlist productivo: `list_directory`, `read_file`.
+- Política deny-by-default.
+- Validación de workspace y paths relativos.
+- Bloqueo de traversal, paths absolutos externos, symlinks externos, ocultos, sensibles y archivos especiales.
+- Límites de timeout, bytes, entradas, profundidad, payload y respuesta.
+- Auditoría SQLite sanitizada.
+- `LocalReadOnlyToolExecutor`.
+- `UnixSocketToolExecutor`.
+- Toolserver C con acciones read-only.
+- Un solo tool round por turno.
+- Tests adversariales.
 
 ## Estructura actual
 
@@ -34,12 +48,13 @@ ai_assistant/
 |-- domain/
 |-- application/
 |-- infrastructure/
+|   `-- tools/
 |-- interfaces/
 |-- bootstrap/
 |-- agent/      # compatibility exports
 |-- cli/        # compatibility exports
 |-- storage/    # compatibility exports
-|-- tools/
+|-- tools/      # framing/socket helpers
 |-- gateway/
 `-- main.py
 ```
@@ -50,23 +65,30 @@ ai_assistant/
 python main.py
 ```
 
-Por defecto usa `AI_ASSISTANT_PROVIDER=dummy`. Para Ollama:
+Por defecto usa `AI_ASSISTANT_PROVIDER=dummy`.
+
+Ejemplo con herramientas locales:
 
 ```bash
-AI_ASSISTANT_PROVIDER=ollama \
-AI_ASSISTANT_MODEL=gemma3:1b \
-AI_ASSISTANT_REQUEST_TIMEOUT=180 \
+AI_ASSISTANT_TOOL_EXECUTION=true \
+AI_ASSISTANT_WORKSPACE=/ruta/al/workspace \
 python main.py
 ```
 
 ## Validación
 
+Core sin Ollama ni C toolserver:
+
 ```bash
+PYTHONDONTWRITEBYTECODE=1 python -m pytest -m "not ollama and not toolserver" -q
+```
+
+Suite completa en entorno con `protobuf-c`:
+
+```bash
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig \
+LD_LIBRARY_PATH=/home/rc-regalado/.local/lib \
 PYTHONDONTWRITEBYTECODE=1 python -m pytest -q
-PYTHONDONTWRITEBYTECODE=1 python -m pytest -m unit -q
-PYTHONDONTWRITEBYTECODE=1 python -m pytest -m integration -q
-PYTHONDONTWRITEBYTECODE=1 python -m pytest -m contract -q
-PYTHONDONTWRITEBYTECODE=1 python -m pytest -m smoke -q
 ```
 
 Ollama real:
@@ -77,19 +99,32 @@ AI_ASSISTANT_REQUEST_TIMEOUT=180 \
 PYTHONDONTWRITEBYTECODE=1 python -m pytest -m ollama -q
 ```
 
-## Limitaciones conocidas
+## ADRs
 
-- No hay ejecución de herramientas.
-- No hay embeddings, RAG ni memoria semántica.
-- No hay streaming.
-- No hay UI fuera de CLI.
-- El servicio C de herramientas existe como trabajo separado, no integrado productivamente al runtime.
-- Los paquetes `agent`, `cli` y `storage` son fachadas de compatibilidad.
+- ADR-001 a ADR-015: Phase 1 implementada.
+- ADR-016 a ADR-025: Phase 2 implementada.
 
-## Mejoras recomendadas
+## Datos disponibles para Phase 3
 
-1. Remover fachadas legacy cuando se acepte romper imports antiguos.
-2. Diseñar Phase 2 alrededor de `ToolExecutor`, permisos y confirmación humana.
-3. Definir política de auditoría antes de ejecutar herramientas.
-4. Añadir migraciones explícitas si el esquema SQLite crece.
-5. Medir latencia y memoria con perfiles reales de Ollama antes de elegir defaults más pesados.
+| Área | Evidencia |
+|---|---|
+| Tool domain models | `ai_assistant/domain/tools.py` |
+| Application ports | `ai_assistant/application/ports/tools.py` |
+| Static catalog | `ai_assistant/application/tool_catalog.py` |
+| Deny-by-default policy | `ai_assistant/application/tool_policy.py` |
+| Workspace path policy | `ai_assistant/application/path_policy.py` |
+| Coordinator | `ai_assistant/application/tool_coordinator.py` |
+| Audit store | `ai_assistant/infrastructure/storage/sqlite_audit.py` |
+| Local executor | `ai_assistant/infrastructure/tools/local_read_only.py` |
+| Unix socket executor | `ai_assistant/infrastructure/tools/unix_socket.py` |
+| C toolserver | `c_toolserver/` |
+| Adversarial tests | `tests/test_adversarial_security.py` |
+
+## Decisiones faltantes para Phase 3
+
+- Nuevas familias de herramientas productivas y sus permisos.
+- Confirmaciones humanas interactivas para operaciones de mayor riesgo.
+- Si el executor C será default o seguirá siendo opcional.
+- Política de retención/exportación/borrado de auditoría.
+- Búsqueda recursiva, Git, red, shell o escritura: requieren ADR/gate nuevo.
+- UI/TUI/web, streaming, embeddings, RAG y multiagente siguen fuera del alcance actual.

@@ -1,0 +1,101 @@
+"""Deny-by-default tool policy."""
+
+from collections.abc import Mapping
+
+from ai_assistant.application.ports.tools import ToolPolicy
+from ai_assistant.application.tool_catalog import LIST_DIRECTORY, READ_FILE
+from ai_assistant.domain.tools import (
+    PolicyDecisionKind,
+    ToolDefinition,
+    ToolExecutionRequest,
+    ToolPolicyDecision,
+)
+
+REASON_TOOL_DISABLED = "tool_disabled"
+REASON_UNKNOWN_TOOL = "unknown_tool"
+REASON_INVALID_ARGUMENTS = "invalid_arguments"
+REASON_PERMISSION_DENIED = "permission_denied"
+REASON_TIMEOUT_EXCEEDED = "timeout_exceeded"
+REASON_LIMIT_EXCEEDED = "limit_exceeded"
+REASON_PATH_DENIED = "path_denied"
+
+
+class DenyByDefaultToolPolicy(ToolPolicy):
+    def __init__(self, enabled: bool = True) -> None:
+        self._enabled = enabled
+
+    def decide(
+        self, request: ToolExecutionRequest, definition: ToolDefinition
+    ) -> ToolPolicyDecision:
+        if not self._enabled:
+            return _deny(REASON_TOOL_DISABLED)
+        if request.tool_name != definition.name:
+            return _deny(REASON_UNKNOWN_TOOL)
+        if request.permission != definition.permission:
+            return _deny(REASON_PERMISSION_DENIED)
+        if request.timeout_seconds > float(definition.limits["timeout_seconds"]):
+            return _deny(REASON_TIMEOUT_EXCEEDED)
+        if not _valid_arguments(request.arguments, definition):
+            return _deny(REASON_INVALID_ARGUMENTS)
+        if _exceeds_limits(request.arguments, definition):
+            return _deny(REASON_LIMIT_EXCEEDED)
+        return ToolPolicyDecision(kind=PolicyDecisionKind.ALLOW)
+
+    def deny_unknown_tool(self) -> ToolPolicyDecision:
+        return _deny(REASON_UNKNOWN_TOOL)
+
+    def deny_path_result(self) -> ToolPolicyDecision:
+        return _deny(REASON_PATH_DENIED)
+
+
+def _valid_arguments(arguments: Mapping[str, object], definition: ToolDefinition) -> bool:
+    path = arguments.get("path")
+    if not isinstance(path, str) or not path:
+        return False
+    if definition.name == READ_FILE:
+        return _optional_int(arguments, "offset") and _optional_int(
+            arguments, "max_bytes"
+        )
+    if definition.name == LIST_DIRECTORY:
+        return (
+            _optional_bool(arguments, "recursive")
+            and _optional_bool(arguments, "include_hidden")
+            and _optional_int(arguments, "max_entries")
+            and _optional_int(arguments, "max_depth")
+        )
+    return False
+
+
+def _exceeds_limits(arguments: Mapping[str, object], definition: ToolDefinition) -> bool:
+    if len(str(arguments["path"])) > int(definition.limits["max_path_length"]):
+        return True
+    if definition.name == READ_FILE:
+        offset = int(arguments.get("offset", definition.defaults["offset"]))
+        max_bytes = int(arguments.get("max_bytes", definition.defaults["max_bytes"]))
+        return (
+            offset < 0
+            or max_bytes < 1
+            or max_bytes > int(definition.limits["max_bytes"])
+        )
+    max_entries = int(arguments.get("max_entries", definition.defaults["max_entries"]))
+    max_depth = int(arguments.get("max_depth", definition.defaults["max_depth"]))
+    return (
+        max_entries < 1
+        or max_entries > int(definition.limits["max_entries"])
+        or max_depth < 0
+        or max_depth > int(definition.limits["max_depth"])
+    )
+
+
+def _optional_int(arguments: Mapping[str, object], name: str) -> bool:
+    value = arguments.get(name)
+    return value is None or type(value) is int
+
+
+def _optional_bool(arguments: Mapping[str, object], name: str) -> bool:
+    value = arguments.get(name)
+    return value is None or isinstance(value, bool)
+
+
+def _deny(reason_code: str) -> ToolPolicyDecision:
+    return ToolPolicyDecision(kind=PolicyDecisionKind.DENY, reason_code=reason_code)

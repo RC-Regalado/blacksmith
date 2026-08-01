@@ -29,12 +29,33 @@ Generated changes are provisional until recorded here.
 | M14 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobado, todo sigue funcionando correctamente. Inicia el M15". |
 | M15 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobado, finaliza la fase 1 con la documentación". |
 | M16 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User requested Phase 1 closure after M15 approval; CI implemented and core commands validated locally. |
-| M17 | implemented-awaiting-human-review | awaiting-review | — | 2026-07-29 | Phase 1 documentation and ADR closure implemented; review `.agent/reports/M17.md`. |
+| M17 | implemented-awaiting-human-review | approved | User | 2026-07-29 | User confirmed: "Aprobado. Valida los datos necesarios para pasar a la fase 2". |
+| M2.1 | implemented-awaiting-human-review | approved | User | 2026-07-30 | User confirmed: "aprobados los ADR-016 a ADR-025." |
+| M2.2 | implemented-awaiting-human-review | approved | User | 2026-07-30 | User confirmed: "Aprobado, inicia el M2.3". |
+| M2.3 | implemented-awaiting-human-review | approved | User | 2026-07-30 | User confirmed: "Aprobado, pasa al M2.4". |
+| M2.4 | implemented-awaiting-human-review | approved | User | 2026-07-31 | User confirmed: "aprobado, pasa al M2.5". |
+| M2.5 | implemented-awaiting-human-review | approved | User | 2026-07-31 | User confirmed: "Aprobado, inicia el M2.6". |
+| M2.6 | implemented-awaiting-human-review | approved | User | 2026-07-31 | User confirmed: "Aprobado. Pasa al M2.7". |
+| M2.7 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "Aprobado, pasa al M2.8". |
+| M2.8 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "Aprobado. Inicia el M2.9". |
+| M2.9 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "aprobado, pasa al M2.10". |
+| M2.10 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "Aprobado. Pasa al M2.11". |
+| M2.11 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "aprobado, pasa al M2.12". |
+| M2.12 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "Aprobado, pasa al M2.13". |
+| M2.13 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "Aprobado, pasa al M2.14". |
+| M2.14 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "Aprobado, pasa al M2.15". |
+| M2.15 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "aprobado, pasa al M2.16". |
+| M2.16 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed Phase 2 approved after manual tool validation with `gemma4:latest`. |
 
 ## Approval gates
 
 | Gate ID | Related task | Requested decision | Why blocked | Status | Resolution |
 |---|---|---|---|---|---|
+| PHASE2-G1 | Phase 2 | Approve exact tool execution safety policy | Phase 2 introduces side effects; accepted supervisor rules require approval before tool execution or weakening safety boundaries. | closed | Approved through ADR-016, ADR-017, ADR-023 and ADR-024. |
+| PHASE2-G2 | Phase 2 | Approve initial tool scope and permission levels | Existing proto has permission enums, but no policy mapping from tool name to allowed permission. | closed | Approved through ADR-018 and ADR-019. |
+| PHASE2-G3 | Phase 2 | Approve audit persistence target and retention | Phase 2 requires audit, but no durable audit schema or retention policy exists. | closed | Approved through ADR-020. |
+| PHASE2-G4 | M2.1 | Approve ADR-016 through ADR-025 after proposal | Required Phase 2 ADRs must be accepted before productive execution tasks become eligible. | closed | ADR-016 through ADR-025 approved by user. |
+| M2.13-G1 | M2.13 | Install `protoc-gen-c` and `protobuf-c` build dependencies | `make -C c_toolserver` failed until local `protobuf-c` was exposed to `pkg-config`. | closed | Validated with `PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig` and `LD_LIBRARY_PATH=/home/rc-regalado/.local/lib`. |
 
 ## Manual review record template
 
