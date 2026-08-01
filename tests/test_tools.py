@@ -190,6 +190,25 @@ def test_execution_context_requires_workspace_id() -> None:
         ToolExecutionContext(request=request, workspace_id="")
 
 
+def test_execution_context_accepts_resolved_path_metadata() -> None:
+    request = ToolExecutionRequest(
+        request_id="req-1",
+        session_id="default",
+        tool_name="read_file",
+        arguments={"path": "README.md"},
+    )
+
+    context = ToolExecutionContext(
+        request=request,
+        workspace_id="workspace",
+        resolved_path="/workspace/README.md",
+        relative_path="README.md",
+    )
+
+    assert context.resolved_path == "/workspace/README.md"
+    assert context.relative_path == "README.md"
+
+
 def test_sanitized_tool_error_requires_code_and_message() -> None:
     error = SanitizedToolError(code="path_denied", message="Path denied.")
 

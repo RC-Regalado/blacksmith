@@ -22,6 +22,7 @@ _TOOLS = MappingProxyType(
                     "recursive": {"type": "boolean"},
                     "include_hidden": {"type": "boolean"},
                     "max_entries": {"type": "integer"},
+                    "max_depth": {"type": "integer"},
                 },
                 "required": ["path"],
             },
@@ -30,6 +31,7 @@ _TOOLS = MappingProxyType(
                 "recursive": False,
                 "include_hidden": False,
                 "max_entries": 200,
+                "max_depth": 0,
                 "timeout_seconds": 5.0,
             },
             limits={

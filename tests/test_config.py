@@ -36,6 +36,7 @@ def test_load_app_config_reads_supported_environment_values() -> None:
             "AI_ASSISTANT_LOG_LEVEL": "debug",
             "AI_ASSISTANT_REQUEST_TIMEOUT": "2.5",
             "AI_ASSISTANT_CONTEXT_LIMIT": "128",
+            "AI_ASSISTANT_WORKSPACE": " /tmp/workspace ",
             "OPENAI_API_KEY": "secret",
         }
     )
@@ -49,6 +50,7 @@ def test_load_app_config_reads_supported_environment_values() -> None:
     assert config.log_level == "DEBUG"
     assert config.request_timeout == 2.5
     assert config.context_limit == 128
+    assert config.workspace == "/tmp/workspace"
     assert config.api_key == "secret"
 
 

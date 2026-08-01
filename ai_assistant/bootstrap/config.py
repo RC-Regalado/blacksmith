@@ -20,6 +20,7 @@ class AppConfig:
     log_level: str = "INFO"
     request_timeout: float = 60.0
     context_limit: int = 4096
+    workspace: str | None = None
     api_key: str | None = field(default=None, repr=False)
 
 
@@ -44,6 +45,7 @@ def load_app_config(env: Mapping[str, str] | None = None) -> AppConfig:
             source.get("AI_ASSISTANT_CONTEXT_LIMIT", "4096"),
             "AI_ASSISTANT_CONTEXT_LIMIT",
         ),
+        workspace=_optional_text(source.get("AI_ASSISTANT_WORKSPACE")),
         api_key=source.get("OPENAI_API_KEY"),
     )
 
@@ -82,3 +84,10 @@ def _positive_int(value: str, name: str) -> int:
     if parsed <= 0:
         raise ConfigurationError(f"{name} must be a positive integer")
     return parsed
+
+
+def _optional_text(value: str | None) -> str | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    return stripped or None

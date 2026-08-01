@@ -11,6 +11,11 @@ from ai_assistant.application.ports.models import ModelProvider
 from ai_assistant.agent.message import Message
 from ai_assistant.agent.planner import ToolCallDetector
 from ai_assistant.agent.runtime import AgentRuntime
+from ai_assistant.domain.tools import (
+    ToolExecutionRequest,
+    ToolExecutionResult,
+    ToolExecutionStatus,
+)
 
 
 pytestmark = pytest.mark.unit
@@ -112,6 +117,112 @@ def test_runtime_stores_tool_call_plan_without_execution() -> None:
     assert runtime.last_tool_plan.tool_name == "search"
 
 
+def test_runtime_uses_tool_result_for_final_answer() -> None:
+    memory = FakeConversationStore()
+    model = SequenceModel(
+        [
+            '{"tool_call":{"id":"call-1","name":"read_file","arguments":{"path":"notes.txt"}}}',
+            "Final answer from tool result",
+        ]
+    )
+    runtime = AgentRuntime(
+        context_builder=ContextBuilder(system_prompt="System prompt"),
+        memory=memory,
+        model=model,
+        tool_detector=ToolCallDetector(),
+        tool_coordinator=FakeToolCoordinator(
+            ToolExecutionResult(
+                request_id="call-1",
+                tool_name="read_file",
+                status=ToolExecutionStatus.SUCCESS,
+                content={"content": "notes"},
+            )
+        ),
+        session_id="alpha",
+    )
+
+    response = runtime.respond("Read notes")
+
+    assert response == Message(role="assistant", content="Final answer from tool result")
+    assert model.calls[1][-1].role == "tool"
+    assert memory.history("alpha") == [
+        Message(role="user", content="Read notes", session_id="alpha"),
+        Message(
+            role="assistant",
+            content='{"tool_call":{"id":"call-1","name":"read_file","arguments":{"path":"notes.txt"}}}',
+            session_id="alpha",
+        ),
+        Message(
+            role="tool",
+            content='{"content": {"content": "notes"}, "status": "success", "truncated": false}',
+            session_id="alpha",
+            tool_name="read_file",
+            tool_call_id="call-1",
+        ),
+        Message(
+            role="assistant",
+            content="Final answer from tool result",
+            session_id="alpha",
+        ),
+    ]
+
+
+def test_runtime_stops_after_second_tool_request() -> None:
+    runtime = AgentRuntime(
+        context_builder=ContextBuilder(system_prompt="System prompt"),
+        memory=FakeConversationStore(),
+        model=SequenceModel(
+            [
+                '{"tool_call":{"name":"read_file","arguments":{"path":"notes.txt"}}}',
+                '{"tool_call":{"name":"read_file","arguments":{"path":"again.txt"}}}',
+            ]
+        ),
+        tool_detector=ToolCallDetector(),
+        tool_coordinator=FakeToolCoordinator(
+            ToolExecutionResult(
+                request_id="alpha:read_file",
+                tool_name="read_file",
+                status=ToolExecutionStatus.SUCCESS,
+                content={"content": "notes"},
+            )
+        ),
+        session_id="alpha",
+    )
+
+    response = runtime.respond("Read notes")
+
+    assert response == Message(
+        role="assistant",
+        content="Tool round limit reached; no additional tool was executed.",
+    )
+
+
+def test_runtime_persists_tool_round_atomically() -> None:
+    runtime = AgentRuntime(
+        context_builder=ContextBuilder(system_prompt="System prompt"),
+        memory=FailingTurnStore(),
+        model=SequenceModel(
+            [
+                '{"tool_call":{"name":"read_file","arguments":{"path":"notes.txt"}}}',
+                "Final answer",
+            ]
+        ),
+        tool_detector=ToolCallDetector(),
+        tool_coordinator=FakeToolCoordinator(
+            ToolExecutionResult(
+                request_id="alpha:read_file",
+                tool_name="read_file",
+                status=ToolExecutionStatus.SUCCESS,
+                content={"content": "notes"},
+            )
+        ),
+        session_id="alpha",
+    )
+
+    with pytest.raises(RuntimeError, match="store failed"):
+        runtime.respond("Read notes")
+
+
 class FailingTurnStore(ConversationMemory):
     def __init__(self) -> None:
         self._messages: list[Message] = []
@@ -135,7 +246,13 @@ class FakeConversationStore(ConversationMemory):
 
     def append_many(self, session_id: SessionId, messages: list[Message]) -> None:
         self._messages.extend(
-            Message(role=message.role, content=message.content, session_id=session_id)
+            Message(
+                role=message.role,
+                content=message.content,
+                session_id=session_id,
+                tool_name=message.tool_name,
+                tool_call_id=message.tool_call_id,
+            )
             for message in messages
         )
 
@@ -151,3 +268,23 @@ class FakeModel(ModelProvider):
 
     def chat(self, messages: list[Message]) -> Message:
         return Message(role="assistant", content=self._response)
+
+
+class SequenceModel(ModelProvider):
+    def __init__(self, responses: list[str]) -> None:
+        self._responses = responses
+        self.calls: list[list[Message]] = []
+
+    def chat(self, messages: list[Message]) -> Message:
+        self.calls.append(messages)
+        return Message(role="assistant", content=self._responses.pop(0))
+
+
+class FakeToolCoordinator:
+    def __init__(self, result: ToolExecutionResult) -> None:
+        self.result = result
+        self.requests: list[ToolExecutionRequest] = []
+
+    def execute(self, request: ToolExecutionRequest) -> ToolExecutionResult:
+        self.requests.append(request)
+        return self.result

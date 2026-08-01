@@ -33,7 +33,14 @@ Generated changes are provisional until recorded here.
 | M2.1 | implemented-awaiting-human-review | approved | User | 2026-07-30 | User confirmed: "aprobados los ADR-016 a ADR-025." |
 | M2.2 | implemented-awaiting-human-review | approved | User | 2026-07-30 | User confirmed: "Aprobado, inicia el M2.3". |
 | M2.3 | implemented-awaiting-human-review | approved | User | 2026-07-30 | User confirmed: "Aprobado, pasa al M2.4". |
-| M2.4 | implemented-awaiting-human-review | awaiting-review | — | 2026-07-30 | Static read-only tool catalog implemented and validated; review `.agent/reports/M2.4.md`. |
+| M2.4 | implemented-awaiting-human-review | approved | User | 2026-07-31 | User confirmed: "aprobado, pasa al M2.5". |
+| M2.5 | implemented-awaiting-human-review | approved | User | 2026-07-31 | User confirmed: "Aprobado, inicia el M2.6". |
+| M2.6 | implemented-awaiting-human-review | approved | User | 2026-07-31 | User confirmed: "Aprobado. Pasa al M2.7". |
+| M2.7 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "Aprobado, pasa al M2.8". |
+| M2.8 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "Aprobado. Inicia el M2.9". |
+| M2.9 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "aprobado, pasa al M2.10". |
+| M2.10 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "Aprobado. Pasa al M2.11". |
+| M2.11 | implemented-awaiting-human-review | awaiting-review | — | 2026-08-01 | One bounded runtime tool round implemented and validated; review `.agent/reports/M2.11.md`. |
 
 ## Approval gates
 

@@ -10,8 +10,8 @@ Phase 2: Read-Only Workspace Tools
 
 ## Current milestone
 
-- ID: M2.4
-- Name: Implement the static tool catalog
+- ID: M2.11
+- Name: Integrate one bounded tool round into runtime
 - Status: implemented-awaiting-human-review
 - Source: `docs/roadmap-phase-2.md`
 
@@ -53,14 +53,14 @@ Phase 2: Read-Only Workspace Tools
 | M2.1 | Approve Phase 2 security decisions | accepted | — | `.agent/reports/M2.1.md` | approved |
 | M2.2 | Add tool execution domain models | accepted | — | `.agent/reports/M2.2.md` | approved |
 | M2.3 | Add application ports | accepted | — | `.agent/reports/M2.3.md` | approved |
-| M2.4 | Implement the static tool catalog | implemented-awaiting-human-review | — | `.agent/reports/M2.4.md` | awaiting-review |
-| M2.5 | Implement workspace and path policy | planned | M2.4 | — | — |
-| M2.6 | Implement deny-by-default tool policy | planned | M2.5 | — | — |
-| M2.7 | Add fake and dry-run executors | planned | M2.6 | — | — |
-| M2.8 | Implement audit persistence | planned | M2.7 | — | — |
-| M2.9 | Implement LocalReadOnlyToolExecutor | planned | M2.8 | — | — |
-| M2.10 | Implement ToolExecutionCoordinator | planned | M2.9 | — | — |
-| M2.11 | Integrate one bounded tool round into runtime | planned | M2.10 | — | — |
+| M2.4 | Implement the static tool catalog | accepted | — | `.agent/reports/M2.4.md` | approved |
+| M2.5 | Implement workspace and path policy | accepted | — | `.agent/reports/M2.5.md` | approved |
+| M2.6 | Implement deny-by-default tool policy | accepted | — | `.agent/reports/M2.6.md` | approved |
+| M2.7 | Add fake and dry-run executors | accepted | — | `.agent/reports/M2.7.md` | approved |
+| M2.8 | Implement audit persistence | accepted | — | `.agent/reports/M2.8.md` | approved |
+| M2.9 | Implement LocalReadOnlyToolExecutor | accepted | — | `.agent/reports/M2.9.md` | approved |
+| M2.10 | Implement ToolExecutionCoordinator | accepted | — | `.agent/reports/M2.10.md` | approved |
+| M2.11 | Integrate one bounded tool round into runtime | implemented-awaiting-human-review | — | `.agent/reports/M2.11.md` | awaiting-review |
 | M2.12 | Add configuration and CLI support | planned | M2.11 | — | — |
 | M2.13 | Extend protobuf and C tool service | planned | M2.12 | — | — |
 | M2.14 | Implement UnixSocketToolExecutor | planned | M2.13 | — | — |
@@ -83,5 +83,5 @@ Record after first inspection:
 ## Last supervisor update
 
 - Date: 2026-07-30
-- Summary: M2.4 implemented and validated. Static catalog exposes only `list_directory` and `read_file` with immutable read-only metadata.
-- Next action: Await human review before starting M2.5.
+- Summary: M2.11 implemented and validated. Runtime can perform one bounded tool round when a coordinator is provided while preserving no-tool behavior.
+- Next action: Await human review before starting M2.12.

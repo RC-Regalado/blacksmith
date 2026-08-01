@@ -82,6 +82,27 @@ The supervisor is the only agent permitted to update this file.
 | M2.4-T1 | M2.4 | Runtime implementer | Add static read-only catalog with immutable tool metadata | `ai_assistant/application/tool_catalog.py`, `ai_assistant/domain/tools.py` | M2.3 | implemented |
 | M2.4-T2 | M2.4 | Test agent | Cover exact-name lookup, unknown rejection and immutable catalog metadata | `tests/test_tool_catalog.py`, `tests/test_tools.py` | M2.4-T1 | implemented |
 | M2.4-T3 | M2.4 | Integration validator | Validate M2.4 acceptance criteria and produce report | `.agent/reports/M2.4.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M2.4-T2 | implemented |
+| M2.5-T1 | M2.5 | Runtime implementer | Add workspace configuration and normalized execution context path metadata | `ai_assistant/bootstrap/config.py`, `ai_assistant/domain/tools.py`, `tests/test_config.py`, `tests/test_tools.py` | M2.4 | implemented |
+| M2.5-T2 | M2.5 | Runtime implementer | Implement workspace path policy with traversal, symlink, hidden, sensitive and file-type checks | `ai_assistant/application/path_policy.py`, `tests/test_path_policy.py` | M2.5-T1 | implemented |
+| M2.5-T3 | M2.5 | Integration validator | Validate M2.5 acceptance criteria and produce report | `.agent/reports/M2.5.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M2.5-T2 | implemented |
+| M2.6-T1 | M2.6 | Runtime implementer | Add pure deny-by-default tool policy with stable reason codes | `ai_assistant/application/tool_policy.py`, `ai_assistant/application/tool_catalog.py` | M2.5 | implemented |
+| M2.6-T2 | M2.6 | Test agent | Cover unknown, malformed, over-limit, path-denied and executor-not-called policy cases | `tests/test_tool_policy.py` | M2.6-T1 | implemented |
+| M2.6-T3 | M2.6 | Integration validator | Validate M2.6 acceptance criteria and produce report | `.agent/reports/M2.6.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M2.6-T2 | implemented |
+| M2.7-T1 | M2.7 | Runtime implementer | Add reproducible fake and dry-run tool executors | `ai_assistant/application/tool_executors.py` | M2.6 | implemented |
+| M2.7-T2 | M2.7 | Test agent | Cover allowed, denied, success, timeout, failure and dry-run executor behavior | `tests/test_tool_executors.py` | M2.7-T1 | implemented |
+| M2.7-T3 | M2.7 | Integration validator | Validate M2.7 acceptance criteria and produce report | `.agent/reports/M2.7.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M2.7-T2 | implemented |
+| M2.8-T1 | M2.8 | Persistence implementer | Add SQLite audit recorder with sanitized append-only schema | `ai_assistant/infrastructure/storage/sqlite_audit.py`, `ai_assistant/domain/errors.py`, `ai_assistant/domain/__init__.py`, `ai_assistant/application/errors.py` | M2.7 | implemented |
+| M2.8-T2 | M2.8 | Test agent | Cover audit outcomes, redaction, failure behavior and temporary SQLite integration | `tests/test_sqlite_audit.py` | M2.8-T1 | implemented |
+| M2.8-T3 | M2.8 | Integration validator | Validate M2.8 acceptance criteria and produce report | `.agent/reports/M2.8.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M2.8-T2 | implemented |
+| M2.9-T1 | M2.9 | Persistence implementer | Add secure local read-only executor for list_directory and read_file | `ai_assistant/infrastructure/tools/local_read_only.py`, `ai_assistant/infrastructure/tools/__init__.py`, `docs/architecture.md` | M2.8 | implemented |
+| M2.9-T2 | M2.9 | Test agent | Cover structured listing, bounded reads, repeated validation, binary behavior and response limits | `tests/test_local_read_only_executor.py` | M2.9-T1 | implemented |
+| M2.9-T3 | M2.9 | Integration validator | Validate M2.9 acceptance criteria and produce report | `.agent/reports/M2.9.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M2.9-T2 | implemented |
+| M2.10-T1 | M2.10 | Runtime implementer | Add ToolExecutionCoordinator deterministic execution pipeline | `ai_assistant/application/tool_coordinator.py`, `ai_assistant/domain/tools.py` | M2.9 | implemented |
+| M2.10-T2 | M2.10 | Test agent | Cover coordinator order, audit, denial and executor error normalization with fakes | `tests/test_tool_coordinator.py` | M2.10-T1 | implemented |
+| M2.10-T3 | M2.10 | Integration validator | Validate M2.10 with local executor and SQLite audit | `tests/test_tool_coordinator_integration.py`, `.agent/reports/M2.10.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M2.10-T2 | implemented |
+| M2.11-T1 | M2.11 | Runtime implementer | Add optional one-round tool execution path to AgentRuntime | `ai_assistant/application/runtime.py`, `tests/test_agent_runtime.py` | M2.10 | implemented |
+| M2.11-T2 | M2.11 | Test agent | Cover final answer with tool result, no-tool regression, loop bound and transactional persistence | `tests/test_agent_runtime.py` | M2.11-T1 | implemented |
+| M2.11-T3 | M2.11 | Integration validator | Validate M2.11 acceptance criteria and produce report | `.agent/reports/M2.11.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M2.11-T2 | implemented |
 
 ## Task records
 
@@ -4472,3 +4493,1824 @@ git diff --check
 - Assumptions: M2.4 does not require documentation updates because architecture and ADR-018 already define the allowlist.
 - Remaining issues: M2.4 awaits manual review.
 - Recommended follow-up: Start M2.5 after approval.
+
+### Task M2.5-T1 — Workspace Config And Context Paths
+
+## Parent milestone
+
+M2.5
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Add workspace configuration and normalized path metadata on execution context.
+
+## Scope
+
+- Load optional `AI_ASSISTANT_WORKSPACE`.
+- Preserve Phase 1 defaults when workspace is unset.
+- Add optional resolved and relative path fields to `ToolExecutionContext`.
+
+## Explicit exclusions
+
+- No runtime integration.
+- No executor implementation.
+- No path validation in bootstrap.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/bootstrap/config.py`
+- `ai_assistant/domain/tools.py`
+- `tests/test_config.py`
+- `tests/test_tools.py`
+
+### Read-only
+
+- `docs/adr/ADR-019-workspace-confinement-and-path-resolution.md`
+
+### Forbidden
+
+- concrete infrastructure adapters
+- runtime execution flow
+
+## Dependencies
+
+- M2.4 accepted.
+
+## Applicable ADRs
+
+- ADR-019 Workspace Confinement and Path Resolution
+
+## Acceptance criteria
+
+- [x] missing workspace produces a typed error.
+- [x] Internal valid path context can carry normalized metadata.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_config.py tests/test_tools.py -q
+```
+
+## Risks
+
+- Validating workspace too early would break Phase 1 startup without tools.
+
+## Result report
+
+- Summary: Added optional workspace config and optional path metadata on `ToolExecutionContext`.
+- Files changed: `ai_assistant/bootstrap/config.py`, `ai_assistant/domain/tools.py`, `tests/test_config.py`, `tests/test_tools.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_path_policy.py tests/test_config.py tests/test_tools.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: scoped suite passed with 50 tests; full suite passed with 116 tests and 1 skipped; diff check passed.
+- Assumptions: Missing workspace should fail when constructing `WorkspacePathPolicy`, not during normal Phase 1 config load.
+- Remaining issues: None for this task.
+- Recommended follow-up: Wire workspace into composition root in M2.12.
+
+### Task M2.5-T2 — Workspace Path Policy
+
+## Parent milestone
+
+M2.5
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Implement path policy checks for confined read-only workspace access.
+
+## Scope
+
+- Canonicalize workspace and requested paths.
+- Reject absolute paths, traversal, workspace escapes and external symlinks.
+- Reject hidden and sensitive path components.
+- Reject wrong file type and special files.
+- Enforce path-length limit from catalog metadata.
+
+## Explicit exclusions
+
+- No file content reads.
+- No directory listing.
+- No stable policy reason codes yet.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/application/path_policy.py`
+- `tests/test_path_policy.py`
+
+### Read-only
+
+- `ai_assistant/application/tool_catalog.py`
+- `ai_assistant/application/ports/tools.py`
+- `docs/adr/ADR-019-workspace-confinement-and-path-resolution.md`
+- `docs/adr/ADR-025-sensitive-file-deny-policy.md`
+
+### Forbidden
+
+- concrete executors
+- audit persistence
+
+## Dependencies
+
+- M2.5-T1
+
+## Applicable ADRs
+
+- ADR-019 Workspace Confinement and Path Resolution
+- ADR-025 Sensitive File Deny Policy
+
+## Acceptance criteria
+
+- [x] `../` escape is denied.
+- [x] External absolute path is denied.
+- [x] Internal valid path is allowed.
+- [x] External symlink is denied.
+- [x] Hidden and sensitive paths are denied.
+- [x] devices, sockets, FIFOs and other special files are denied.
+- [x] missing workspace produces a typed error.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_path_policy.py -q
+```
+
+## Risks
+
+- Symlink semantics must stay strict when executors repeat validation later.
+
+## Result report
+
+- Summary: Added `WorkspacePathPolicy` with confined canonical resolution and sensitive path denial.
+- Files changed: `ai_assistant/application/path_policy.py`, `tests/test_path_policy.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_path_policy.py tests/test_config.py tests/test_tools.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`
+- Test results: scoped suite passed with 50 tests; full suite passed with 116 tests and 1 skipped.
+- Assumptions: Stable denial reason codes belong to M2.6.
+- Remaining issues: Executors must revalidate before file access in later milestones.
+- Recommended follow-up: Implement deny-by-default tool policy in M2.6.
+
+### Task M2.5-T3 — Validate M2.5
+
+## Parent milestone
+
+M2.5
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate M2.5 acceptance criteria and prepare manual review artifacts.
+
+## Scope
+
+- Run scoped and full validation.
+- Produce `.agent/reports/M2.5.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M2.5 accepted.
+- Do not start M2.6.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M2.5.md`
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+### Read-only
+
+- repository diff
+
+### Forbidden
+
+- source behavior changes during validation
+
+## Dependencies
+
+- M2.5-T2
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-013 Pytest Testing Strategy
+- ADR-019 Workspace Confinement and Path Resolution
+- ADR-025 Sensitive File Deny Policy
+
+## Acceptance criteria
+
+- [x] `../` escape is denied.
+- [x] External absolute path is denied.
+- [x] Internal valid path is allowed.
+- [x] External symlink is denied.
+- [x] Hidden and sensitive paths are denied.
+- [x] devices, sockets, FIFOs and other special files are denied.
+- [x] missing workspace produces a typed error.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_path_policy.py tests/test_config.py tests/test_tools.py tests/test_layering.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Risks
+
+- Existing unrelated workspace changes may appear in git status.
+
+## Result report
+
+- Summary: Validated M2.5 and prepared manual review.
+- Files changed: `.agent/reports/M2.5.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_path_policy.py tests/test_config.py tests/test_tools.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: scoped suite passed with 50 tests; full suite passed with 116 tests and 1 skipped; diff check passed.
+- Assumptions: No documentation update is required because ADR-019 and ADR-025 already define the policy.
+- Remaining issues: M2.5 awaits manual review.
+- Recommended follow-up: Start M2.6 after approval.
+
+### Task M2.6-T1 — Deny-By-Default Policy
+
+## Parent milestone
+
+M2.6
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Add a pure deny-by-default tool policy with stable reason codes.
+
+## Scope
+
+- Validate enabled flag, tool name, permission, arguments, timeout and limits.
+- Add stable denial reason constants.
+- Keep path-policy failure mapping as a pure denial result.
+
+## Explicit exclusions
+
+- No executor implementation.
+- No audit persistence.
+- No coordinator.
+- No filesystem access from policy.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/application/tool_policy.py`
+- `ai_assistant/application/tool_catalog.py`
+
+### Read-only
+
+- `ai_assistant/application/path_policy.py`
+- `ai_assistant/application/ports/tools.py`
+- `docs/adr/ADR-017-deny-by-default-tool-policy.md`
+- `docs/adr/ADR-021-tool-timeouts-and-resource-limits.md`
+
+### Forbidden
+
+- concrete executors
+- runtime execution flow
+
+## Dependencies
+
+- M2.5 accepted.
+
+## Applicable ADRs
+
+- ADR-017 Deny-by-Default Tool Policy
+- ADR-018 Read-Only Tool Allowlist
+- ADR-021 Tool Timeouts and Resource Limits
+
+## Acceptance criteria
+
+- [x] Unknown tools are denied.
+- [x] Malformed arguments are denied.
+- [x] Values above hard maximum are denied.
+- [x] Denied requests never invoke an executor.
+- [x] Every denial has a stable reason code.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_policy.py tests/test_tool_catalog.py tests/test_path_policy.py tests/test_ports_contract.py tests/test_layering.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Risks
+
+- Over-coupling policy to path policy would reintroduce external effects.
+
+## Result report
+
+- Summary: Added `DenyByDefaultToolPolicy` and stable denial reason constants.
+- Files changed: `ai_assistant/application/tool_policy.py`, `ai_assistant/application/tool_catalog.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_policy.py tests/test_tool_catalog.py tests/test_path_policy.py tests/test_ports_contract.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: scoped suite passed with 54 tests; full suite passed with 133 tests and 1 skipped; diff check passed.
+- Assumptions: Coordinator-level executor gating is completed in M2.10.
+- Remaining issues: None for M2.6.
+- Recommended follow-up: Add fake and dry-run executors in M2.7.
+
+### Task M2.6-T2 — Policy Tests
+
+## Parent milestone
+
+M2.6
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Cover deny-by-default policy behavior and stable reason codes.
+
+## Scope
+
+- Test unknown, malformed, timeout, limit, permission, disabled and path-denied cases.
+- Test denied policy result does not invoke a fake executor gate.
+
+## Explicit exclusions
+
+- No real executor.
+- No filesystem fixtures.
+- No audit assertions.
+
+## File scope
+
+### Writable
+
+- `tests/test_tool_policy.py`
+
+### Read-only
+
+- `ai_assistant/application/tool_policy.py`
+- `ai_assistant/application/tool_catalog.py`
+
+### Forbidden
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M2.6-T1
+
+## Applicable ADRs
+
+- ADR-017 Deny-by-Default Tool Policy
+- ADR-021 Tool Timeouts and Resource Limits
+
+## Acceptance criteria
+
+- [x] Unknown tools are denied.
+- [x] Malformed arguments are denied.
+- [x] Values above hard maximum are denied.
+- [x] Denied requests never invoke an executor.
+- [x] Every denial has a stable reason code.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_policy.py -q
+```
+
+## Risks
+
+- Tests should not assume future audit/coordinator implementation details.
+
+## Result report
+
+- Summary: Added focused policy tests.
+- Files changed: `tests/test_tool_policy.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_policy.py tests/test_tool_catalog.py tests/test_path_policy.py tests/test_ports_contract.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`
+- Test results: scoped suite passed with 54 tests; full suite passed with 133 tests and 1 skipped.
+- Assumptions: Path-policy failures are represented as a stable `path_denied` decision in this milestone.
+- Remaining issues: None for M2.6.
+- Recommended follow-up: Exercise executor outcomes in M2.7.
+
+### Task M2.6-T3 — Validate M2.6
+
+## Parent milestone
+
+M2.6
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate M2.6 acceptance criteria and prepare manual review artifacts.
+
+## Scope
+
+- Run scoped and full validation.
+- Produce `.agent/reports/M2.6.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M2.6 accepted.
+- Do not start M2.7.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M2.6.md`
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+### Read-only
+
+- repository diff
+
+### Forbidden
+
+- source behavior changes during validation
+
+## Dependencies
+
+- M2.6-T2
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-013 Pytest Testing Strategy
+- ADR-017 Deny-by-Default Tool Policy
+
+## Acceptance criteria
+
+- [x] Unknown tools are denied.
+- [x] Malformed arguments are denied.
+- [x] Values above hard maximum are denied.
+- [x] Denied requests never invoke an executor.
+- [x] Every denial has a stable reason code.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_policy.py tests/test_tool_catalog.py tests/test_path_policy.py tests/test_ports_contract.py tests/test_layering.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Risks
+
+- Existing M2.5 uncommitted changes remain part of the working tree.
+
+## Result report
+
+- Summary: Validated M2.6 and prepared manual review.
+- Files changed: `.agent/reports/M2.6.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_policy.py tests/test_tool_catalog.py tests/test_path_policy.py tests/test_ports_contract.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: scoped suite passed with 54 tests; full suite passed with 133 tests and 1 skipped; diff check passed.
+- Assumptions: No documentation update required; ADR-017 already documents policy semantics.
+- Remaining issues: M2.6 awaits manual review.
+- Recommended follow-up: Start M2.7 after approval.
+
+### Task M2.7-T1 — Fake And Dry-Run Executors
+
+## Parent milestone
+
+M2.7
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Add reproducible no-effect tool executors for validation.
+
+## Scope
+
+- Add `FakeToolExecutor` with recorded calls and configurable status.
+- Add `DryRunToolExecutor` returning structured dry-run content.
+- Keep executors behind the `ToolExecutor` port.
+
+## Explicit exclusions
+
+- No filesystem reads.
+- No audit persistence.
+- No coordinator.
+- No production local executor.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/application/tool_executors.py`
+
+### Read-only
+
+- `ai_assistant/application/ports/tools.py`
+- `ai_assistant/domain/tools.py`
+- `docs/roadmap-phase-2.md`
+
+### Forbidden
+
+- runtime execution flow
+- concrete filesystem executor
+
+## Dependencies
+
+- M2.6 accepted.
+
+## Applicable ADRs
+
+- ADR-016 Safe Tool Execution Pipeline
+- ADR-021 Tool Timeouts and Resource Limits
+
+## Acceptance criteria
+
+- [x] Allowed requests reach the fake executor.
+- [x] Denied requests do not.
+- [x] Success, timeout and failure are reproducible.
+- [x] Dry-run produces no external effect.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_executors.py tests/test_tool_policy.py tests/test_ports_contract.py tests/test_layering.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Risks
+
+- Accidentally adding orchestration before M2.10.
+
+## Result report
+
+- Summary: Added `FakeToolExecutor` and `DryRunToolExecutor`.
+- Files changed: `ai_assistant/application/tool_executors.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_executors.py tests/test_tool_policy.py tests/test_ports_contract.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: scoped suite passed with 30 tests; full suite passed with 139 tests and 1 skipped; diff check passed.
+- Assumptions: These executors are application test utilities, not production filesystem adapters.
+- Remaining issues: None for M2.7.
+- Recommended follow-up: Implement audit persistence in M2.8.
+
+### Task M2.7-T2 — Executor Tests
+
+## Parent milestone
+
+M2.7
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Cover allowed, denied, success, timeout, failure and dry-run executor behavior.
+
+## Scope
+
+- Verify fake executor records allowed calls.
+- Verify denied flow skips fake executor.
+- Verify deterministic success, timeout and error results.
+- Verify dry-run returns structured content only.
+
+## Explicit exclusions
+
+- No real filesystem effects.
+- No audit tests.
+- No coordinator tests.
+
+## File scope
+
+### Writable
+
+- `tests/test_tool_executors.py`
+
+### Read-only
+
+- `ai_assistant/application/tool_executors.py`
+- `ai_assistant/domain/tools.py`
+
+### Forbidden
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M2.7-T1
+
+## Applicable ADRs
+
+- ADR-016 Safe Tool Execution Pipeline
+
+## Acceptance criteria
+
+- [x] Allowed requests reach the fake executor.
+- [x] Denied requests do not.
+- [x] Success, timeout and failure are reproducible.
+- [x] Dry-run produces no external effect.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_executors.py -q
+```
+
+## Risks
+
+- Tests should not encode final coordinator internals.
+
+## Result report
+
+- Summary: Added focused executor tests.
+- Files changed: `tests/test_tool_executors.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_executors.py tests/test_tool_policy.py tests/test_ports_contract.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`
+- Test results: scoped suite passed with 30 tests; full suite passed with 139 tests and 1 skipped.
+- Assumptions: Denied request skip is represented by the same policy gate shape the coordinator will use later.
+- Remaining issues: None for M2.7.
+- Recommended follow-up: Add coordinator-level denial tests in M2.10.
+
+### Task M2.7-T3 — Validate M2.7
+
+## Parent milestone
+
+M2.7
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate M2.7 acceptance criteria and prepare manual review artifacts.
+
+## Scope
+
+- Run scoped and full validation.
+- Produce `.agent/reports/M2.7.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M2.7 accepted.
+- Do not start M2.8.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M2.7.md`
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+### Read-only
+
+- repository diff
+
+### Forbidden
+
+- source behavior changes during validation
+
+## Dependencies
+
+- M2.7-T2
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-013 Pytest Testing Strategy
+- ADR-016 Safe Tool Execution Pipeline
+
+## Acceptance criteria
+
+- [x] Allowed requests reach the fake executor.
+- [x] Denied requests do not.
+- [x] Success, timeout and failure are reproducible.
+- [x] Dry-run produces no external effect.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_executors.py tests/test_tool_policy.py tests/test_ports_contract.py tests/test_layering.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Risks
+
+- Existing uncommitted M2.5/M2.6 changes remain part of the working tree.
+
+## Result report
+
+- Summary: Validated M2.7 and prepared manual review.
+- Files changed: `.agent/reports/M2.7.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_executors.py tests/test_tool_policy.py tests/test_ports_contract.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: scoped suite passed with 30 tests; full suite passed with 139 tests and 1 skipped; diff check passed.
+- Assumptions: No documentation update required; behavior is test support for later orchestration.
+- Remaining issues: M2.7 awaits manual review.
+- Recommended follow-up: Start M2.8 after approval.
+
+### Task M2.8-T1 — SQLite Audit Recorder
+
+## Parent milestone
+
+M2.8
+
+## Status
+
+implemented
+
+## Owner role
+
+Persistence implementer
+
+## Objective
+
+Persist sanitized tool audit events in SQLite separately from conversation storage.
+
+## Scope
+
+- Add append-oriented `SQLiteAuditRecorder`.
+- Add `ToolAuditStoreError`.
+- Persist event metadata, redacted argument summaries and artifact IDs.
+- Raise explicit typed errors on audit persistence failures.
+
+## Explicit exclusions
+
+- No conversation schema changes.
+- No retention pruning.
+- No config/CLI wiring for `AI_ASSISTANT_AUDIT_DATABASE`.
+- No coordinator integration.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/infrastructure/storage/sqlite_audit.py`
+- `ai_assistant/domain/errors.py`
+- `ai_assistant/domain/__init__.py`
+- `ai_assistant/application/errors.py`
+
+### Read-only
+
+- `ai_assistant/application/ports/tools.py`
+- `docs/adr/ADR-020-tool-execution-audit-and-retention.md`
+
+### Forbidden
+
+- `ai_assistant/infrastructure/storage/sqlite_memory.py`
+- runtime execution flow
+
+## Dependencies
+
+- M2.7 accepted.
+
+## Applicable ADRs
+
+- ADR-020 Tool Execution Audit and Retention
+- ADR-023 Error and Log Redaction
+
+## Acceptance criteria
+
+- [x] Allow, deny, success, timeout and failure are recorded.
+- [x] File contents are never persisted.
+- [x] Sensitive values are redacted.
+- [x] Audit failure behavior is explicit.
+- [x] Integration tests use temporary SQLite.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_sqlite_audit.py tests/test_tools.py tests/test_ports_contract.py tests/test_layering.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Risks
+
+- Redaction denylist is intentionally minimal and should expand with new audit fields.
+
+## Result report
+
+- Summary: Added `SQLiteAuditRecorder` and `ToolAuditStoreError`.
+- Files changed: `ai_assistant/infrastructure/storage/sqlite_audit.py`, `ai_assistant/domain/errors.py`, `ai_assistant/domain/__init__.py`, `ai_assistant/application/errors.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_sqlite_audit.py tests/test_tools.py tests/test_ports_contract.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: scoped suite passed with 29 tests; full suite passed with 145 tests and 1 skipped; diff check passed.
+- Assumptions: Read APIs for audit are not required until reporting/export features are approved.
+- Remaining issues: None for M2.8.
+- Recommended follow-up: Wire audit recorder into coordinator in M2.10 and config in M2.12.
+
+### Task M2.8-T2 — Audit Persistence Tests
+
+## Parent milestone
+
+M2.8
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Cover audit outcomes, redaction, failure behavior and temporary SQLite integration.
+
+## Scope
+
+- Verify allow, deny, success, timeout and error persistence.
+- Verify file content and secret-like values are redacted.
+- Verify persistence failure raises `ToolAuditStoreError`.
+- Use temporary SQLite databases.
+
+## Explicit exclusions
+
+- No coordinator tests.
+- No retention tests.
+- No real workspace reads.
+
+## File scope
+
+### Writable
+
+- `tests/test_sqlite_audit.py`
+
+### Read-only
+
+- `ai_assistant/infrastructure/storage/sqlite_audit.py`
+- `ai_assistant/domain/tools.py`
+
+### Forbidden
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M2.8-T1
+
+## Applicable ADRs
+
+- ADR-020 Tool Execution Audit and Retention
+- ADR-023 Error and Log Redaction
+
+## Acceptance criteria
+
+- [x] Allow, deny, success, timeout and failure are recorded.
+- [x] File contents are never persisted.
+- [x] Sensitive values are redacted.
+- [x] Audit failure behavior is explicit.
+- [x] Integration tests use temporary SQLite.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_sqlite_audit.py -q
+```
+
+## Risks
+
+- Tests should not require a permanent audit database.
+
+## Result report
+
+- Summary: Added SQLite audit integration tests.
+- Files changed: `tests/test_sqlite_audit.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_sqlite_audit.py tests/test_tools.py tests/test_ports_contract.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`
+- Test results: scoped suite passed with 29 tests; full suite passed with 145 tests and 1 skipped.
+- Assumptions: Direct SQL assertions are enough; no audit read port exists yet.
+- Remaining issues: None for M2.8.
+- Recommended follow-up: Add coordinator audit assertions in M2.10.
+
+### Task M2.8-T3 — Validate M2.8
+
+## Parent milestone
+
+M2.8
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate M2.8 acceptance criteria and prepare manual review artifacts.
+
+## Scope
+
+- Run scoped and full validation.
+- Produce `.agent/reports/M2.8.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M2.8 accepted.
+- Do not start M2.9.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M2.8.md`
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+### Read-only
+
+- repository diff
+
+### Forbidden
+
+- source behavior changes during validation
+
+## Dependencies
+
+- M2.8-T2
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-013 Pytest Testing Strategy
+- ADR-020 Tool Execution Audit and Retention
+
+## Acceptance criteria
+
+- [x] Allow, deny, success, timeout and failure are recorded.
+- [x] File contents are never persisted.
+- [x] Sensitive values are redacted.
+- [x] Audit failure behavior is explicit.
+- [x] Integration tests use temporary SQLite.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_sqlite_audit.py tests/test_tools.py tests/test_ports_contract.py tests/test_layering.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Risks
+
+- Existing uncommitted Phase 2 changes remain part of the working tree.
+
+## Result report
+
+- Summary: Validated M2.8 and prepared manual review.
+- Files changed: `.agent/reports/M2.8.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_sqlite_audit.py tests/test_tools.py tests/test_ports_contract.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: scoped suite passed with 29 tests; full suite passed with 145 tests and 1 skipped; diff check passed.
+- Assumptions: No docs update required; ADR-020 already documents retention and storage intent.
+- Remaining issues: M2.8 awaits manual review.
+- Recommended follow-up: Start M2.9 after approval.
+
+### Task M2.9-T1 — Local Read-Only Executor
+
+## Parent milestone
+
+M2.9
+
+## Status
+
+implemented
+
+## Owner role
+
+Persistence implementer
+
+## Objective
+
+Add secure local implementations for `list_directory` and `read_file`.
+
+## Scope
+
+- Implement `LocalReadOnlyToolExecutor` behind the `ToolExecutor` port.
+- Repeat workspace path validation immediately before access.
+- Return structured directory entries.
+- Read bounded file bytes and mark truncation.
+- Document binary decode behavior.
+
+## Explicit exclusions
+
+- No writes.
+- No shell/process/Git/network calls.
+- No coordinator integration.
+- No C socket executor.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/infrastructure/tools/local_read_only.py`
+- `ai_assistant/infrastructure/tools/__init__.py`
+- `docs/architecture.md`
+
+### Read-only
+
+- `ai_assistant/application/path_policy.py`
+- `ai_assistant/application/tool_catalog.py`
+- `docs/adr/ADR-019-workspace-confinement-and-path-resolution.md`
+- `docs/adr/ADR-021-tool-timeouts-and-resource-limits.md`
+
+### Forbidden
+
+- runtime execution flow
+- audit coordinator
+
+## Dependencies
+
+- M2.8 accepted.
+
+## Applicable ADRs
+
+- ADR-016 Safe Tool Execution Pipeline
+- ADR-019 Workspace Confinement and Path Resolution
+- ADR-021 Tool Timeouts and Resource Limits
+
+## Acceptance criteria
+
+- [x] Structured directory entries are returned.
+- [x] File reads are bounded and indicate truncation.
+- [x] Path validation is repeated immediately before access.
+- [x] Binary-file behavior is documented and tested.
+- [x] Response limits are enforced independently.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_local_read_only_executor.py tests/test_path_policy.py tests/test_tool_policy.py tests/test_layering.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Risks
+
+- Local filesystem reads must stay behind explicit policy and workspace validation.
+
+## Result report
+
+- Summary: Added `LocalReadOnlyToolExecutor` for bounded listing and file reading.
+- Files changed: `ai_assistant/infrastructure/tools/local_read_only.py`, `ai_assistant/infrastructure/tools/__init__.py`, `docs/architecture.md`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_local_read_only_executor.py tests/test_path_policy.py tests/test_tool_policy.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: scoped suite passed with 48 tests; full suite passed with 151 tests and 1 skipped; diff check passed.
+- Assumptions: Binary content is returned as UTF-8 with replacement instead of rejecting binary files.
+- Remaining issues: None for M2.9.
+- Recommended follow-up: Wire executor through coordinator in M2.10.
+
+### Task M2.9-T2 — Local Executor Tests
+
+## Parent milestone
+
+M2.9
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Cover local read-only executor behavior with temporary workspaces.
+
+## Scope
+
+- Test structured directory entries.
+- Test bounded file reads and truncation.
+- Test repeated path validation.
+- Test binary decode behavior.
+- Test independent read and directory limits.
+
+## Explicit exclusions
+
+- No permanent workspace.
+- No coordinator or audit assertions.
+- No C tool service.
+
+## File scope
+
+### Writable
+
+- `tests/test_local_read_only_executor.py`
+
+### Read-only
+
+- `ai_assistant/infrastructure/tools/local_read_only.py`
+- `ai_assistant/domain/tools.py`
+
+### Forbidden
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M2.9-T1
+
+## Applicable ADRs
+
+- ADR-019 Workspace Confinement and Path Resolution
+- ADR-021 Tool Timeouts and Resource Limits
+
+## Acceptance criteria
+
+- [x] Structured directory entries are returned.
+- [x] File reads are bounded and indicate truncation.
+- [x] Path validation is repeated immediately before access.
+- [x] Binary-file behavior is documented and tested.
+- [x] Response limits are enforced independently.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_local_read_only_executor.py -q
+```
+
+## Risks
+
+- Tests must avoid reading outside temporary directories.
+
+## Result report
+
+- Summary: Added local executor integration tests with `tmp_path`.
+- Files changed: `tests/test_local_read_only_executor.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_local_read_only_executor.py tests/test_path_policy.py tests/test_tool_policy.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`
+- Test results: scoped suite passed with 48 tests; full suite passed with 151 tests and 1 skipped.
+- Assumptions: Direct executor tests are enough until coordinator audit flow exists.
+- Remaining issues: None for M2.9.
+- Recommended follow-up: Add coordinator integration tests in M2.10.
+
+### Task M2.9-T3 — Validate M2.9
+
+## Parent milestone
+
+M2.9
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate M2.9 acceptance criteria and prepare manual review artifacts.
+
+## Scope
+
+- Run scoped and full validation.
+- Produce `.agent/reports/M2.9.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M2.9 accepted.
+- Do not start M2.10.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M2.9.md`
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+### Read-only
+
+- repository diff
+
+### Forbidden
+
+- source behavior changes during validation
+
+## Dependencies
+
+- M2.9-T2
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-013 Pytest Testing Strategy
+- ADR-019 Workspace Confinement and Path Resolution
+
+## Acceptance criteria
+
+- [x] Structured directory entries are returned.
+- [x] File reads are bounded and indicate truncation.
+- [x] Path validation is repeated immediately before access.
+- [x] Binary-file behavior is documented and tested.
+- [x] Response limits are enforced independently.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_local_read_only_executor.py tests/test_path_policy.py tests/test_tool_policy.py tests/test_layering.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Risks
+
+- Existing uncommitted Phase 2 changes remain part of the working tree.
+
+## Result report
+
+- Summary: Validated M2.9 and prepared manual review.
+- Files changed: `.agent/reports/M2.9.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_local_read_only_executor.py tests/test_path_policy.py tests/test_tool_policy.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: scoped suite passed with 48 tests; full suite passed with 151 tests and 1 skipped; diff check passed.
+- Assumptions: M2.9 does not require CLI/config wiring.
+- Remaining issues: M2.9 awaits manual review.
+- Recommended follow-up: Start M2.10 after approval.
+
+### Task M2.10-T1 — Tool Execution Coordinator
+
+## Parent milestone
+
+M2.10
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Add a deterministic coordinator for authorized tool execution.
+
+## Scope
+
+- Orchestrate `ToolCatalog`, `ToolPolicy`, `PathPolicy`, `AuditRecorder` and `ToolExecutor`.
+- Audit denials and allowed/final execution outcomes.
+- Prevent denied requests from reaching executors.
+- Normalize unexpected executor exceptions into sanitized tool results.
+
+## Explicit exclusions
+
+- No runtime integration.
+- No CLI/config wiring.
+- No multi-round tool loop.
+- No model calls.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/application/tool_coordinator.py`
+- `ai_assistant/domain/tools.py`
+
+### Read-only
+
+- `ai_assistant/application/ports/tools.py`
+- `docs/adr/ADR-016-safe-tool-execution-pipeline.md`
+- `docs/adr/ADR-024-bounded-single-tool-round-per-turn.md`
+
+### Forbidden
+
+- runtime execution flow
+- CLI
+
+## Dependencies
+
+- M2.9 accepted.
+
+## Applicable ADRs
+
+- ADR-016 Safe Tool Execution Pipeline
+- ADR-020 Tool Execution Audit and Retention
+- ADR-024 Bounded Single Tool Round per Turn
+
+## Acceptance criteria
+
+- [x] Execution order is deterministic.
+- [x] Every outcome is audited.
+- [x] Denied requests never reach the executor.
+- [x] Executor errors become normalized typed results.
+- [x] Unit tests use fake ports.
+- [x] Integration tests use the local executor and SQLite audit.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_coordinator.py tests/test_tool_coordinator_integration.py tests/test_local_read_only_executor.py tests/test_sqlite_audit.py tests/test_layering.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Risks
+
+- Coordinator must not become runtime integration before M2.11.
+
+## Result report
+
+- Summary: Added `ToolExecutionCoordinator` and `allowed` audit status.
+- Files changed: `ai_assistant/application/tool_coordinator.py`, `ai_assistant/domain/tools.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_coordinator.py tests/test_tool_coordinator_integration.py tests/test_local_read_only_executor.py tests/test_sqlite_audit.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: scoped suite passed with 21 tests; full suite passed with 157 tests and 1 skipped; diff check passed.
+- Assumptions: `allowed` is an audit status used before executor invocation, not a final executor result.
+- Remaining issues: None for M2.10.
+- Recommended follow-up: Integrate one bounded tool round into runtime in M2.11.
+
+### Task M2.10-T2 — Coordinator Unit Tests
+
+## Parent milestone
+
+M2.10
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Cover coordinator order, audit, denial and executor error normalization with fake ports.
+
+## Scope
+
+- Assert exact call order for allowed execution.
+- Assert policy/path/catalog denials are audited and skip executor.
+- Assert executor exceptions become sanitized error results.
+
+## Explicit exclusions
+
+- No real filesystem.
+- No SQLite.
+- No runtime integration.
+
+## File scope
+
+### Writable
+
+- `tests/test_tool_coordinator.py`
+
+### Read-only
+
+- `ai_assistant/application/tool_coordinator.py`
+- `ai_assistant/domain/tools.py`
+
+### Forbidden
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M2.10-T1
+
+## Applicable ADRs
+
+- ADR-016 Safe Tool Execution Pipeline
+
+## Acceptance criteria
+
+- [x] Execution order is deterministic.
+- [x] Every outcome is audited.
+- [x] Denied requests never reach the executor.
+- [x] Executor errors become normalized typed results.
+- [x] Unit tests use fake ports.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_coordinator.py -q
+```
+
+## Risks
+
+- Tests should not encode M2.11 runtime behavior.
+
+## Result report
+
+- Summary: Added fake-port coordinator tests.
+- Files changed: `tests/test_tool_coordinator.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_coordinator.py tests/test_tool_coordinator_integration.py tests/test_local_read_only_executor.py tests/test_sqlite_audit.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`
+- Test results: scoped suite passed with 21 tests; full suite passed with 157 tests and 1 skipped.
+- Assumptions: Audit failure propagation is covered by M2.8 and not duplicated here.
+- Remaining issues: None for M2.10.
+- Recommended follow-up: Add runtime tool-round tests in M2.11.
+
+### Task M2.10-T3 — Coordinator Integration Validation
+
+## Parent milestone
+
+M2.10
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate M2.10 with the local executor and SQLite audit.
+
+## Scope
+
+- Add integration test wiring static catalog, deny-by-default policy, workspace path policy, SQLite audit and local executor.
+- Run scoped and full validation.
+- Produce `.agent/reports/M2.10.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M2.10 accepted.
+- Do not start M2.11.
+
+## File scope
+
+### Writable
+
+- `tests/test_tool_coordinator_integration.py`
+- `.agent/reports/M2.10.md`
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+### Read-only
+
+- repository diff
+
+### Forbidden
+
+- runtime execution flow
+
+## Dependencies
+
+- M2.10-T2
+
+## Applicable ADRs
+
+- ADR-001 Ports and Adapters
+- ADR-013 Pytest Testing Strategy
+- ADR-016 Safe Tool Execution Pipeline
+
+## Acceptance criteria
+
+- [x] Execution order is deterministic.
+- [x] Every outcome is audited.
+- [x] Denied requests never reach the executor.
+- [x] Executor errors become normalized typed results.
+- [x] Unit tests use fake ports.
+- [x] Integration tests use the local executor and SQLite audit.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_coordinator.py tests/test_tool_coordinator_integration.py tests/test_local_read_only_executor.py tests/test_sqlite_audit.py tests/test_layering.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Risks
+
+- Existing uncommitted Phase 2 changes remain part of the working tree.
+
+## Result report
+
+- Summary: Validated M2.10 and prepared manual review.
+- Files changed: `tests/test_tool_coordinator_integration.py`, `.agent/reports/M2.10.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_coordinator.py tests/test_tool_coordinator_integration.py tests/test_local_read_only_executor.py tests/test_sqlite_audit.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: scoped suite passed with 21 tests; full suite passed with 157 tests and 1 skipped; diff check passed.
+- Assumptions: M2.10 intentionally stops before runtime integration.
+- Remaining issues: M2.10 awaits manual review.
+- Recommended follow-up: Start M2.11 after approval.
+
+### Task M2.11-T1 — Runtime Tool Round
+
+## Parent milestone
+
+M2.11
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Add an optional one-round tool execution path to `AgentRuntime`.
+
+## Scope
+
+- Accept an optional `ToolExecutionCoordinator`.
+- Convert the first assistant tool call into a `ToolExecutionRequest`.
+- Send one tool-result message to a second model call.
+- Stop safely if the second model response requests another tool.
+- Persist the complete tool round with one `append_many` call.
+
+## Explicit exclusions
+
+- No bootstrap/config wiring.
+- No CLI changes.
+- No multi-tool loop.
+- No automatic retry after denial.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/application/runtime.py`
+
+### Read-only
+
+- `ai_assistant/application/tool_coordinator.py`
+- `docs/adr/ADR-024-bounded-single-tool-round-per-turn.md`
+
+### Forbidden
+
+- infrastructure adapters
+- CLI wiring
+
+## Dependencies
+
+- M2.10 accepted.
+
+## Applicable ADRs
+
+- ADR-010 Transactional Turn Persistence
+- ADR-016 Safe Tool Execution Pipeline
+- ADR-024 Bounded Single Tool Round per Turn
+
+## Acceptance criteria
+
+- [x] Final answers can use tool results.
+- [x] No-tool Phase 1 behavior is preserved.
+- [x] Loop bound is enforced.
+- [x] Conversation persistence remains transactional.
+- [x] Regression tests cover Phase 1 behavior.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_agent_runtime.py tests/test_tool_coordinator.py tests/test_layering.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Risks
+
+- Runtime must not enable tools unless a coordinator is explicitly provided.
+
+## Result report
+
+- Summary: Added optional bounded tool round to `AgentRuntime`.
+- Files changed: `ai_assistant/application/runtime.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_agent_runtime.py tests/test_tool_coordinator.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: scoped suite passed with 17 tests; full suite passed with 160 tests and 1 skipped; diff check passed.
+- Assumptions: Tool result messages may be stored in conversation history as local-first runtime state.
+- Remaining issues: None for M2.11.
+- Recommended follow-up: Wire configuration and CLI support in M2.12.
+
+### Task M2.11-T2 — Runtime Tool Round Tests
+
+## Parent milestone
+
+M2.11
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Cover final answer with tool result, no-tool regression, loop bound and transactional persistence.
+
+## Scope
+
+- Add sequence model tests for second model call.
+- Verify tool result message reaches final model call.
+- Verify second tool request is bounded.
+- Verify complete tool round persists transactionally.
+
+## Explicit exclusions
+
+- No local filesystem executor.
+- No SQLite audit.
+- No CLI tests.
+
+## File scope
+
+### Writable
+
+- `tests/test_agent_runtime.py`
+
+### Read-only
+
+- `ai_assistant/application/runtime.py`
+
+### Forbidden
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/decisions.md`
+
+## Dependencies
+
+- M2.11-T1
+
+## Applicable ADRs
+
+- ADR-010 Transactional Turn Persistence
+- ADR-024 Bounded Single Tool Round per Turn
+
+## Acceptance criteria
+
+- [x] Final answers can use tool results.
+- [x] No-tool Phase 1 behavior is preserved.
+- [x] Loop bound is enforced.
+- [x] Conversation persistence remains transactional.
+- [x] Regression tests cover Phase 1 behavior.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_agent_runtime.py -q
+```
+
+## Risks
+
+- Tests should not rely on M2.12 composition.
+
+## Result report
+
+- Summary: Added focused runtime tests for one bounded tool round.
+- Files changed: `tests/test_agent_runtime.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_agent_runtime.py tests/test_tool_coordinator.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`
+- Test results: scoped suite passed with 17 tests; full suite passed with 160 tests and 1 skipped.
+- Assumptions: Existing no-coordinator test remains the Phase 1 no-tool regression.
+- Remaining issues: None for M2.11.
+- Recommended follow-up: Add bootstrap-level tests in M2.12.
+
+### Task M2.11-T3 — Validate M2.11
+
+## Parent milestone
+
+M2.11
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate M2.11 acceptance criteria and prepare manual review artifacts.
+
+## Scope
+
+- Run scoped and full validation.
+- Produce `.agent/reports/M2.11.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M2.11 accepted.
+- Do not start M2.12.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M2.11.md`
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+### Read-only
+
+- repository diff
+
+### Forbidden
+
+- source behavior changes during validation
+
+## Dependencies
+
+- M2.11-T2
+
+## Applicable ADRs
+
+- ADR-013 Pytest Testing Strategy
+- ADR-016 Safe Tool Execution Pipeline
+- ADR-024 Bounded Single Tool Round per Turn
+
+## Acceptance criteria
+
+- [x] Final answers can use tool results.
+- [x] No-tool Phase 1 behavior is preserved.
+- [x] Loop bound is enforced.
+- [x] Conversation persistence remains transactional.
+- [x] Regression tests cover Phase 1 behavior.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_agent_runtime.py tests/test_tool_coordinator.py tests/test_layering.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Risks
+
+- Existing uncommitted Phase 2 changes remain part of the working tree.
+
+## Result report
+
+- Summary: Validated M2.11 and prepared manual review.
+- Files changed: `.agent/reports/M2.11.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_agent_runtime.py tests/test_tool_coordinator.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: scoped suite passed with 17 tests; full suite passed with 160 tests and 1 skipped; diff check passed.
+- Assumptions: M2.11 intentionally stops before config/CLI wiring.
+- Remaining issues: M2.11 awaits manual review.
+- Recommended follow-up: Start M2.12 after approval.

@@ -1056,6 +1056,7 @@ Required invariants:
 - default and hard limits are enforced for timeout, bytes, directory entries, recursion depth, path length, request payload and response payload;
 - every allow, deny, success, timeout and failure outcome is audited with sanitized metadata;
 - prompts, model responses and file contents are not stored in audit or logs;
+- `read_file` decodes bounded bytes as UTF-8 with replacement for invalid binary sequences;
 - the runtime may perform at most one tool execution round per user turn.
 
 The proposed ADR package is:

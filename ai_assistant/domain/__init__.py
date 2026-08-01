@@ -11,6 +11,7 @@ from ai_assistant.domain.errors import (
     ModelNotFoundError,
     ModelProtocolError,
     ModelTimeoutError,
+    ToolAuditStoreError,
 )
 from ai_assistant.domain.message import Message, Role
 from ai_assistant.domain.session import DEFAULT_SESSION_ID, SessionId, validate_session_id
@@ -47,6 +48,7 @@ __all__ = [
     "SanitizedToolError",
     "SessionId",
     "ToolAuditEvent",
+    "ToolAuditStoreError",
     "ToolCall",
     "ToolCallPlan",
     "ToolDefinition",

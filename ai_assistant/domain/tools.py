@@ -54,6 +54,7 @@ class PolicyDecisionKind(StrEnum):
 
 
 class ToolExecutionStatus(StrEnum):
+    ALLOWED = "allowed"
     DENIED = "denied"
     SUCCESS = "success"
     TIMEOUT = "timeout"
@@ -94,9 +95,15 @@ class ToolPolicyDecision:
 class ToolExecutionContext:
     request: ToolExecutionRequest
     workspace_id: str
+    resolved_path: str | None = None
+    relative_path: str | None = None
 
     def __post_init__(self) -> None:
         _require_text(self.workspace_id, "workspace_id")
+        if self.resolved_path is not None:
+            _require_text(self.resolved_path, "resolved_path")
+        if self.relative_path is not None:
+            _require_text(self.relative_path, "relative_path")
 
 
 @dataclass(frozen=True, slots=True)
