@@ -40,6 +40,42 @@ def test_bootstrap_wires_context_limit(tmp_path: Path) -> None:
     assert app._runtime.context_builder.context_limit == 123
 
 
+def test_bootstrap_leaves_tools_disabled_by_default(tmp_path: Path) -> None:
+    config = AppConfig(database=str(tmp_path / "test.sqlite3"))
+
+    app = create_application(config)
+
+    assert app._runtime.tool_coordinator is None
+
+
+def test_bootstrap_keeps_tools_unavailable_without_workspace(tmp_path: Path) -> None:
+    config = AppConfig(
+        database=str(tmp_path / "test.sqlite3"),
+        tool_execution=True,
+    )
+
+    app = create_application(config)
+
+    assert app._runtime.tool_coordinator is None
+
+
+def test_bootstrap_wires_local_tool_coordinator_when_enabled(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    config = AppConfig(
+        database=str(tmp_path / "test.sqlite3"),
+        audit_database=str(tmp_path / "audit.sqlite3"),
+        workspace=str(workspace),
+        tool_execution=True,
+        tool_timeout=3.0,
+    )
+
+    app = create_application(config)
+
+    assert app._runtime.tool_coordinator is not None
+    assert app._runtime.tool_timeout_seconds == 3.0
+
+
 class FakeRuntime:
     def respond(self, user_input: str) -> Message:
         return Message(role="assistant", content="ok")

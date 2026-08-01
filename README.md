@@ -41,6 +41,13 @@ Configuration is loaded once at bootstrap from environment variables.
 | `AI_ASSISTANT_LOG_LEVEL` | `INFO` | Python logging level |
 | `AI_ASSISTANT_REQUEST_TIMEOUT` | `60` | Provider request timeout in seconds |
 | `AI_ASSISTANT_CONTEXT_LIMIT` | `4096` | Simple character budget for context |
+| `AI_ASSISTANT_WORKSPACE` | unset | Workspace root for read-only tools |
+| `AI_ASSISTANT_TOOL_EXECUTION` | `false` | Enables read-only tools when `true` and workspace is set |
+| `AI_ASSISTANT_TOOL_TIMEOUT` | `5` | Tool timeout in seconds, capped at 30 |
+| `AI_ASSISTANT_MAX_READ_BYTES` | `16384` | Default `read_file` byte limit, capped at 65536 |
+| `AI_ASSISTANT_MAX_DIRECTORY_ENTRIES` | `200` | Default `list_directory` entry limit, capped at 1000 |
+| `AI_ASSISTANT_MAX_DIRECTORY_DEPTH` | `0` | Default recursive depth, capped at 3 |
+| `AI_ASSISTANT_AUDIT_DATABASE` | `assistant_audit.sqlite3` | Separate SQLite audit database |
 | `OPENAI_API_KEY` | unset | API key for OpenAI-compatible providers |
 
 Example with Ollama:

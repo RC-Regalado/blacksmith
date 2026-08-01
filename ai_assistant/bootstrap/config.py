@@ -21,6 +21,12 @@ class AppConfig:
     request_timeout: float = 60.0
     context_limit: int = 4096
     workspace: str | None = None
+    tool_execution: bool = False
+    tool_timeout: float = 5.0
+    max_read_bytes: int = 16384
+    max_directory_entries: int = 200
+    max_directory_depth: int = 0
+    audit_database: str = "assistant_audit.sqlite3"
     api_key: str | None = field(default=None, repr=False)
 
 
@@ -46,6 +52,30 @@ def load_app_config(env: Mapping[str, str] | None = None) -> AppConfig:
             "AI_ASSISTANT_CONTEXT_LIMIT",
         ),
         workspace=_optional_text(source.get("AI_ASSISTANT_WORKSPACE")),
+        tool_execution=_bool(
+            source.get("AI_ASSISTANT_TOOL_EXECUTION", "false"),
+            "AI_ASSISTANT_TOOL_EXECUTION",
+        ),
+        tool_timeout=_positive_float(
+            source.get("AI_ASSISTANT_TOOL_TIMEOUT", "5"),
+            "AI_ASSISTANT_TOOL_TIMEOUT",
+        ),
+        max_read_bytes=_positive_int(
+            source.get("AI_ASSISTANT_MAX_READ_BYTES", "16384"),
+            "AI_ASSISTANT_MAX_READ_BYTES",
+        ),
+        max_directory_entries=_positive_int(
+            source.get("AI_ASSISTANT_MAX_DIRECTORY_ENTRIES", "200"),
+            "AI_ASSISTANT_MAX_DIRECTORY_ENTRIES",
+        ),
+        max_directory_depth=_non_negative_int(
+            source.get("AI_ASSISTANT_MAX_DIRECTORY_DEPTH", "0"),
+            "AI_ASSISTANT_MAX_DIRECTORY_DEPTH",
+        ),
+        audit_database=source.get(
+            "AI_ASSISTANT_AUDIT_DATABASE",
+            "assistant_audit.sqlite3",
+        ),
         api_key=source.get("OPENAI_API_KEY"),
     )
 
@@ -84,6 +114,25 @@ def _positive_int(value: str, name: str) -> int:
     if parsed <= 0:
         raise ConfigurationError(f"{name} must be a positive integer")
     return parsed
+
+
+def _non_negative_int(value: str, name: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise ConfigurationError(f"{name} must be a non-negative integer") from exc
+    if parsed < 0:
+        raise ConfigurationError(f"{name} must be a non-negative integer")
+    return parsed
+
+
+def _bool(value: str, name: str) -> bool:
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise ConfigurationError(f"{name} must be true or false")
 
 
 def _optional_text(value: str | None) -> str | None:

@@ -10,8 +10,8 @@ Phase 2: Read-Only Workspace Tools
 
 ## Current milestone
 
-- ID: M2.11
-- Name: Integrate one bounded tool round into runtime
+- ID: M2.12
+- Name: Add configuration and CLI support
 - Status: implemented-awaiting-human-review
 - Source: `docs/roadmap-phase-2.md`
 
@@ -60,8 +60,8 @@ Phase 2: Read-Only Workspace Tools
 | M2.8 | Implement audit persistence | accepted | — | `.agent/reports/M2.8.md` | approved |
 | M2.9 | Implement LocalReadOnlyToolExecutor | accepted | — | `.agent/reports/M2.9.md` | approved |
 | M2.10 | Implement ToolExecutionCoordinator | accepted | — | `.agent/reports/M2.10.md` | approved |
-| M2.11 | Integrate one bounded tool round into runtime | implemented-awaiting-human-review | — | `.agent/reports/M2.11.md` | awaiting-review |
-| M2.12 | Add configuration and CLI support | planned | M2.11 | — | — |
+| M2.11 | Integrate one bounded tool round into runtime | accepted | — | `.agent/reports/M2.11.md` | approved |
+| M2.12 | Add configuration and CLI support | implemented-awaiting-human-review | — | `.agent/reports/M2.12.md` | awaiting-review |
 | M2.13 | Extend protobuf and C tool service | planned | M2.12 | — | — |
 | M2.14 | Implement UnixSocketToolExecutor | planned | M2.13 | — | — |
 | M2.15 | Add adversarial security tests | planned | M2.14 | — | — |
@@ -83,5 +83,5 @@ Record after first inspection:
 ## Last supervisor update
 
 - Date: 2026-07-30
-- Summary: M2.11 implemented and validated. Runtime can perform one bounded tool round when a coordinator is provided while preserving no-tool behavior.
-- Next action: Await human review before starting M2.12.
+- Summary: M2.12 implemented and validated. Read-only tools are opt-in through configuration and bootstrap wiring.
+- Next action: Await human review before starting M2.13.

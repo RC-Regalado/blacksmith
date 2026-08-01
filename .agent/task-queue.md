@@ -103,6 +103,9 @@ The supervisor is the only agent permitted to update this file.
 | M2.11-T1 | M2.11 | Runtime implementer | Add optional one-round tool execution path to AgentRuntime | `ai_assistant/application/runtime.py`, `tests/test_agent_runtime.py` | M2.10 | implemented |
 | M2.11-T2 | M2.11 | Test agent | Cover final answer with tool result, no-tool regression, loop bound and transactional persistence | `tests/test_agent_runtime.py` | M2.11-T1 | implemented |
 | M2.11-T3 | M2.11 | Integration validator | Validate M2.11 acceptance criteria and produce report | `.agent/reports/M2.11.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M2.11-T2 | implemented |
+| M2.12-T1 | M2.12 | Runtime implementer | Add read-only tool configuration values | `ai_assistant/bootstrap/config.py`, `tests/test_config.py` | M2.11 | implemented |
+| M2.12-T2 | M2.12 | Runtime implementer | Wire configured local tool coordinator through bootstrap | `ai_assistant/bootstrap/container.py`, `ai_assistant/application/runtime.py`, `ai_assistant/application/tool_catalog.py`, `tests/test_cli_app.py`, `tests/test_agent_runtime.py`, `tests/test_tool_catalog.py`, `README.md` | M2.12-T1 | implemented |
+| M2.12-T3 | M2.12 | Integration validator | Validate M2.12 acceptance criteria and produce report | `.agent/reports/M2.12.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M2.12-T2 | implemented |
 
 ## Task records
 
@@ -6314,3 +6317,260 @@ git diff --check
 - Assumptions: M2.11 intentionally stops before config/CLI wiring.
 - Remaining issues: M2.11 awaits manual review.
 - Recommended follow-up: Start M2.12 after approval.
+
+### Task M2.12-T1 — Tool Configuration Values
+
+## Parent milestone
+
+M2.12
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Add read-only tool settings to bootstrap configuration.
+
+## Scope
+
+- Parse `AI_ASSISTANT_WORKSPACE`.
+- Parse `AI_ASSISTANT_TOOL_EXECUTION`.
+- Parse tool timeout, read bytes, directory entry/depth limits and audit database.
+- Keep execution disabled by default.
+
+## Explicit exclusions
+
+- No C tool service config.
+- No CLI commands.
+- No runtime behavior changes without opt-in.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/bootstrap/config.py`
+- `tests/test_config.py`
+
+### Read-only
+
+- `docs/roadmap-phase-2.md`
+
+### Forbidden
+
+- model adapters
+- storage schema
+
+## Dependencies
+
+- M2.11 accepted.
+
+## Applicable ADRs
+
+- ADR-007 Configuration at Bootstrap
+- ADR-017 Deny-by-Default Tool Policy
+- ADR-021 Tool Timeouts and Resource Limits
+
+## Acceptance criteria
+
+- [x] Execution is opt-in.
+- [x] Missing workspace means tools are unavailable.
+- [x] Tool settings are configurable.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_config.py -q
+```
+
+## Risks
+
+- Config validation must not break default Phase 1 CLI startup.
+
+## Result report
+
+- Summary: Added tool execution config values and validation.
+- Files changed: `ai_assistant/bootstrap/config.py`, `tests/test_config.py`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_config.py tests/test_cli_app.py tests/test_agent_runtime.py tests/test_tool_catalog.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: scoped suite passed with 39 tests; full suite passed with 167 tests and 1 skipped; diff check passed.
+- Assumptions: Values above hard maximum are capped by catalog/policy, not rejected by config.
+- Remaining issues: None for M2.12.
+- Recommended follow-up: C tool service config in M2.13/M2.14.
+
+### Task M2.12-T2 — Bootstrap Tool Wiring
+
+## Parent milestone
+
+M2.12
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Wire configured local tool coordinator through bootstrap.
+
+## Scope
+
+- Construct catalog, policy, path policy, SQLite audit and local executor when tools are enabled and workspace exists.
+- Pass configured tool timeout into runtime requests.
+- Document new environment variables in README.
+
+## Explicit exclusions
+
+- No C socket executor.
+- No new CLI commands.
+- No visible tool status banner.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/bootstrap/container.py`
+- `ai_assistant/application/runtime.py`
+- `ai_assistant/application/tool_catalog.py`
+- `tests/test_cli_app.py`
+- `tests/test_agent_runtime.py`
+- `tests/test_tool_catalog.py`
+- `README.md`
+
+### Read-only
+
+- `ai_assistant/application/tool_coordinator.py`
+- `ai_assistant/infrastructure/tools/local_read_only.py`
+
+### Forbidden
+
+- model provider behavior
+
+## Dependencies
+
+- M2.12-T1
+
+## Applicable ADRs
+
+- ADR-016 Safe Tool Execution Pipeline
+- ADR-019 Workspace Confinement and Path Resolution
+- ADR-020 Tool Execution Audit and Retention
+
+## Acceptance criteria
+
+- [x] Execution is opt-in.
+- [x] Missing workspace means tools are unavailable.
+- [x] User errors are sanitized.
+- [x] Prompts and file contents are not logged.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_cli_app.py tests/test_agent_runtime.py tests/test_tool_catalog.py -q
+```
+
+## Risks
+
+- Enabling tools accidentally by default would violate ADR-017.
+
+## Result report
+
+- Summary: Wired optional local tool coordinator through bootstrap and documented settings.
+- Files changed: `ai_assistant/bootstrap/container.py`, `ai_assistant/application/runtime.py`, `ai_assistant/application/tool_catalog.py`, `tests/test_cli_app.py`, `tests/test_agent_runtime.py`, `tests/test_tool_catalog.py`, `README.md`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_config.py tests/test_cli_app.py tests/test_agent_runtime.py tests/test_tool_catalog.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`
+- Test results: scoped suite passed with 39 tests; full suite passed with 167 tests and 1 skipped.
+- Assumptions: CLI support means environment-configured behavior, not additional interactive commands.
+- Remaining issues: None for M2.12.
+- Recommended follow-up: Add C service support in M2.13/M2.14.
+
+### Task M2.12-T3 — Validate M2.12
+
+## Parent milestone
+
+M2.12
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate M2.12 acceptance criteria and prepare manual review artifacts.
+
+## Scope
+
+- Run scoped and full validation.
+- Produce `.agent/reports/M2.12.md`.
+- Update roadmap state and human review queue.
+
+## Explicit exclusions
+
+- Do not mark M2.12 accepted.
+- Do not start M2.13.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M2.12.md`
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+### Read-only
+
+- repository diff
+
+### Forbidden
+
+- source behavior changes during validation
+
+## Dependencies
+
+- M2.12-T2
+
+## Applicable ADRs
+
+- ADR-013 Pytest Testing Strategy
+- ADR-016 Safe Tool Execution Pipeline
+- ADR-017 Deny-by-Default Tool Policy
+
+## Acceptance criteria
+
+- [x] Execution is opt-in.
+- [x] Missing workspace means tools are unavailable.
+- [x] User errors are sanitized.
+- [x] Prompts and file contents are not logged.
+- [x] Tool settings are configurable.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_config.py tests/test_cli_app.py tests/test_agent_runtime.py tests/test_tool_catalog.py tests/test_layering.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Risks
+
+- Existing uncommitted Phase 2 changes remain part of the working tree.
+
+## Result report
+
+- Summary: Validated M2.12 and prepared manual review.
+- Files changed: `.agent/reports/M2.12.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_config.py tests/test_cli_app.py tests/test_agent_runtime.py tests/test_tool_catalog.py tests/test_layering.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q`; `git diff --check`
+- Test results: scoped suite passed with 39 tests; full suite passed with 167 tests and 1 skipped; diff check passed.
+- Assumptions: M2.12 does not require C service wiring.
+- Remaining issues: M2.12 awaits manual review.
+- Recommended follow-up: Start M2.13 after approval.

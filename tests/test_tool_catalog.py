@@ -43,6 +43,23 @@ def test_static_catalog_uses_exact_name_lookup() -> None:
     assert definition.limits["max_bytes"] == 65536
 
 
+def test_static_catalog_uses_configured_defaults_capped_by_hard_limits() -> None:
+    catalog = StaticToolCatalog(
+        tool_timeout=40,
+        max_read_bytes=70000,
+        max_directory_entries=2000,
+        max_directory_depth=9,
+    )
+
+    read_file = catalog.definition_for("read_file")
+    list_directory = catalog.definition_for("list_directory")
+
+    assert read_file.defaults["timeout_seconds"] == 30.0
+    assert read_file.defaults["max_bytes"] == 65536
+    assert list_directory.defaults["max_entries"] == 1000
+    assert list_directory.defaults["max_depth"] == 3
+
+
 def test_tool_definition_metadata_is_immutable() -> None:
     definition = StaticToolCatalog().definition_for("list_directory")
 

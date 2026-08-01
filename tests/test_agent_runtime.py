@@ -145,6 +145,7 @@ def test_runtime_uses_tool_result_for_final_answer() -> None:
 
     assert response == Message(role="assistant", content="Final answer from tool result")
     assert model.calls[1][-1].role == "tool"
+    assert runtime.tool_coordinator.requests[0].timeout_seconds == 5.0
     assert memory.history("alpha") == [
         Message(role="user", content="Read notes", session_id="alpha"),
         Message(
@@ -165,6 +166,35 @@ def test_runtime_uses_tool_result_for_final_answer() -> None:
             session_id="alpha",
         ),
     ]
+
+
+def test_runtime_uses_configured_tool_timeout() -> None:
+    coordinator = FakeToolCoordinator(
+        ToolExecutionResult(
+            request_id="alpha:read_file",
+            tool_name="read_file",
+            status=ToolExecutionStatus.SUCCESS,
+            content={"content": "notes"},
+        )
+    )
+    runtime = AgentRuntime(
+        context_builder=ContextBuilder(system_prompt="System prompt"),
+        memory=FakeConversationStore(),
+        model=SequenceModel(
+            [
+                '{"tool_call":{"name":"read_file","arguments":{"path":"notes.txt"}}}',
+                "Final answer",
+            ]
+        ),
+        tool_detector=ToolCallDetector(),
+        tool_coordinator=coordinator,
+        tool_timeout_seconds=7.5,
+        session_id="alpha",
+    )
+
+    runtime.respond("Read notes")
+
+    assert coordinator.requests[0].timeout_seconds == 7.5
 
 
 def test_runtime_stops_after_second_tool_request() -> None:

@@ -29,6 +29,7 @@ class AgentRuntime:
     model: ModelProvider
     tool_detector: ToolCallDetector
     tool_coordinator: ToolExecutionCoordinator | None = None
+    tool_timeout_seconds: float = 5.0
     session_id: SessionId = DEFAULT_SESSION_ID
     last_tool_plan: ToolCallPlan = field(
         default_factory=lambda: ToolCallPlan(has_tool_call=False),
@@ -109,6 +110,7 @@ class AgentRuntime:
             session_id=self.session_id,
             tool_name=tool_call.name,
             arguments=tool_call.arguments,
+            timeout_seconds=self.tool_timeout_seconds,
         )
 
     def _persist_turn(self, user_input: str, response: Message) -> None:

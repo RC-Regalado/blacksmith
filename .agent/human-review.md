@@ -40,7 +40,8 @@ Generated changes are provisional until recorded here.
 | M2.8 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "Aprobado. Inicia el M2.9". |
 | M2.9 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "aprobado, pasa al M2.10". |
 | M2.10 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "Aprobado. Pasa al M2.11". |
-| M2.11 | implemented-awaiting-human-review | awaiting-review | — | 2026-08-01 | One bounded runtime tool round implemented and validated; review `.agent/reports/M2.11.md`. |
+| M2.11 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "aprobado, pasa al M2.12". |
+| M2.12 | implemented-awaiting-human-review | awaiting-review | — | 2026-08-01 | Read-only tool configuration and bootstrap wiring implemented; review `.agent/reports/M2.12.md`. |
 
 ## Approval gates
 
