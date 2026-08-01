@@ -118,10 +118,269 @@ The supervisor is the only agent permitted to update this file.
 | M2.16-T1 | M2.16 | Documentation agent | Update Phase 2 architecture, README and context documentation | `docs/architecture.md`, `README.md`, `context-ai.md` | M2.15 | implemented |
 | M2.16-T2 | M2.16 | Documentation agent | Mark Phase 2 ADRs implemented and sync ADR index | `docs/adr/ADR-016-*.md` through `docs/adr/ADR-025-*.md`, `docs/adr/README.md` | M2.16-T1 | implemented |
 | M2.16-T3 | M2.16 | Integration validator | Validate Phase 2 final documentation and produce report | `.agent/reports/M2.16.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M2.16-T2 | implemented |
+| M3.1-T1 | M3.1 | Integration validator | Reconstruct Phase 2 baseline and validate required safety guarantees | read-only repository review and targeted tests | M2.16 | implemented |
+| M3.1-T2 | M3.1 | Supervisor | Record Phase 3 baseline and milestone state | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M3.1.md` | M3.1-T1 | implemented |
+| M3.1-T3 | M3.1 | Security reviewer | Confirm no unresolved Phase 2 security blocker before ADR planning | read-only repository review | M3.1-T1 | implemented |
 
 ## Task records
 
 Use `.agent/templates/task.md` for each detailed record.
+
+### Task M3.1-T1 — Phase 2 Baseline Validation
+
+## Parent milestone
+
+M3.1
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate that the accepted Phase 2 implementation still satisfies its required safety guarantees before Phase 3 starts.
+
+## Scope
+
+- Inspect Phase 2 runtime, policy, catalog, path, audit, Python executor, Unix socket executor and C toolserver.
+- Run targeted Phase 2 validation tests only.
+
+## Explicit exclusions
+
+- No Phase 3 implementation.
+- No production code changes.
+- No ADR changes.
+
+## File scope
+
+### Writable
+
+- None.
+
+### Read-only
+
+- `ai_assistant/`
+- `c_toolserver/`
+- `proto/`
+- `tests/`
+- `docs/`
+- `.agent/`
+
+### Forbidden
+
+- Production source edits.
+- Test edits.
+- ADR edits.
+
+## Dependencies
+
+- M2.16 accepted.
+
+## Applicable ADRs
+
+- ADR-016 Safe Tool Execution Pipeline
+- ADR-017 Deny-by-Default Tool Policy
+- ADR-018 Read-Only Tool Allowlist
+- ADR-019 Workspace Confinement and Path Resolution
+- ADR-020 Tool Execution Audit and Retention
+- ADR-021 Tool Timeouts and Resource Limits
+- ADR-022 Unix Socket Tool Executor
+- ADR-023 Error and Log Redaction
+- ADR-024 Bounded Single Tool Round per Turn
+- ADR-025 Sensitive File Deny Policy
+
+## Acceptance criteria
+
+- [x] Phase 2 accepted state is confirmed.
+- [x] `list_directory` and `read_file` are present and exact allowlist behavior is validated.
+- [x] Deny-by-default, workspace confinement, audit, C toolserver and adversarial tests are validated.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py tests/test_tool_policy.py tests/test_path_policy.py tests/test_local_read_only_executor.py tests/test_sqlite_audit.py tests/test_tool_coordinator.py tests/test_tool_coordinator_integration.py tests/test_adversarial_security.py tests/test_tools.py tests/test_agent_runtime.py -q
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_c_toolserver_contract.py tests/test_unix_socket_tool_executor.py -q
+```
+
+## Risks
+
+- C toolserver build depends on local `protobuf-c` tooling.
+
+## Result report
+
+- Summary: Phase 2 required safety guarantees were present in code and validated with targeted tests.
+- Files changed: None.
+- Tests run: targeted Python Phase 2 suite; C toolserver and Unix socket contract suite.
+- Test results: 110 passed; 13 passed.
+- Assumptions: `AGENTS-phase-3.md` and `docs/roadmap-phase-3.md` are user-provided untracked Phase 3 planning files.
+- Remaining issues: Documentation contains historical Phase 1/2 wording to clean before or during M3.2.
+- Recommended follow-up: M3.2 ADR proposal after M3.1 human review.
+
+### Task M3.1-T2 — Record Phase 3 Baseline
+
+## Parent milestone
+
+M3.1
+
+## Status
+
+implemented
+
+## Owner role
+
+Supervisor
+
+## Objective
+
+Record the Phase 3 startup baseline, task decomposition, human-review entry and milestone report.
+
+## Scope
+
+- Add Phase 3 milestone state.
+- Add M3.1 task records.
+- Produce `.agent/reports/M3.1.md`.
+- Add M3.1 to human review.
+
+## Explicit exclusions
+
+- No acceptance of M3.1; human review is required.
+- No Phase 3 ADR proposal.
+- No runtime, executor, policy or tool implementation.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M3.1.md`
+
+### Read-only
+
+- `docs/roadmap-phase-3.md`
+- `AGENTS-phase-3.md`
+- `docs/adr/`
+- source and tests
+
+### Forbidden
+
+- Production source.
+- Tests.
+- ADR files.
+
+## Dependencies
+
+- M3.1-T1
+
+## Applicable ADRs
+
+- ADR-001 through ADR-025
+
+## Acceptance criteria
+
+- [x] Phase 3 baseline is recorded.
+- [x] M3.1 is marked `implemented-awaiting-human-review`.
+- [x] M3.2 remains planned and blocked by M3.1 review and ADR approval.
+
+## Validation commands
+
+```bash
+git status --short
+```
+
+## Risks
+
+- Accidentally marking a milestone accepted without manual review.
+
+## Result report
+
+- Summary: Canonical supervisor state updated for M3.1.
+- Files changed: `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M3.1.md`.
+- Tests run: `git status --short` after edits.
+- Test results: M3.1 supervisor files modified; `AGENTS-phase-3.md` and `docs/roadmap-phase-3.md` remain untracked user files.
+- Assumptions: Phase 3 docs remain untracked user files until explicitly added.
+- Remaining issues: M3.2 ADRs are not created yet.
+- Recommended follow-up: Human review M3.1.
+
+### Task M3.1-T3 — Phase 2 Security Review
+
+## Parent milestone
+
+M3.1
+
+## Status
+
+implemented
+
+## Owner role
+
+Security reviewer
+
+## Objective
+
+Confirm that no unresolved Phase 2 security blocker prevents Phase 3 ADR planning.
+
+## Scope
+
+- Review implemented Phase 2 safety boundaries.
+- Compare Phase 3 requested surface against current safeguards.
+
+## Explicit exclusions
+
+- No code changes.
+- No approval of Phase 3 side-effecting tools.
+
+## File scope
+
+### Writable
+
+- None.
+
+### Read-only
+
+- Repository.
+
+### Forbidden
+
+- All edits.
+
+## Dependencies
+
+- M3.1-T1
+
+## Applicable ADRs
+
+- ADR-016 through ADR-025
+
+## Acceptance criteria
+
+- [x] No unresolved Phase 2 blocker found.
+- [x] Phase 3 risks and gates identified for ADR planning.
+
+## Validation commands
+
+```bash
+rg -n "Status: Implemented" docs/adr
+```
+
+## Risks
+
+- Phase 3 write/process tools may weaken Phase 2 guarantees if ADRs are skipped.
+
+## Result report
+
+- Summary: Phase 2 security baseline is viable for Phase 3 planning.
+- Files changed: None.
+- Tests run: ADR status inspection and targeted Phase 2 validation.
+- Test results: ADR-016 through ADR-025 are Implemented; targeted validation passed.
+- Assumptions: Productive Phase 3 work waits for ADR-026 through ADR-035.
+- Remaining issues: None blocking M3.2 planning.
+- Recommended follow-up: Draft Phase 3 ADRs.
 
 ### Task M1-T1 — Remove Provider Debug Output
 

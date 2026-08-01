@@ -46,6 +46,7 @@ Generated changes are provisional until recorded here.
 | M2.14 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "Aprobado, pasa al M2.15". |
 | M2.15 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "aprobado, pasa al M2.16". |
 | M2.16 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed Phase 2 approved after manual tool validation with `gemma4:latest`. |
+| M3.1 | implemented-awaiting-human-review | awaiting-review | User | 2026-08-01 | Phase 3 startup baseline recorded; Phase 2 targeted validation passed; M3.2 remains pending ADR approval. |
 
 ## Approval gates
 

@@ -6,14 +6,14 @@ AI Assistant
 
 ## Active phase
 
-Phase 2: Read-Only Workspace Tools
+Phase 3: Controlled Development Tools
 
 ## Current milestone
 
-- ID: M2.16
-- Name: Documentation and final manual review
-- Status: accepted
-- Source: `docs/roadmap-phase-2.md`
+- ID: M3.1
+- Name: Close Phase 2
+- Status: implemented-awaiting-human-review
+- Source: `docs/roadmap-phase-3.md`
 
 ## Milestone status vocabulary
 
@@ -67,21 +67,50 @@ Phase 2: Read-Only Workspace Tools
 | M2.15 | Add adversarial security tests | accepted | — | `.agent/reports/M2.15.md` | approved |
 | M2.16 | Documentation and final manual review | accepted | — | `.agent/reports/M2.16.md` | approved |
 
+## Phase 3 Milestones
+
+| ID | Milestone | Status | Blocking reason | Automated report | Human review |
+|---|---|---|---|---|---|
+| M3.1 | Close Phase 2 | implemented-awaiting-human-review | — | `.agent/reports/M3.1.md` | awaiting-review |
+| M3.2 | Approve Phase 3 ADRs | planned | M3.1 requires human review | — | — |
+| M3.3 | Extend domain models | planned | ADR-026 through ADR-035 not accepted | — | — |
+| M3.4 | Implement confirmation service | planned | ADR-026 through ADR-035 not accepted | — | — |
+| M3.5 | Implement profile registry | planned | ADR-026 through ADR-035 not accepted | — | — |
+| M3.6 | Implement `file_metadata` | planned | ADR-026 through ADR-035 not accepted | — | — |
+| M3.7 | Implement `search_text` | planned | ADR-026 through ADR-035 not accepted | — | — |
+| M3.8 | Implement `git_status` | planned | ADR-026 through ADR-035 not accepted | — | — |
+| M3.9 | Implement `git_diff` | planned | ADR-026 through ADR-035 not accepted | — | — |
+| M3.10 | Implement `run_tests` | planned | ADR-026 through ADR-035 not accepted | — | — |
+| M3.11 | Implement `build_project` | planned | ADR-026 through ADR-035 not accepted | — | — |
+| M3.12 | Implement write policy | planned | ADR-026 through ADR-035 not accepted | — | — |
+| M3.13 | Implement atomic C `write` | planned | ADR-026 through ADR-035 not accepted | — | — |
+| M3.14 | Make C toolserver primary | planned | ADR-026 through ADR-035 not accepted | — | — |
+| M3.15 | Implement retention and purge | planned | ADR-026 through ADR-035 not accepted | — | — |
+| M3.16 | Integrate runtime and CLI | planned | ADR-026 through ADR-035 not accepted | — | — |
+| M3.17 | Security and adversarial tests | planned | ADR-026 through ADR-035 not accepted | — | — |
+| M3.18 | Documentation and final review | planned | Phase 3 implementation incomplete | — | — |
+
 ## Current baseline
 
-Record after first inspection:
+Record before Phase 3 implementation:
 
-- Git status: existing user/workspace changes present: `AGENTS.md` modified; `.agent/`, ADR docs, templates and supervisor kit files untracked. Generated artifacts are ignored by `.gitignore`.
-- Python version: Python 3.14.6
-- Test command: `PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests`
-- Tests passed: 10 of 12 before Milestone 1 implementation; 12 of 12 after permissions were adjusted and M1 was implemented.
-- Existing failures: baseline had 2 Unix socket failures from sandbox `server.bind(...)` denial; final validation passed after permissions were adjusted.
-- CLI smoke: `PYTHONDONTWRITEBYTECODE=1 python -c "from ai_assistant.cli.app import build_runtime; r=build_runtime(); print(r.respond('hello').content)"` exited 0 but printed debug line `dummy` before `Echo: hello`.
-- Ollama availability: not checked; out of scope for Milestone 1.
-- Notes: `.gitignore` already contains local environment, Python cache, SQLite, C build and local Codex/session ignore rules. `git ls-files` shows no tracked `__pycache__`, `*.pyc`, `assistant.sqlite3` or `c_toolserver/build/*` artifacts.
+- Date: 2026-08-01
+- Git status before M3.1 edits: only untracked `AGENTS-phase-3.md` and `docs/roadmap-phase-3.md`.
+- Phase 2 state: M2.1 through M2.16 accepted by human review.
+- ADR state: ADR-001 through ADR-025 are `Implemented`; ADR-016 through ADR-025 bind Phase 2 tool safety.
+- Productive Phase 2 tools: exact allowlist contains `list_directory` and `read_file`.
+- Runtime: one bounded tool round per user turn remains implemented.
+- Executor baseline: Python local read-only executor is the configured bootstrap default; Unix socket C executor exists behind the `ToolExecutor` port but is not the default.
+- C toolserver: read-only `list_directory` and `read_file` contract tests pass.
+- Audit: separate SQLite audit recorder exists with sanitized metadata and explicit failure behavior.
+- Phase 3 implementation status: no Phase 3 productive tools, confirmation service, write policy, profile registry or retention policy implemented yet.
+- Phase 3 blocker: M3.2 ADR-026 through ADR-035 must be accepted before productive Phase 3 implementation.
+- Validation passed:
+  - `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py tests/test_tool_policy.py tests/test_path_policy.py tests/test_local_read_only_executor.py tests/test_sqlite_audit.py tests/test_tool_coordinator.py tests/test_tool_coordinator_integration.py tests/test_adversarial_security.py tests/test_tools.py tests/test_agent_runtime.py -q` -> 110 passed.
+  - `PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_c_toolserver_contract.py tests/test_unix_socket_tool_executor.py -q` -> 13 passed.
 
 ## Last supervisor update
 
 - Date: 2026-08-01
-- Summary: Phase 2 approved after manual validation with `gemma4:latest`; post-review fixes added for Ollama tool-call formats and deterministic direct tool JSON.
-- Next action: Commit Phase 2 closure.
+- Summary: M3.1 established Phase 3 baseline from the accepted Phase 2 implementation.
+- Next action: human review of M3.1, then M3.2 ADR-026 through ADR-035 proposal.
