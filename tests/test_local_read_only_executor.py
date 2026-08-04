@@ -8,6 +8,7 @@ from ai_assistant.domain.tools import (
     ToolExecutionContext,
     ToolExecutionRequest,
     ToolExecutionStatus,
+    ToolPermission,
 )
 from ai_assistant.infrastructure.tools.local_read_only import LocalReadOnlyToolExecutor
 
@@ -48,6 +49,21 @@ def test_read_file_is_bounded_and_reports_truncation(tmp_path: Path) -> None:
         "bytes_read": 3,
         "truncated": True,
     }
+
+
+def test_file_metadata_returns_no_file_content(tmp_path: Path) -> None:
+    (tmp_path / "notes.txt").write_text("abcdef", encoding="utf-8")
+
+    result = LocalReadOnlyToolExecutor().execute(
+        _context(tmp_path, "file_metadata", "notes.txt", permission=ToolPermission.READ_METADATA)
+    )
+
+    assert result.status == ToolExecutionStatus.SUCCESS
+    assert result.content is not None
+    assert result.content["path"] == "notes.txt"
+    assert result.content["type"] == "file"
+    assert result.content["size"] == 6
+    assert "content" not in result.content
 
 
 def test_executor_repeats_path_validation_before_access(tmp_path: Path) -> None:
@@ -108,6 +124,7 @@ def _context(
     tool_name: str,
     path: str,
     arguments: dict[str, object] | None = None,
+    permission: ToolPermission = ToolPermission.READ_ONLY,
 ) -> ToolExecutionContext:
     args = {"path": path, **(arguments or {})}
     return ToolExecutionContext(
@@ -116,6 +133,7 @@ def _context(
             session_id="default",
             tool_name=tool_name,
             arguments=args,
+            permission=permission,
         ),
         workspace_id=str(workspace),
         resolved_path=str((workspace / path).resolve()),

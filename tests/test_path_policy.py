@@ -36,6 +36,14 @@ def test_internal_valid_directory_path_is_allowed(tmp_path: Path) -> None:
     assert context.relative_path == "src"
 
 
+def test_file_metadata_allows_file_or_directory(tmp_path: Path) -> None:
+    (tmp_path / "notes.txt").write_text("ok", encoding="utf-8")
+    (tmp_path / "src").mkdir()
+
+    assert _validate(tmp_path, "file_metadata", "notes.txt").relative_path == "notes.txt"
+    assert _validate(tmp_path, "file_metadata", "src").relative_path == "src"
+
+
 @pytest.mark.parametrize("path", ["../outside.txt", "nested/../../outside.txt"])
 def test_traversal_escape_is_denied(tmp_path: Path, path: str) -> None:
     with pytest.raises(InvalidToolCallError, match="traversal"):

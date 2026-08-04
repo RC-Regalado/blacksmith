@@ -11,6 +11,7 @@ from ai_assistant.domain.tools import (
     ToolExecutionContext,
     ToolExecutionRequest,
     ToolExecutionStatus,
+    ToolPermission,
 )
 from ai_assistant.infrastructure.tools import UnixSocketToolExecutor
 from ai_assistant.tools.unix_socket_client import UnixSocketProtobufClient
@@ -50,6 +51,30 @@ def test_c_toolserver_reads_bounded_file(tmp_path: Path) -> None:
     assert b'"truncated":true' in response[4]
 
 
+def test_c_toolserver_returns_file_metadata_without_content(tmp_path: Path) -> None:
+    binary = build_toolserver_or_skip()
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / "notes.txt").write_text("abcdef", encoding="utf-8")
+
+    response = run_toolserver_request(
+        build_tool_request(
+            request_id="metadata-1",
+            tool_name="file_metadata",
+            workspace_id=str(workspace),
+            args={"path": "notes.txt"},
+        ),
+        binary,
+    )
+
+    assert response[1] == b"metadata-1"
+    assert response[2] == 1
+    assert response[3] == b"file metadata"
+    assert b'"type":"file"' in response[4]
+    assert b'"size":6' in response[4]
+    assert b"abcdef" not in response[4]
+
+
 def test_unix_socket_executor_reads_from_c_toolserver(tmp_path: Path) -> None:
     binary = build_toolserver_or_skip()
     workspace = tmp_path / "workspace"
@@ -84,6 +109,43 @@ def test_unix_socket_executor_reads_from_c_toolserver(tmp_path: Path) -> None:
     assert result.content["content"] == "abc"
     assert result.content["bytes_read"] == 3
     assert result.truncated is True
+
+
+def test_unix_socket_executor_gets_metadata_from_c_toolserver(tmp_path: Path) -> None:
+    binary = build_toolserver_or_skip()
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    target = workspace / "notes.txt"
+    target.write_text("abcdef", encoding="utf-8")
+
+    with tempfile.TemporaryDirectory() as directory:
+        socket_path = Path(directory) / "toolserver.sock"
+        process = subprocess.Popen([str(binary), "--socket", str(socket_path)])
+        try:
+            wait_for_socket(socket_path)
+            result = UnixSocketToolExecutor(socket_path).execute(
+                ToolExecutionContext(
+                    request=ToolExecutionRequest(
+                        request_id="metadata-exec-1",
+                        session_id="default",
+                        tool_name="file_metadata",
+                        arguments={"path": "notes.txt"},
+                        permission=ToolPermission.READ_METADATA,
+                    ),
+                    workspace_id=str(workspace),
+                    resolved_path=str(target),
+                    relative_path="notes.txt",
+                )
+            )
+        finally:
+            process.terminate()
+            process.wait(timeout=2)
+
+    assert result.status == ToolExecutionStatus.SUCCESS
+    assert result.content is not None
+    assert result.content["type"] == "file"
+    assert result.content["size"] == 6
+    assert "content" not in result.content
 
 
 def test_c_toolserver_lists_directory_without_hidden_entries(tmp_path: Path) -> None:

@@ -38,7 +38,8 @@ c_toolserver/build/toolserver --socket /tmp/blacksmith-toolserver.sock
 
 Acciones incluidas:
 
+- `file_metadata` con `workspace_id` y argumento `path`
 - `list_directory` con `workspace_id` y argumento `path`
 - `read_file` con `workspace_id`, argumento `path` y límites opcionales `offset`, `max_bytes`
 
-`workspace_id` debe apuntar al workspace autorizado. El servidor C valida de nuevo paths relativos, traversal, symlinks externos, permiso read-only y límites antes de leer.
+`workspace_id` debe apuntar al workspace autorizado. El servidor C valida de nuevo paths relativos, traversal, symlinks externos, permiso read-only y límites antes de leer o inspeccionar metadata.

@@ -7,6 +7,7 @@ from ai_assistant.domain.tools import ToolDefinition, ToolPermission
 
 LIST_DIRECTORY = "list_directory"
 READ_FILE = "read_file"
+FILE_METADATA = "file_metadata"
 
 
 class StaticToolCatalog(ToolCatalog):
@@ -41,6 +42,21 @@ def _definitions(
     max_directory_depth: int,
 ) -> dict[str, ToolDefinition]:
     return {
+        FILE_METADATA: ToolDefinition(
+            name=FILE_METADATA,
+            description="Return bounded metadata for a workspace file or directory.",
+            input_schema={
+                "type": "object",
+                "properties": {"path": {"type": "string"}},
+                "required": ["path"],
+            },
+            permission=ToolPermission.READ_METADATA,
+            defaults={"timeout_seconds": tool_timeout},
+            limits={
+                "max_path_length": 4096,
+                "timeout_seconds": 30.0,
+            },
+        ),
         LIST_DIRECTORY: ToolDefinition(
             name=LIST_DIRECTORY,
             description="List entries in a workspace directory.",

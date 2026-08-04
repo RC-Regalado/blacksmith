@@ -5,7 +5,7 @@ from pathlib import Path
 
 from ai_assistant.application.errors import ConfigurationError, InvalidToolCallError
 from ai_assistant.application.ports.tools import PathPolicy
-from ai_assistant.application.tool_catalog import LIST_DIRECTORY, READ_FILE
+from ai_assistant.application.tool_catalog import FILE_METADATA, LIST_DIRECTORY, READ_FILE
 from ai_assistant.domain.tools import (
     ToolDefinition,
     ToolExecutionContext,
@@ -94,3 +94,5 @@ def _require_expected_type(path: Path, definition: ToolDefinition) -> None:
         raise InvalidToolCallError("path must be a regular file")
     if definition.name == LIST_DIRECTORY and not path.is_dir():
         raise InvalidToolCallError("path must be a directory")
+    if definition.name == FILE_METADATA and not (path.is_file() or path.is_dir()):
+        raise InvalidToolCallError("path must be a regular file or directory")

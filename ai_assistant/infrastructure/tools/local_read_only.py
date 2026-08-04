@@ -11,6 +11,7 @@ from pathlib import Path
 from ai_assistant.application.path_policy import WorkspacePathPolicy
 from ai_assistant.application.ports.tools import ToolExecutor
 from ai_assistant.application.tool_catalog import (
+    FILE_METADATA,
     LIST_DIRECTORY,
     READ_FILE,
     StaticToolCatalog,
@@ -32,6 +33,8 @@ class LocalReadOnlyToolExecutor(ToolExecutor):
     def execute(self, context: ToolExecutionContext) -> ToolExecutionResult:
         try:
             checked = self._validate_again(context)
+            if checked.request.tool_name == FILE_METADATA:
+                return _file_metadata(checked)
             if checked.request.tool_name == READ_FILE:
                 return _read_file(checked)
             if checked.request.tool_name == LIST_DIRECTORY:
@@ -76,6 +79,22 @@ def _read_file(context: ToolExecutionContext) -> ToolExecutionResult:
             "truncated": truncated,
         },
         truncated=truncated,
+    )
+
+
+def _file_metadata(context: ToolExecutionContext) -> ToolExecutionResult:
+    path = _resolved_path(context)
+    info = path.stat()
+    return ToolExecutionResult(
+        request_id=context.request.request_id,
+        tool_name=context.request.tool_name,
+        status=ToolExecutionStatus.SUCCESS,
+        content={
+            "path": context.relative_path,
+            "type": "directory" if path.is_dir() else "file",
+            "size": None if path.is_dir() else info.st_size,
+            "modified_at": int(info.st_mtime),
+        },
     )
 
 

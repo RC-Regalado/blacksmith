@@ -121,6 +121,18 @@ The supervisor is the only agent permitted to update this file.
 | M3.1-T1 | M3.1 | Integration validator | Reconstruct Phase 2 baseline and validate required safety guarantees | read-only repository review and targeted tests | M2.16 | implemented |
 | M3.1-T2 | M3.1 | Supervisor | Record Phase 3 baseline and milestone state | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M3.1.md` | M3.1-T1 | implemented |
 | M3.1-T3 | M3.1 | Security reviewer | Confirm no unresolved Phase 2 security blocker before ADR planning | read-only repository review | M3.1-T1 | implemented |
+| M3.2-T1 | M3.2 | Architect | Draft Phase 3 ADR-026 through ADR-035 as Proposed decisions | `docs/adr/ADR-026-*.md` through `docs/adr/ADR-035-*.md`, `docs/adr/README.md` | M3.1 | implemented |
+| M3.2-T2 | M3.2 | Security reviewer | Review Phase 3 ADR package against approval gates and Phase 2 guarantees | read-only ADR and roadmap review | M3.2-T1 | implemented |
+| M3.2-T3 | M3.2 | Supervisor | Prepare M3.2 approval package and canonical state updates | `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M3.2.md` | M3.2-T2 | implemented |
+| M3.3-T1 | M3.3 | Runtime implementer | Add Phase 3 infrastructure-neutral domain models | `ai_assistant/domain/tools.py` | M3.2 | implemented |
+| M3.3-T2 | M3.3 | Test agent | Add unit coverage for Phase 3 domain models and invalid states | `tests/test_tools.py` | M3.3-T1 | implemented |
+| M3.4-T1 | M3.4 | Runtime implementer | Add in-memory confirmation service and confirmation prompt port | `ai_assistant/application/confirmation.py`, `ai_assistant/application/ports/tools.py` | M3.3 | implemented |
+| M3.4-T2 | M3.4 | Test agent | Cover confirmation grant reuse, denial, revocation and audit | `tests/test_confirmation.py` | M3.4-T1 | implemented |
+| M3.5-T1 | M3.5 | Runtime implementer | Add fixed test/build profile registry | `ai_assistant/application/profile_registry.py`, `ai_assistant/application/ports/tools.py` | M3.4 | implemented |
+| M3.5-T2 | M3.5 | Test agent | Cover profile lookup, no shell, argv immutability and env sanitization | `tests/test_profile_registry.py` | M3.5-T1 | implemented |
+| M3.6-T1 | M3.6 | Runtime implementer | Add Python-side `file_metadata` catalog, policy, path and local executor support | `ai_assistant/application/tool_catalog.py`, `ai_assistant/application/tool_policy.py`, `ai_assistant/application/path_policy.py`, `ai_assistant/infrastructure/tools/local_read_only.py` | M3.5 | implemented |
+| M3.6-T2 | M3.6 | C toolserver engineer | Add C toolserver `file_metadata` action | `c_toolserver/src/actions.c`, `c_toolserver/README.md` | M3.6-T1 | implemented |
+| M3.6-T3 | M3.6 | Test agent | Cover `file_metadata` Python and C behavior | relevant Python and C contract tests | M3.6-T2 | implemented |
 
 ## Task records
 
@@ -381,6 +393,1007 @@ rg -n "Status: Implemented" docs/adr
 - Assumptions: Productive Phase 3 work waits for ADR-026 through ADR-035.
 - Remaining issues: None blocking M3.2 planning.
 - Recommended follow-up: Draft Phase 3 ADRs.
+
+### Task M3.2-T1 — Draft Phase 3 ADRs
+
+## Parent milestone
+
+M3.2
+
+## Status
+
+implemented
+
+## Owner role
+
+Architect
+
+## Objective
+
+Create the Phase 3 ADR package covering controlled development tools before implementation.
+
+## Scope
+
+- Draft ADR-026 through ADR-035 in `Proposed` status.
+- Update the ADR index.
+- Cover all seven approved Phase 3 tools and required policy components.
+
+## Explicit exclusions
+
+- Do not mark ADRs Accepted.
+- Do not implement Phase 3 tools.
+- Do not modify production code or tests.
+
+## File scope
+
+### Writable
+
+- `docs/adr/ADR-026-*.md` through `docs/adr/ADR-035-*.md`
+- `docs/adr/README.md`
+
+### Read-only
+
+- `docs/roadmap-phase-3.md`
+- `AGENTS-phase-3.md`
+- `docs/architecture.md`
+- Phase 2 ADRs
+
+### Forbidden
+
+- Production source.
+- Tests.
+- Proto files.
+- C toolserver source.
+
+## Dependencies
+
+- M3.1 accepted.
+
+## Applicable ADRs
+
+- ADR-001 through ADR-025
+
+## Acceptance criteria
+
+- [x] All seven tools are covered.
+- [x] Confirmation scope is explicit.
+- [x] Arbitrary command execution is prohibited.
+- [x] Write atomicity is specified.
+- [x] Retention policy is specified.
+
+## Validation commands
+
+```bash
+ls docs/adr/ADR-0{26,27,28,29,30,31,32,33,34,35}-*.md
+rg -n "Status: Proposed|ADR-0(26|27|28|29|30|31|32|33|34|35)" docs/adr/README.md docs/adr/ADR-0{26,27,28,29,30,31,32,33,34,35}-*.md
+rg -n "file_metadata|search_text|git_status|git_diff|run_tests|build_project|write|session_id \+ workspace_id \+ permission_level|arbitrary|shell|atomic|retention|purge" docs/adr/ADR-0{26,27,28,29,30,31,32,33,34,35}-*.md
+```
+
+## Risks
+
+- ADRs can be too broad and accidentally permit future unsafe implementation.
+
+## Result report
+
+- Summary: ADR-026 through ADR-035 drafted and listed in ADR index; ADR-026 through ADR-032 and ADR-034 through ADR-035 later accepted by human review.
+- Files changed: `docs/adr/ADR-026-*.md` through `docs/adr/ADR-035-*.md`, `docs/adr/README.md`.
+- Tests run: ADR file presence and content checks.
+- Test results: ADR package validation passed.
+- Assumptions: Manual approval was required before marking ADR-033 Accepted.
+- Remaining issues: None for M3.2.
+- Recommended follow-up: M3.3 domain models.
+
+### Task M3.2-T2 — Review Phase 3 ADR Package
+
+## Parent milestone
+
+M3.2
+
+## Status
+
+implemented
+
+## Owner role
+
+Security reviewer
+
+## Objective
+
+Confirm the Phase 3 ADR package preserves Phase 2 safety boundaries and records required approval gates.
+
+## Scope
+
+- Review proposed tool allowlist, permissions, confirmation, executor, process, write, Git, search and retention policies.
+
+## Explicit exclusions
+
+- No code changes.
+- No ADR acceptance.
+
+## File scope
+
+### Writable
+
+- None.
+
+### Read-only
+
+- `docs/adr/ADR-026-*.md` through `docs/adr/ADR-035-*.md`
+- `docs/roadmap-phase-3.md`
+- `AGENTS-phase-3.md`
+
+### Forbidden
+
+- All edits.
+
+## Dependencies
+
+- M3.2-T1
+
+## Applicable ADRs
+
+- ADR-016 through ADR-025
+
+## Acceptance criteria
+
+- [x] ADR package keeps arbitrary shell and argv prohibited.
+- [x] Write scope remains workspace-confined and bounded.
+- [x] Confirmation grants are scoped and in-memory.
+- [x] Audit purge remains unavailable to model tools.
+
+## Validation commands
+
+```bash
+rg -n "Review trigger|requires human approval|No shell|no shell|model cannot|Purge is not exposed" docs/adr/ADR-0{26,27,28,29,30,31,32,33,34,35}-*.md
+```
+
+## Risks
+
+- Human approval could accept an ADR with ambiguous wording.
+
+## Result report
+
+- Summary: No blocking security gap found in the ADR package; ADR-033 was revised to prefer fixed `rg` over `grep`.
+- Files changed: None.
+- Tests run: ADR safety keyword review.
+- Test results: Review terms present in proposed ADRs.
+- Assumptions: Implementation tasks will follow these ADRs only after approval.
+- Remaining issues: None for M3.2.
+- Recommended follow-up: M3.3 domain models.
+
+### Task M3.2-T3 — Prepare ADR Approval Package
+
+## Parent milestone
+
+M3.2
+
+## Status
+
+implemented
+
+## Owner role
+
+Supervisor
+
+## Objective
+
+Record M3.2 outcome and queue ADR-026 through ADR-035 for manual approval.
+
+## Scope
+
+- Update roadmap state.
+- Update task queue.
+- Add human review entry.
+- Produce milestone report.
+
+## Explicit exclusions
+
+- Do not mark M3.2 accepted.
+- Do not mark ADRs Accepted.
+- Do not start M3.3 before human approval.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M3.2.md`
+
+### Read-only
+
+- `docs/adr/`
+- `docs/roadmap-phase-3.md`
+
+### Forbidden
+
+- Production source.
+- Tests.
+
+## Dependencies
+
+- M3.2-T2
+
+## Applicable ADRs
+
+- ADR-001 through ADR-025
+- ADR-026 through ADR-035 Proposed
+
+## Acceptance criteria
+
+- [x] M3.2 is recorded as implemented-awaiting-human-review.
+- [x] Human review entry requests ADR approval.
+- [x] M3.3 remained blocked until ADR-033 was Accepted.
+
+## Validation commands
+
+```bash
+git status --short
+rg -n "M3\\.2|ADR-026|ADR-035|awaiting-review|implemented-awaiting-human-review" .agent/roadmap-state.md .agent/human-review.md .agent/reports/M3.2.md
+```
+
+## Risks
+
+- Accidentally treating Proposed ADRs as accepted.
+
+## Result report
+
+- Summary: M3.2 approval package prepared.
+- Files changed: `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`, `.agent/reports/M3.2.md`.
+- Tests run: final supervisor state checks.
+- Test results: M3.2 files modified/added; ADR-026 through ADR-035 later accepted.
+- Assumptions: Productive Phase 3 implementation starts only through later milestones.
+- Remaining issues: None for M3.2.
+- Recommended follow-up: M3.3 domain models.
+
+### Task M3.3-T1 — Add Phase 3 Domain Models
+
+## Parent milestone
+
+M3.3
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Add infrastructure-neutral domain types required by Phase 3 policies.
+
+## Scope
+
+- Extend `ToolPermission`.
+- Add confirmation grant, profile ID, write mode/request/result, hash metadata and audit retention models.
+
+## Explicit exclusions
+
+- No policy implementation.
+- No confirmation service.
+- No executor, C or protobuf changes.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/domain/tools.py`
+
+### Read-only
+
+- `docs/adr/ADR-026-*.md` through `docs/adr/ADR-035-*.md`
+- `tests/test_tools.py`
+
+### Forbidden
+
+- Infrastructure adapters.
+- Runtime integration.
+- C toolserver.
+- Proto files.
+
+## Dependencies
+
+- M3.2 accepted.
+
+## Applicable ADRs
+
+- ADR-026 through ADR-035
+
+## Acceptance criteria
+
+- [x] Domain models are infrastructure-neutral.
+- [x] Invalid states are rejected.
+- [x] Existing Phase 2 model behavior remains compatible.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tools.py -q
+```
+
+## Risks
+
+- Over-modeling future behavior before policies exist.
+
+## Result report
+
+- Summary: Added Phase 3 permission, confirmation, profile, write, hash and retention domain models.
+- Files changed: `ai_assistant/domain/tools.py`, `ai_assistant/domain/__init__.py`, `ai_assistant/agent/planner.py`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tools.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_policy.py tests/test_tool_catalog.py tests/test_agent_runtime.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m py_compile ai_assistant/domain/tools.py ai_assistant/domain/__init__.py ai_assistant/agent/planner.py`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -m "not ollama and not toolserver" -q`.
+- Test results: 31 passed; 37 passed; py_compile passed; 208 passed, 7 deselected.
+- Assumptions: M3.3 only defines domain types; policy behavior starts in later milestones.
+- Remaining issues: None for M3.3.
+- Recommended follow-up: M3.4 confirmation service after human review.
+
+### Task M3.3-T2 — Test Phase 3 Domain Models
+
+## Parent milestone
+
+M3.3
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Cover valid construction and invalid states for new Phase 3 domain models.
+
+## Scope
+
+- Add focused tests in `tests/test_tools.py`.
+
+## Explicit exclusions
+
+- No integration tests.
+- No executor tests.
+
+## File scope
+
+### Writable
+
+- `tests/test_tools.py`
+
+### Read-only
+
+- `ai_assistant/domain/tools.py`
+
+### Forbidden
+
+- Production code outside domain models.
+- C toolserver.
+- Proto files.
+
+## Dependencies
+
+- M3.3-T1
+
+## Applicable ADRs
+
+- ADR-027
+- ADR-029
+- ADR-030
+- ADR-031
+- ADR-034
+
+## Acceptance criteria
+
+- [x] New permission values are covered.
+- [x] Confirmation grant scope and expiry metadata are covered.
+- [x] Profile IDs reject invalid values.
+- [x] Write and hash models reject invalid states.
+- [x] Retention classes reject invalid days.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tools.py -q
+```
+
+## Risks
+
+- Tests may encode implementation details instead of domain invariants.
+
+## Result report
+
+- Summary: Added focused unit tests for M3.3 domain model invariants.
+- Files changed: `tests/test_tools.py`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tools.py -q`; `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -m "not ollama and not toolserver" -q`.
+- Test results: 31 passed; 208 passed, 7 deselected.
+- Assumptions: Tests cover domain invariants, not later policy/executor behavior.
+- Remaining issues: None for M3.3.
+- Recommended follow-up: M3.4 confirmation service tests.
+
+### Task M3.4-T1 — Add Confirmation Service
+
+## Parent milestone
+
+M3.4
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Implement in-memory confirmation grants scoped by session, workspace and permission.
+
+## Scope
+
+- Add a confirmation prompt port.
+- Add a confirmation service with grant reuse, revocation, default-deny prompt handling and audit events.
+
+## Explicit exclusions
+
+- No runtime or coordinator integration.
+- No CLI prompt implementation.
+- No persistence.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/application/confirmation.py`
+- `ai_assistant/application/ports/tools.py`
+- `ai_assistant/application/ports/__init__.py`
+
+### Read-only
+
+- `ai_assistant/domain/tools.py`
+- `docs/adr/ADR-027-permission-levels-and-confirmation-grants.md`
+
+### Forbidden
+
+- Runtime integration.
+- Infrastructure adapters.
+- C toolserver.
+- Proto files.
+
+## Dependencies
+
+- M3.3 accepted.
+
+## Applicable ADRs
+
+- ADR-027
+- ADR-020
+- ADR-023
+
+## Acceptance criteria
+
+- [x] Same-scope reuse does not reprompt.
+- [x] New session/workspace/permission prompts again.
+- [x] Denial creates no grant.
+- [x] Confirmation is audited.
+- [x] Grants are in-memory and revocable.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_confirmation.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m py_compile ai_assistant/application/confirmation.py ai_assistant/application/ports/tools.py tests/test_confirmation.py
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -m "not ollama and not toolserver" -q
+```
+
+## Risks
+
+- Later integration must ensure denied confirmation prevents executor invocation.
+
+## Result report
+
+- Summary: Added in-memory confirmation service and prompt port.
+- Files changed: `ai_assistant/application/confirmation.py`, `ai_assistant/application/ports/tools.py`, `ai_assistant/application/ports/__init__.py`.
+- Tests run: confirmation unit tests, py_compile and core suite without Ollama/toolserver.
+- Test results: 10 passed; py_compile passed; 218 passed, 7 deselected.
+- Assumptions: CLI prompting and coordinator integration happen in later milestones.
+- Remaining issues: None for M3.4.
+- Recommended follow-up: M3.5 profile registry after human review.
+
+### Task M3.4-T2 — Test Confirmation Service
+
+## Parent milestone
+
+M3.4
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Cover confirmation grant reuse, denial, scope changes, revocation and audit behavior.
+
+## Scope
+
+- Add focused tests in `tests/test_confirmation.py`.
+
+## Explicit exclusions
+
+- No CLI tests.
+- No executor integration tests.
+
+## File scope
+
+### Writable
+
+- `tests/test_confirmation.py`
+
+### Read-only
+
+- `ai_assistant/application/confirmation.py`
+
+### Forbidden
+
+- Production code outside confirmation service.
+- Runtime integration.
+
+## Dependencies
+
+- M3.4-T1
+
+## Applicable ADRs
+
+- ADR-027
+
+## Acceptance criteria
+
+- [x] Same-scope reuse is tested.
+- [x] Scope changes are tested.
+- [x] Denial and prompt errors deny by default.
+- [x] Revocation is tested.
+- [x] Audit events are tested.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_confirmation.py -q
+```
+
+## Risks
+
+- Tests use fakes and do not cover CLI user input yet.
+
+## Result report
+
+- Summary: Added unit tests for confirmation service invariants.
+- Files changed: `tests/test_confirmation.py`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_confirmation.py -q`.
+- Test results: 10 passed.
+- Assumptions: Prompt adapter behavior will be covered when CLI integration is added.
+- Remaining issues: None for M3.4.
+- Recommended follow-up: M3.5 profile registry tests.
+
+### Task M3.5-T1 — Add Fixed Profile Registry
+
+## Parent milestone
+
+M3.5
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Add a registry that maps approved profile IDs to fixed argv, timeout and sanitized environment.
+
+## Scope
+
+- Add immutable `ToolProfile` definitions.
+- Add `StaticToolProfileRegistry`.
+- Add default Phase 3 test profiles.
+- Add profile registry port export.
+
+## Explicit exclusions
+
+- No subprocess execution.
+- No model-controlled argv.
+- No runtime/toolserver integration.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/application/profile_registry.py`
+- `ai_assistant/application/ports/tools.py`
+- `ai_assistant/application/ports/__init__.py`
+
+### Read-only
+
+- `docs/adr/ADR-029-preconfigured-test-and-build-profiles.md`
+- `ai_assistant/domain/tools.py`
+
+### Forbidden
+
+- Runtime integration.
+- C toolserver.
+- Proto files.
+
+## Dependencies
+
+- M3.4 accepted.
+
+## Applicable ADRs
+
+- ADR-029
+- ADR-035
+
+## Acceptance criteria
+
+- [x] Unknown profiles denied.
+- [x] No shell profiles accepted.
+- [x] Model cannot supply argv through lookup.
+- [x] Environment sanitized.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_profile_registry.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m py_compile ai_assistant/application/profile_registry.py ai_assistant/application/ports/tools.py ai_assistant/application/ports/__init__.py tests/test_profile_registry.py
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -m "not ollama and not toolserver" -q
+```
+
+## Risks
+
+- Later execution code must preserve fixed argv semantics and avoid shell.
+
+## Result report
+
+- Summary: Added immutable static profile registry with fixed test profiles.
+- Files changed: `ai_assistant/application/profile_registry.py`, `ai_assistant/application/ports/tools.py`, `ai_assistant/application/ports/__init__.py`.
+- Tests run: profile registry tests, py_compile, core suite without Ollama/toolserver.
+- Test results: 8 passed; py_compile passed; 226 passed, 7 deselected.
+- Assumptions: Process execution is implemented later and must consume registry output directly.
+- Remaining issues: None for M3.5.
+- Recommended follow-up: M3.6 `file_metadata` after human review.
+
+### Task M3.5-T2 — Test Fixed Profile Registry
+
+## Parent milestone
+
+M3.5
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Cover approved profile lookup and rejection of unsafe profile definitions.
+
+## Scope
+
+- Add focused tests in `tests/test_profile_registry.py`.
+
+## Explicit exclusions
+
+- No subprocess or toolserver tests.
+
+## File scope
+
+### Writable
+
+- `tests/test_profile_registry.py`
+
+### Read-only
+
+- `ai_assistant/application/profile_registry.py`
+
+### Forbidden
+
+- Runtime integration.
+- C toolserver.
+
+## Dependencies
+
+- M3.5-T1
+
+## Applicable ADRs
+
+- ADR-029
+
+## Acceptance criteria
+
+- [x] Unknown profile denial covered.
+- [x] Shell executable rejection covered.
+- [x] Env sanitization and package installer rejection covered.
+- [x] Profile immutability covered.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_profile_registry.py -q
+```
+
+## Risks
+
+- Tests verify registry constraints, not later process cleanup or output limits.
+
+## Result report
+
+- Summary: Added unit tests for profile registry invariants.
+- Files changed: `tests/test_profile_registry.py`.
+- Tests run: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_profile_registry.py -q`.
+- Test results: 8 passed.
+- Assumptions: Process behavior will be covered in M3.10 and M3.11.
+- Remaining issues: None for M3.5.
+- Recommended follow-up: M3.6 `file_metadata` tests.
+
+### Task M3.6-T1 — Add Python File Metadata Tool
+
+## Parent milestone
+
+M3.6
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Add Python-side catalog, policy, path and local executor support for `file_metadata`.
+
+## Scope
+
+- Add static catalog definition.
+- Validate `READ_METADATA` permission and arguments.
+- Permit regular file or directory metadata targets.
+- Return bounded metadata without content.
+
+## Explicit exclusions
+
+- No runtime permission assignment.
+- No prompt changes.
+- No write/process behavior.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/application/tool_catalog.py`
+- `ai_assistant/application/tool_policy.py`
+- `ai_assistant/application/path_policy.py`
+- `ai_assistant/infrastructure/tools/local_read_only.py`
+
+### Read-only
+
+- ADR-026 through ADR-028
+
+### Forbidden
+
+- Runtime integration.
+- Model adapters.
+
+## Dependencies
+
+- M3.5 accepted.
+
+## Applicable ADRs
+
+- ADR-026
+- ADR-027
+- ADR-028
+
+## Acceptance criteria
+
+- [x] Workspace confinement is reused.
+- [x] Sensitive paths are denied by existing path policy.
+- [x] No content is returned.
+- [x] Errors remain sanitized through existing executor/coordinator paths.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py tests/test_tool_policy.py tests/test_path_policy.py tests/test_local_read_only_executor.py tests/test_unix_socket_tool_executor.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -m "not ollama and not toolserver" -q
+```
+
+## Risks
+
+- Runtime must later assign catalog permission instead of trusting model output.
+
+## Result report
+
+- Summary: Added Python-side `file_metadata` support.
+- Files changed: catalog, policy, path policy, local executor and Unix socket permission mapping.
+- Tests run: Python focused suite and core suite.
+- Test results: 67 passed; 232 passed, 8 deselected.
+- Assumptions: Runtime permission assignment is later scope.
+- Remaining issues: None for M3.6.
+- Recommended follow-up: M3.7 `search_text`.
+
+### Task M3.6-T2 — Add C File Metadata Action
+
+## Parent milestone
+
+M3.6
+
+## Status
+
+implemented
+
+## Owner role
+
+C toolserver engineer
+
+## Objective
+
+Add a C toolserver `file_metadata` action with independent path validation and no content return.
+
+## Scope
+
+- Add action dispatch and metadata JSON.
+- Reuse C path confinement and read-only permission validation.
+- Update C toolserver README.
+
+## Explicit exclusions
+
+- No protobuf schema change.
+- No write/process actions.
+
+## File scope
+
+### Writable
+
+- `c_toolserver/src/actions.c`
+- `c_toolserver/README.md`
+
+### Read-only
+
+- `proto/toolserver.proto`
+
+### Forbidden
+
+- Python runtime integration.
+- Protobuf compatibility changes.
+
+## Dependencies
+
+- M3.6-T1
+
+## Applicable ADRs
+
+- ADR-028
+
+## Acceptance criteria
+
+- [x] C validates workspace and path before metadata.
+- [x] C returns file/directory metadata without content.
+- [x] C rejects unsupported/special targets safely.
+
+## Validation commands
+
+```bash
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib make -C c_toolserver
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_c_toolserver_contract.py -q
+```
+
+## Risks
+
+- C JSON construction is manual and must remain bounded.
+
+## Result report
+
+- Summary: Added C `file_metadata` action.
+- Files changed: `c_toolserver/src/actions.c`, `c_toolserver/README.md`.
+- Tests run: C build and C contract tests.
+- Test results: make passed with local protobuf-c environment; 8 passed.
+- Assumptions: Existing protobuf request/response is sufficient.
+- Remaining issues: None for M3.6.
+- Recommended follow-up: M3.7 `search_text`.
+
+### Task M3.6-T3 — Test File Metadata Paths
+
+## Parent milestone
+
+M3.6
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Cover `file_metadata` in catalog, policy, path validation, local executor, Unix socket mapping and C contract tests.
+
+## Scope
+
+- Update focused Python tests.
+- Update C toolserver contract tests.
+
+## Explicit exclusions
+
+- No Ollama tests.
+- No full runtime prompt tests.
+
+## File scope
+
+### Writable
+
+- `tests/test_tool_catalog.py`
+- `tests/test_tool_policy.py`
+- `tests/test_path_policy.py`
+- `tests/test_local_read_only_executor.py`
+- `tests/test_unix_socket_tool_executor.py`
+- `tests/test_c_toolserver_contract.py`
+
+### Read-only
+
+- implementation files touched by M3.6
+
+### Forbidden
+
+- Model adapters.
+
+## Dependencies
+
+- M3.6-T2
+
+## Applicable ADRs
+
+- ADR-026
+- ADR-027
+- ADR-028
+
+## Acceptance criteria
+
+- [x] Python behavior is covered.
+- [x] Unix socket read-metadata permission mapping is covered.
+- [x] C action is covered.
+- [x] No-content response is covered.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py tests/test_tool_policy.py tests/test_path_policy.py tests/test_local_read_only_executor.py tests/test_unix_socket_tool_executor.py -q
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_c_toolserver_contract.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -m "not ollama and not toolserver" -q
+```
+
+## Risks
+
+- Runtime integration still needs separate tests later.
+
+## Result report
+
+- Summary: Added focused M3.6 test coverage.
+- Files changed: focused Python and C tests.
+- Tests run: Python focused suite, C contract suite and core suite.
+- Test results: 67 passed; 8 passed; 232 passed, 8 deselected.
+- Assumptions: M3.6 tests cover implementation, not later prompt integration.
+- Remaining issues: None for M3.6.
+- Recommended follow-up: M3.7 `search_text` tests.
 
 ### Task M1-T1 — Remove Provider Debug Output
 

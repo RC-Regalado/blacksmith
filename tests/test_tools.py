@@ -6,8 +6,13 @@ import pytest
 
 from ai_assistant.agent.message import Message
 from ai_assistant.agent.planner import (
+    AuditRetentionClass,
+    AuditRetentionRule,
+    ConfirmationGrant,
+    HashMetadata,
     PolicyDecisionKind,
     SanitizedToolError,
+    ToolProfileId,
     ToolCall,
     ToolAuditEvent,
     ToolCallDetector,
@@ -19,6 +24,9 @@ from ai_assistant.agent.planner import (
     ToolExecutionStatus,
     ToolPermission,
     ToolPolicyDecision,
+    WriteMode,
+    WriteRequest,
+    WriteResult,
 )
 from ai_assistant.application.errors import InvalidToolCallError
 
@@ -137,6 +145,95 @@ def test_tool_execution_request_is_provider_neutral() -> None:
     assert request.permission == ToolPermission.READ_ONLY
     assert request.timeout_seconds == 5.0
     assert request.dry_run is False
+
+
+def test_phase_3_permission_values_are_available() -> None:
+    assert ToolPermission.READ_METADATA == "read_metadata"
+    assert ToolPermission.READ_CONTENT == "read_content"
+    assert ToolPermission.READ_REPOSITORY == "read_repository"
+    assert ToolPermission.EXECUTE_PROJECT == "execute_project"
+    assert ToolPermission.WRITE_WORKSPACE == "write_workspace"
+
+
+def test_confirmation_grant_scope_uses_session_workspace_and_permission() -> None:
+    granted_at = datetime(2026, 8, 3, tzinfo=UTC)
+
+    grant = ConfirmationGrant(
+        session_id="session-1",
+        workspace_id="/workspace",
+        permission=ToolPermission.WRITE_WORKSPACE,
+        granted_at=granted_at,
+        policy_version="phase3-v1",
+    )
+
+    assert grant.scope == (
+        "session-1",
+        "/workspace",
+        ToolPermission.WRITE_WORKSPACE,
+    )
+
+
+def test_confirmation_grant_rejects_read_only_permission() -> None:
+    with pytest.raises(InvalidToolCallError, match="require consent"):
+        ConfirmationGrant(
+            session_id="session-1",
+            workspace_id="/workspace",
+            permission=ToolPermission.READ_CONTENT,
+            granted_at=datetime(2026, 8, 3, tzinfo=UTC),
+            policy_version="phase3-v1",
+        )
+
+
+def test_profile_id_accepts_safe_identifier() -> None:
+    assert ToolProfileId("core-tests").value == "core-tests"
+
+
+@pytest.mark.parametrize("profile_id", ["", "Core", "../test", "test profile"])
+def test_profile_id_rejects_unsafe_identifier(profile_id: str) -> None:
+    with pytest.raises(InvalidToolCallError, match="profile_id"):
+        ToolProfileId(profile_id)
+
+
+def test_hash_metadata_rejects_invalid_sha256() -> None:
+    with pytest.raises(InvalidToolCallError, match="sha256"):
+        HashMetadata(sha256="abc", size_bytes=1)
+
+
+def test_write_request_accepts_create_and_expected_hash() -> None:
+    sha = "a" * 64
+
+    request = WriteRequest(
+        path="notes.txt",
+        content="hello",
+        mode=WriteMode.REPLACE,
+        expected_sha256=sha,
+    )
+
+    assert request.expected_sha256 == sha
+
+
+def test_write_request_rejects_non_text_content() -> None:
+    with pytest.raises(InvalidToolCallError, match="content"):
+        WriteRequest(path="notes.txt", content=b"bytes", mode=WriteMode.CREATE)
+
+
+def test_write_result_requires_before_hash_for_replace() -> None:
+    with pytest.raises(InvalidToolCallError, match="before"):
+        WriteResult(
+            path="notes.txt",
+            mode=WriteMode.REPLACE,
+            bytes_written=5,
+            before=None,
+            after=HashMetadata(sha256="b" * 64, size_bytes=5),
+        )
+
+
+def test_audit_retention_rule_rejects_non_positive_days() -> None:
+    with pytest.raises(InvalidToolCallError, match="retention"):
+        AuditRetentionRule(
+            retention_class=AuditRetentionClass.SECURITY_DENIAL,
+            days=0,
+        )
 
 
 def test_policy_denial_requires_reason_code() -> None:

@@ -133,7 +133,12 @@ def _error_code(fields: dict[int, bytes | int], status: int) -> str:
 
 
 def _permission(permission: ToolPermission) -> int:
-    if permission == ToolPermission.READ_ONLY:
+    if permission in {
+        ToolPermission.READ_ONLY,
+        ToolPermission.READ_METADATA,
+        ToolPermission.READ_CONTENT,
+        ToolPermission.READ_REPOSITORY,
+    }:
         return _READ_ONLY
     return 0
 

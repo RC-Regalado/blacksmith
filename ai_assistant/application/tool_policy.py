@@ -3,7 +3,7 @@
 from collections.abc import Mapping
 
 from ai_assistant.application.ports.tools import ToolPolicy
-from ai_assistant.application.tool_catalog import LIST_DIRECTORY, READ_FILE
+from ai_assistant.application.tool_catalog import FILE_METADATA, LIST_DIRECTORY, READ_FILE
 from ai_assistant.domain.tools import (
     PolicyDecisionKind,
     ToolDefinition,
@@ -52,6 +52,8 @@ def _valid_arguments(arguments: Mapping[str, object], definition: ToolDefinition
     path = arguments.get("path")
     if not isinstance(path, str) or not path:
         return False
+    if definition.name == FILE_METADATA:
+        return set(arguments) == {"path"}
     if definition.name == READ_FILE:
         return _optional_int(arguments, "offset") and _optional_int(
             arguments, "max_bytes"
@@ -69,6 +71,8 @@ def _valid_arguments(arguments: Mapping[str, object], definition: ToolDefinition
 def _exceeds_limits(arguments: Mapping[str, object], definition: ToolDefinition) -> bool:
     if len(str(arguments["path"])) > int(definition.limits["max_path_length"]):
         return True
+    if definition.name == FILE_METADATA:
+        return False
     if definition.name == READ_FILE:
         offset = int(arguments.get("offset", definition.defaults["offset"]))
         max_bytes = int(arguments.get("max_bytes", definition.defaults["max_bytes"]))

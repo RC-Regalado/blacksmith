@@ -249,6 +249,36 @@ static void handle_list_directory(const Toolserver__V1__ToolRequest *request,
     set_data(result, "directory listed", json);
 }
 
+static void handle_file_metadata(const Toolserver__V1__ToolRequest *request,
+                                 ActionResult *result)
+{
+    char target[PATH_MAX];
+    if (!resolve_target(request, target)) {
+        set_error(result, TOOLSERVER__V1__TOOL_STATUS__TOOL_STATUS_DENIED,
+                  "path_denied", "path denied");
+        return;
+    }
+    struct stat st;
+    if (stat(target, &st) != 0 || (!S_ISREG(st.st_mode) && !S_ISDIR(st.st_mode))) {
+        set_error(result, TOOLSERVER__V1__TOOL_STATUS__TOOL_STATUS_INVALID_ARGUMENT,
+                  "invalid_path", "path must be a regular file or directory");
+        return;
+    }
+    char *json = malloc(160U);
+    if (json == NULL) {
+        set_data(result, "file metadata", NULL);
+        return;
+    }
+    if (S_ISDIR(st.st_mode)) {
+        snprintf(json, 160U, "{\"type\":\"directory\",\"size\":null,\"modified_at\":%ld}",
+                 (long)st.st_mtime);
+    } else {
+        snprintf(json, 160U, "{\"type\":\"file\",\"size\":%ld,\"modified_at\":%ld}",
+                 (long)st.st_size, (long)st.st_mtime);
+    }
+    set_data(result, "file metadata", json);
+}
+
 static void handle_read_file(const Toolserver__V1__ToolRequest *request,
                              ActionResult *result)
 {
@@ -315,6 +345,10 @@ void handle_tool_request(const Toolserver__V1__ToolRequest *request,
     if (!permission_allowed(request)) {
         set_error(result, TOOLSERVER__V1__TOOL_STATUS__TOOL_STATUS_DENIED,
                   "permission_denied", "requested permission is not allowed");
+        return;
+    }
+    if (strcmp(request->tool_name, "file_metadata") == 0) {
+        handle_file_metadata(request, result);
         return;
     }
     if (strcmp(request->tool_name, "list_directory") == 0) {

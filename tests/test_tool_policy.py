@@ -19,6 +19,7 @@ from ai_assistant.domain.tools import (
     ToolExecutionRequest,
     ToolExecutionResult,
     ToolExecutionStatus,
+    ToolPermission,
 )
 
 
@@ -27,6 +28,17 @@ pytestmark = pytest.mark.unit
 
 def test_allowed_read_file_request_is_allowed() -> None:
     decision = _decide("read_file", {"path": "notes.txt", "max_bytes": 1024})
+
+    assert decision.kind == PolicyDecisionKind.ALLOW
+    assert decision.reason_code is None
+
+
+def test_allowed_file_metadata_request_is_allowed() -> None:
+    decision = _decide(
+        "file_metadata",
+        {"path": "notes.txt"},
+        permission=ToolPermission.READ_METADATA,
+    )
 
     assert decision.kind == PolicyDecisionKind.ALLOW
     assert decision.reason_code is None
@@ -51,6 +63,16 @@ def test_unknown_tool_is_denied_with_stable_reason() -> None:
 )
 def test_malformed_arguments_are_denied(tool_name: str, arguments: dict[str, object]) -> None:
     decision = _decide(tool_name, arguments)
+
+    assert decision.reason_code == REASON_INVALID_ARGUMENTS
+
+
+def test_file_metadata_rejects_extra_arguments() -> None:
+    decision = _decide(
+        "file_metadata",
+        {"path": "notes.txt", "max_bytes": 1},
+        permission=ToolPermission.READ_METADATA,
+    )
 
     assert decision.reason_code == REASON_INVALID_ARGUMENTS
 
@@ -84,6 +106,12 @@ def test_timeout_above_hard_maximum_is_denied() -> None:
 
 def test_permission_above_static_permission_is_denied() -> None:
     decision = _decide("read_file", {"path": "notes.txt"}, permission="write")
+
+    assert decision.reason_code == REASON_PERMISSION_DENIED
+
+
+def test_file_metadata_requires_read_metadata_permission() -> None:
+    decision = _decide("file_metadata", {"path": "notes.txt"})
 
     assert decision.reason_code == REASON_PERMISSION_DENIED
 

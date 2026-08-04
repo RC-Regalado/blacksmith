@@ -46,7 +46,12 @@ Generated changes are provisional until recorded here.
 | M2.14 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "Aprobado, pasa al M2.15". |
 | M2.15 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed: "aprobado, pasa al M2.16". |
 | M2.16 | implemented-awaiting-human-review | approved | User | 2026-08-01 | User confirmed Phase 2 approved after manual tool validation with `gemma4:latest`. |
-| M3.1 | implemented-awaiting-human-review | awaiting-review | User | 2026-08-01 | Phase 3 startup baseline recorded; Phase 2 targeted validation passed; M3.2 remains pending ADR approval. |
+| M3.1 | implemented-awaiting-human-review | approved | User | 2026-08-03 | User confirmed: "Aprobado". Phase 3 startup baseline accepted; M3.2 may begin. |
+| M3.2 | implemented-awaiting-human-review | approved | User | 2026-08-03 | User approved revised ADR-033 after `rg` over `grep` change. ADR-026 through ADR-035 accepted; M3.3 may begin. |
+| M3.3 | implemented-awaiting-human-review | approved | User | 2026-08-03 | User confirmed: "Aprobado, pasa al M3.4". Phase 3 domain models accepted. |
+| M3.4 | implemented-awaiting-human-review | approved | User | 2026-08-03 | User confirmed: "Aprobado, inicia el M3.5". Confirmation service accepted. |
+| M3.5 | implemented-awaiting-human-review | approved | User | 2026-08-03 | User confirmed: "Aprobado". Fixed profile registry accepted. |
+| M3.6 | implemented-awaiting-human-review | awaiting-review | User | 2026-08-03 | `file_metadata` implemented and validated through Python and C paths. |
 
 ## Approval gates
 
@@ -57,6 +62,7 @@ Generated changes are provisional until recorded here.
 | PHASE2-G3 | Phase 2 | Approve audit persistence target and retention | Phase 2 requires audit, but no durable audit schema or retention policy exists. | closed | Approved through ADR-020. |
 | PHASE2-G4 | M2.1 | Approve ADR-016 through ADR-025 after proposal | Required Phase 2 ADRs must be accepted before productive execution tasks become eligible. | closed | ADR-016 through ADR-025 approved by user. |
 | M2.13-G1 | M2.13 | Install `protoc-gen-c` and `protobuf-c` build dependencies | `make -C c_toolserver` failed until local `protobuf-c` was exposed to `pkg-config`. | closed | Validated with `PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig` and `LD_LIBRARY_PATH=/home/rc-regalado/.local/lib`. |
+| M3.2-G1 | M3.2 | Approve ADR-033 | `search_text` policy required explicit approval after the requested `rg` over `grep` revision. | closed | ADR-033 approved by user on 2026-08-03. |
 
 ## Manual review record template
 

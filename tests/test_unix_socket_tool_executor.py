@@ -11,6 +11,7 @@ from ai_assistant.domain.tools import (
     ToolExecutionContext,
     ToolExecutionRequest,
     ToolExecutionStatus,
+    ToolPermission,
 )
 from ai_assistant.infrastructure.tools import UnixSocketToolExecutor
 from ai_assistant.tools.framing import decode_frame_header, encode_frame
@@ -33,6 +34,20 @@ def test_executor_transmits_authorized_context(tmp_path: Path) -> None:
     assert request[3] == str(tmp_path).encode()
     assert request[5] == 1
     assert _request_args(received[0])["path"] == "safe.txt"
+
+
+def test_executor_maps_read_metadata_to_read_only_transport(tmp_path: Path) -> None:
+    received: list[bytes] = []
+    thread = _server(tmp_path / "tool.sock", received, _response("req-1", 1, b"{}"))
+
+    result = UnixSocketToolExecutor(tmp_path / "tool.sock").execute(
+        _context(tmp_path, permission=ToolPermission.READ_METADATA)
+    )
+
+    thread.join(timeout=2)
+    request = _decode_message(received[0])
+    assert result.status == ToolExecutionStatus.SUCCESS
+    assert request[5] == 1
 
 
 def test_missing_socket_becomes_typed_error(tmp_path: Path) -> None:
@@ -102,7 +117,11 @@ def test_response_id_mismatch_becomes_typed_error(tmp_path: Path) -> None:
     assert result.error.code == "response_id_mismatch"
 
 
-def _context(workspace: Path | None = None, timeout_seconds: float = 5.0) -> ToolExecutionContext:
+def _context(
+    workspace: Path | None = None,
+    timeout_seconds: float = 5.0,
+    permission: ToolPermission = ToolPermission.READ_ONLY,
+) -> ToolExecutionContext:
     root = workspace or Path.cwd()
     return ToolExecutionContext(
         request=ToolExecutionRequest(
@@ -111,6 +130,7 @@ def _context(workspace: Path | None = None, timeout_seconds: float = 5.0) -> Too
             tool_name="read_file",
             arguments={"path": "../unsafe.txt", "max_bytes": 8},
             timeout_seconds=timeout_seconds,
+            permission=permission,
         ),
         workspace_id=str(root),
         resolved_path=str(root / "safe.txt"),

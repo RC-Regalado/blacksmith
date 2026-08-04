@@ -2,8 +2,13 @@
 
 from ai_assistant.application.tool_calls import ToolCallDetector, ToolCallInterpreter
 from ai_assistant.domain.tools import (
+    AuditRetentionClass,
+    AuditRetentionRule,
+    ConfirmationGrant,
+    HashMetadata,
     PolicyDecisionKind,
     SanitizedToolError,
+    ToolProfileId,
     ToolAuditEvent,
     ToolCall,
     ToolCallPlan,
@@ -14,6 +19,9 @@ from ai_assistant.domain.tools import (
     ToolExecutionStatus,
     ToolPermission,
     ToolPolicyDecision,
+    WriteMode,
+    WriteRequest,
+    WriteResult,
 )
 
 __all__ = [
@@ -31,4 +39,12 @@ __all__ = [
     "ToolAuditEvent",
     "SanitizedToolError",
     "PolicyDecisionKind",
+    "ConfirmationGrant",
+    "ToolProfileId",
+    "WriteMode",
+    "WriteRequest",
+    "WriteResult",
+    "HashMetadata",
+    "AuditRetentionClass",
+    "AuditRetentionRule",
 ]
