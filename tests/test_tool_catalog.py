@@ -15,10 +15,18 @@ def test_static_catalog_registers_only_productive_read_only_tools() -> None:
 
     names = {definition.name for definition in catalog.definitions()}
 
-    assert names == {"file_metadata", "list_directory", "read_file"}
+    assert names == {
+        "file_metadata",
+        "git_status",
+        "list_directory",
+        "read_file",
+        "search_text",
+    }
     assert catalog.definition_for("file_metadata").permission == ToolPermission.READ_METADATA
+    assert catalog.definition_for("git_status").permission == ToolPermission.READ_REPOSITORY
     assert catalog.definition_for("list_directory").permission == ToolPermission.READ_ONLY
     assert catalog.definition_for("read_file").permission == ToolPermission.READ_ONLY
+    assert catalog.definition_for("search_text").permission == ToolPermission.READ_CONTENT
 
 
 @pytest.mark.parametrize(
@@ -53,12 +61,18 @@ def test_static_catalog_uses_configured_defaults_capped_by_hard_limits() -> None
     read_file = catalog.definition_for("read_file")
     list_directory = catalog.definition_for("list_directory")
     file_metadata = catalog.definition_for("file_metadata")
+    git_status = catalog.definition_for("git_status")
+    search_text = catalog.definition_for("search_text")
 
     assert read_file.defaults["timeout_seconds"] == 30.0
     assert read_file.defaults["max_bytes"] == 65536
     assert list_directory.defaults["max_entries"] == 1000
     assert list_directory.defaults["max_depth"] == 3
     assert file_metadata.defaults["timeout_seconds"] == 30.0
+    assert git_status.defaults["max_entries"] == 200
+    assert git_status.limits["max_entries"] == 1000
+    assert search_text.defaults["max_matches"] == 20
+    assert search_text.limits["max_files"] == 200
 
 
 def test_tool_definition_metadata_is_immutable() -> None:

@@ -44,6 +44,23 @@ def test_file_metadata_allows_file_or_directory(tmp_path: Path) -> None:
     assert _validate(tmp_path, "file_metadata", "src").relative_path == "src"
 
 
+def test_search_text_allows_file_or_directory_root(tmp_path: Path) -> None:
+    (tmp_path / "notes.txt").write_text("ok", encoding="utf-8")
+    (tmp_path / "src").mkdir()
+
+    assert _validate(tmp_path, "search_text", "notes.txt").relative_path == "notes.txt"
+    assert _validate(tmp_path, "search_text", "src").relative_path == "src"
+
+
+def test_git_status_allows_directory_root_only(tmp_path: Path) -> None:
+    (tmp_path / "notes.txt").write_text("ok", encoding="utf-8")
+    (tmp_path / "repo").mkdir()
+
+    assert _validate(tmp_path, "git_status", "repo").relative_path == "repo"
+    with pytest.raises(InvalidToolCallError, match="directory"):
+        _validate(tmp_path, "git_status", "notes.txt")
+
+
 @pytest.mark.parametrize("path", ["../outside.txt", "nested/../../outside.txt"])
 def test_traversal_escape_is_denied(tmp_path: Path, path: str) -> None:
     with pytest.raises(InvalidToolCallError, match="traversal"):

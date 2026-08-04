@@ -62,6 +62,9 @@ AI_ASSISTANT_REQUEST_TIMEOUT=180 \
 python main.py
 ```
 
+For the current local server profile and recommended Blacksmith parameters, see
+`docs/ollama-local.md`.
+
 Example with read-only tools:
 
 ```bash
@@ -69,6 +72,7 @@ ollama create blacksmith-tools -f Modelfile
 
 AI_ASSISTANT_PROVIDER=ollama \
 AI_ASSISTANT_MODEL=blacksmith-tools \
+AI_ASSISTANT_REQUEST_TIMEOUT=240 \
 AI_ASSISTANT_WORKSPACE="$PWD" \
 AI_ASSISTANT_TOOL_EXECUTION=true \
 AI_ASSISTANT_CONTEXT_LIMIT=2048 \

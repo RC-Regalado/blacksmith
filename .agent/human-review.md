@@ -51,7 +51,9 @@ Generated changes are provisional until recorded here.
 | M3.3 | implemented-awaiting-human-review | approved | User | 2026-08-03 | User confirmed: "Aprobado, pasa al M3.4". Phase 3 domain models accepted. |
 | M3.4 | implemented-awaiting-human-review | approved | User | 2026-08-03 | User confirmed: "Aprobado, inicia el M3.5". Confirmation service accepted. |
 | M3.5 | implemented-awaiting-human-review | approved | User | 2026-08-03 | User confirmed: "Aprobado". Fixed profile registry accepted. |
-| M3.6 | implemented-awaiting-human-review | awaiting-review | User | 2026-08-03 | `file_metadata` implemented and validated through Python and C paths. |
+| M3.6 | implemented-awaiting-human-review | approved | User | 2026-08-03 | User confirmed: "aprobado, pasa al M3.7". `file_metadata` accepted. |
+| M3.7 | implemented-awaiting-human-review | approved | User | 2026-08-03 | User confirmed: "Aprobado, pasa al M3.8". `search_text` accepted. |
+| M3.8 | implemented-awaiting-human-review | awaiting-review | User | 2026-08-03 | `git_status` implemented and validated through the Python local executor path. |
 
 ## Approval gates
 

@@ -1,6 +1,9 @@
 """Integration tests for local read-only tool executor."""
 
+import os
 from pathlib import Path
+import shutil
+import subprocess
 
 import pytest
 
@@ -10,6 +13,7 @@ from ai_assistant.domain.tools import (
     ToolExecutionStatus,
     ToolPermission,
 )
+from ai_assistant.infrastructure.tools import local_read_only
 from ai_assistant.infrastructure.tools.local_read_only import LocalReadOnlyToolExecutor
 
 
@@ -64,6 +68,272 @@ def test_file_metadata_returns_no_file_content(tmp_path: Path) -> None:
     assert result.content["type"] == "file"
     assert result.content["size"] == 6
     assert "content" not in result.content
+
+
+def test_search_text_returns_bounded_literal_matches(tmp_path: Path) -> None:
+    if shutil.which("rg") is None:
+        pytest.skip("rg is required for productive search_text")
+    (tmp_path / "notes.txt").write_text("hello.*\nhellox\n", encoding="utf-8")
+
+    result = LocalReadOnlyToolExecutor().execute(
+        _context(
+            tmp_path,
+            "search_text",
+            ".",
+            {"query": "hello.*", "max_matches": 1},
+            permission=ToolPermission.READ_CONTENT,
+        )
+    )
+
+    assert result.status == ToolExecutionStatus.SUCCESS
+    assert result.truncated is False
+    assert result.content == {
+        "matches": [{"path": "notes.txt", "line": 1, "preview": "hello.*"}],
+        "truncated": False,
+    }
+
+
+def test_search_text_marks_truncation(tmp_path: Path) -> None:
+    if shutil.which("rg") is None:
+        pytest.skip("rg is required for productive search_text")
+    (tmp_path / "a.txt").write_text("needle\nneedle\n", encoding="utf-8")
+
+    result = LocalReadOnlyToolExecutor().execute(
+        _context(
+            tmp_path,
+            "search_text",
+            ".",
+            {"query": "needle", "max_matches": 1},
+            permission=ToolPermission.READ_CONTENT,
+        )
+    )
+
+    assert result.status == ToolExecutionStatus.SUCCESS
+    assert result.truncated is True
+    assert result.content is not None
+    assert result.content["truncated"] is True
+    assert len(result.content["matches"]) == 1
+
+
+def test_search_text_bounds_files_and_bytes(tmp_path: Path) -> None:
+    if shutil.which("rg") is None:
+        pytest.skip("rg is required for productive search_text")
+    (tmp_path / "a.txt").write_text("needle\n", encoding="utf-8")
+    (tmp_path / "b.txt").write_text("needle\n", encoding="utf-8")
+    (tmp_path / "big.txt").write_text("needle\n" + ("x" * 20), encoding="utf-8")
+
+    result = LocalReadOnlyToolExecutor().execute(
+        _context(
+            tmp_path,
+            "search_text",
+            ".",
+            {"query": "needle", "max_files": 1, "max_bytes_per_file": 100},
+            permission=ToolPermission.READ_CONTENT,
+        )
+    )
+
+    assert result.status == ToolExecutionStatus.SUCCESS
+    assert result.truncated is True
+    assert result.content is not None
+    assert result.content["matches"] == [
+        {"path": "a.txt", "line": 1, "preview": "needle"}
+    ]
+
+    bytes_result = LocalReadOnlyToolExecutor().execute(
+        _context(
+            tmp_path,
+            "search_text",
+            ".",
+            {"query": "needle", "max_files": 10, "max_bytes_per_file": 8},
+            permission=ToolPermission.READ_CONTENT,
+        )
+    )
+
+    assert bytes_result.status == ToolExecutionStatus.SUCCESS
+    assert bytes_result.content is not None
+    paths = {match["path"] for match in bytes_result.content["matches"]}
+    assert paths == {"a.txt", "b.txt"}
+
+
+def test_search_text_excludes_hidden_sensitive_and_redacts_preview(tmp_path: Path) -> None:
+    if shutil.which("rg") is None:
+        pytest.skip("rg is required for productive search_text")
+    (tmp_path / "visible.txt").write_text("token=abc123\n", encoding="utf-8")
+    (tmp_path / ".hidden.txt").write_text("needle\n", encoding="utf-8")
+    (tmp_path / "secret.pem").write_text("needle\n", encoding="utf-8")
+
+    result = LocalReadOnlyToolExecutor().execute(
+        _context(
+            tmp_path,
+            "search_text",
+            ".",
+            {"query": "token"},
+            permission=ToolPermission.READ_CONTENT,
+        )
+    )
+
+    assert result.status == ToolExecutionStatus.SUCCESS
+    assert result.content == {
+        "matches": [{"path": "visible.txt", "line": 1, "preview": "token=[REDACTED]"}],
+        "truncated": False,
+    }
+
+    denied = LocalReadOnlyToolExecutor().execute(
+        _context(
+            tmp_path,
+            "search_text",
+            ".",
+            {"query": "needle"},
+            permission=ToolPermission.READ_CONTENT,
+        )
+    )
+
+    assert denied.status == ToolExecutionStatus.SUCCESS
+    assert denied.content == {"matches": [], "truncated": False}
+
+
+def test_search_text_reports_missing_rg(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(local_read_only, "_RG", "__missing_rg__")
+    (tmp_path / "notes.txt").write_text("needle", encoding="utf-8")
+
+    result = LocalReadOnlyToolExecutor().execute(
+        _context(
+            tmp_path,
+            "search_text",
+            ".",
+            {"query": "needle"},
+            permission=ToolPermission.READ_CONTENT,
+        )
+    )
+
+    assert result.status == ToolExecutionStatus.ERROR
+    assert result.error is not None
+    assert result.error.code == "search_backend_unavailable"
+
+
+def test_git_status_returns_structured_entries(tmp_path: Path) -> None:
+    _git(tmp_path, "init")
+    (tmp_path / "tracked.txt").write_text("old\n", encoding="utf-8")
+    _git(tmp_path, "add", "tracked.txt")
+    _git(tmp_path, "commit", "-m", "initial")
+    (tmp_path / "tracked.txt").write_text("new\n", encoding="utf-8")
+    (tmp_path / "new.txt").write_text("new\n", encoding="utf-8")
+
+    result = LocalReadOnlyToolExecutor().execute(
+        _context(
+            tmp_path,
+            "git_status",
+            ".",
+            permission=ToolPermission.READ_REPOSITORY,
+        )
+    )
+
+    assert result.status == ToolExecutionStatus.SUCCESS
+    assert result.content is not None
+    assert result.content["repository"] == "."
+    assert result.content["truncated"] is False
+    assert sorted(result.content["entries"], key=lambda row: row["path"]) == [
+        {"path": "new.txt", "index": "?", "worktree": "?"},
+        {"path": "tracked.txt", "index": " ", "worktree": "M"},
+    ]
+
+
+def test_git_status_marks_truncation(tmp_path: Path) -> None:
+    _git(tmp_path, "init")
+    (tmp_path / "a.txt").write_text("a\n", encoding="utf-8")
+    (tmp_path / "b.txt").write_text("b\n", encoding="utf-8")
+
+    result = LocalReadOnlyToolExecutor().execute(
+        _context(
+            tmp_path,
+            "git_status",
+            ".",
+            {"max_entries": 1},
+            permission=ToolPermission.READ_REPOSITORY,
+        )
+    )
+
+    assert result.status == ToolExecutionStatus.SUCCESS
+    assert result.truncated is True
+    assert result.content is not None
+    assert result.content["truncated"] is True
+    assert len(result.content["entries"]) == 1
+
+
+def test_git_status_omits_hidden_and_sensitive_paths(tmp_path: Path) -> None:
+    _git(tmp_path, "init")
+    (tmp_path / ".env").write_text("SECRET=value\n", encoding="utf-8")
+    (tmp_path / "secret.pem").write_text("secret\n", encoding="utf-8")
+    (tmp_path / "visible.txt").write_text("ok\n", encoding="utf-8")
+
+    result = LocalReadOnlyToolExecutor().execute(
+        _context(
+            tmp_path,
+            "git_status",
+            ".",
+            permission=ToolPermission.READ_REPOSITORY,
+        )
+    )
+
+    assert result.status == ToolExecutionStatus.SUCCESS
+    assert result.content is not None
+    assert result.content["entries"] == [
+        {"path": "visible.txt", "index": "?", "worktree": "?"}
+    ]
+
+
+def test_git_status_denies_repo_outside_workspace(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    workspace = repo / "workspace"
+    workspace.mkdir(parents=True)
+    _git(repo, "init")
+
+    result = LocalReadOnlyToolExecutor().execute(
+        _context(
+            workspace,
+            "git_status",
+            ".",
+            permission=ToolPermission.READ_REPOSITORY,
+        )
+    )
+
+    assert result.status == ToolExecutionStatus.ERROR
+    assert result.error is not None
+    assert result.error.code == "git_repo_outside_workspace"
+
+
+def test_git_status_uses_fixed_environment(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _git(tmp_path, "init")
+    calls: list[dict[str, object]] = []
+    real_run = subprocess.run
+
+    def recording_run(*args: object, **kwargs: object):
+        calls.append({"args": args, "kwargs": kwargs})
+        return real_run(*args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", recording_run)
+
+    result = LocalReadOnlyToolExecutor().execute(
+        _context(
+            tmp_path,
+            "git_status",
+            ".",
+            permission=ToolPermission.READ_REPOSITORY,
+        )
+    )
+
+    assert result.status == ToolExecutionStatus.SUCCESS
+    status_call = calls[-1]
+    argv = status_call["args"][0]
+    env = status_call["kwargs"]["env"]
+    assert "status" in argv
+    assert "core.hooksPath=/dev/null" in argv
+    assert "pager.status=false" in argv
+    assert env["GIT_PAGER"] == "cat"
+    assert env["PAGER"] == "cat"
+    assert env["GIT_EXTERNAL_DIFF"] == ""
 
 
 def test_executor_repeats_path_validation_before_access(tmp_path: Path) -> None:
@@ -138,4 +408,21 @@ def _context(
         workspace_id=str(workspace),
         resolved_path=str((workspace / path).resolve()),
         relative_path=path,
+    )
+
+
+def _git(cwd: Path, *args: str) -> None:
+    subprocess.run(
+        ["git", *args],
+        cwd=cwd,
+        env={
+            "GIT_AUTHOR_NAME": "Test",
+            "GIT_AUTHOR_EMAIL": "test@example.invalid",
+            "GIT_COMMITTER_NAME": "Test",
+            "GIT_COMMITTER_EMAIL": "test@example.invalid",
+            "PATH": os.environ.get("PATH", ""),
+        },
+        check=True,
+        capture_output=True,
+        text=True,
     )

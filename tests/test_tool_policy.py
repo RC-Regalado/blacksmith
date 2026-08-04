@@ -44,6 +44,28 @@ def test_allowed_file_metadata_request_is_allowed() -> None:
     assert decision.reason_code is None
 
 
+def test_allowed_search_text_request_is_allowed() -> None:
+    decision = _decide(
+        "search_text",
+        {"path": ".", "query": "needle", "max_matches": 2},
+        permission=ToolPermission.READ_CONTENT,
+    )
+
+    assert decision.kind == PolicyDecisionKind.ALLOW
+    assert decision.reason_code is None
+
+
+def test_allowed_git_status_request_is_allowed() -> None:
+    decision = _decide(
+        "git_status",
+        {"path": ".", "max_entries": 20},
+        permission=ToolPermission.READ_REPOSITORY,
+    )
+
+    assert decision.kind == PolicyDecisionKind.ALLOW
+    assert decision.reason_code is None
+
+
 def test_unknown_tool_is_denied_with_stable_reason() -> None:
     decision = DenyByDefaultToolPolicy().deny_unknown_tool()
 
@@ -59,10 +81,16 @@ def test_unknown_tool_is_denied_with_stable_reason() -> None:
         ("read_file", {"path": "notes.txt", "max_bytes": True}),
         ("list_directory", {"path": ".", "recursive": "yes"}),
         ("list_directory", {"path": ".", "include_hidden": 1}),
+        ("search_text", {"path": ".", "query": ""}),
+        ("search_text", {"path": ".", "query": "needle", "regex": True}),
+        ("search_text", {"path": ".", "query": "needle", "max_matches": True}),
+        ("git_status", {"path": ".", "scope": "all"}),
+        ("git_status", {"path": ".", "max_entries": True}),
     ],
 )
 def test_malformed_arguments_are_denied(tool_name: str, arguments: dict[str, object]) -> None:
-    decision = _decide(tool_name, arguments)
+    permission = _permission_for(tool_name)
+    decision = _decide(tool_name, arguments, permission=permission)
 
     assert decision.reason_code == REASON_INVALID_ARGUMENTS
 
@@ -84,12 +112,18 @@ def test_file_metadata_rejects_extra_arguments() -> None:
         ("read_file", {"path": "notes.txt", "offset": -1}),
         ("list_directory", {"path": ".", "max_entries": 1001}),
         ("list_directory", {"path": ".", "max_depth": 4}),
+        ("search_text", {"path": ".", "query": "needle", "max_matches": 101}),
+        ("search_text", {"path": ".", "query": "needle", "max_files": 201}),
+        ("search_text", {"path": ".", "query": "needle", "max_preview_chars": 501}),
+        ("search_text", {"path": ".", "query": "x" * 257}),
+        ("git_status", {"path": ".", "max_entries": 1001}),
     ],
 )
 def test_values_above_hard_maximum_are_denied(
     tool_name: str, arguments: dict[str, object]
 ) -> None:
-    decision = _decide(tool_name, arguments)
+    permission = _permission_for(tool_name)
+    decision = _decide(tool_name, arguments, permission=permission)
 
     assert decision.reason_code == REASON_LIMIT_EXCEEDED
 
@@ -112,6 +146,18 @@ def test_permission_above_static_permission_is_denied() -> None:
 
 def test_file_metadata_requires_read_metadata_permission() -> None:
     decision = _decide("file_metadata", {"path": "notes.txt"})
+
+    assert decision.reason_code == REASON_PERMISSION_DENIED
+
+
+def test_search_text_requires_read_content_permission() -> None:
+    decision = _decide("search_text", {"path": ".", "query": "needle"})
+
+    assert decision.reason_code == REASON_PERMISSION_DENIED
+
+
+def test_git_status_requires_read_repository_permission() -> None:
+    decision = _decide("git_status", {"path": "."})
 
     assert decision.reason_code == REASON_PERMISSION_DENIED
 
@@ -183,6 +229,14 @@ def _request(
         permission=permission,  # type: ignore[arg-type]
         timeout_seconds=timeout_seconds,
     )
+
+
+def _permission_for(tool_name: str) -> object:
+    if tool_name == "search_text":
+        return ToolPermission.READ_CONTENT
+    if tool_name == "git_status":
+        return ToolPermission.READ_REPOSITORY
+    return "read_only"
 
 
 def _execute_if_allowed(

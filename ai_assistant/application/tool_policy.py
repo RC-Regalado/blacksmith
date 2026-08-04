@@ -3,7 +3,13 @@
 from collections.abc import Mapping
 
 from ai_assistant.application.ports.tools import ToolPolicy
-from ai_assistant.application.tool_catalog import FILE_METADATA, LIST_DIRECTORY, READ_FILE
+from ai_assistant.application.tool_catalog import (
+    FILE_METADATA,
+    GIT_STATUS,
+    LIST_DIRECTORY,
+    READ_FILE,
+    SEARCH_TEXT,
+)
 from ai_assistant.domain.tools import (
     PolicyDecisionKind,
     ToolDefinition,
@@ -54,6 +60,30 @@ def _valid_arguments(arguments: Mapping[str, object], definition: ToolDefinition
         return False
     if definition.name == FILE_METADATA:
         return set(arguments) == {"path"}
+    if definition.name == SEARCH_TEXT:
+        query = arguments.get("query")
+        return (
+            isinstance(query, str)
+            and bool(query)
+            and _optional_int(arguments, "max_matches")
+            and _optional_int(arguments, "max_files")
+            and _optional_int(arguments, "max_preview_chars")
+            and _optional_int(arguments, "max_bytes_per_file")
+            and set(arguments)
+            <= {
+                "path",
+                "query",
+                "max_matches",
+                "max_files",
+                "max_preview_chars",
+                "max_bytes_per_file",
+            }
+        )
+    if definition.name == GIT_STATUS:
+        return _optional_int(arguments, "max_entries") and set(arguments) <= {
+            "path",
+            "max_entries",
+        }
     if definition.name == READ_FILE:
         return _optional_int(arguments, "offset") and _optional_int(
             arguments, "max_bytes"
@@ -73,6 +103,39 @@ def _exceeds_limits(arguments: Mapping[str, object], definition: ToolDefinition)
         return True
     if definition.name == FILE_METADATA:
         return False
+    if definition.name == SEARCH_TEXT:
+        query = str(arguments["query"])
+        max_matches = int(
+            arguments.get("max_matches", definition.defaults["max_matches"])
+        )
+        max_files = int(arguments.get("max_files", definition.defaults["max_files"]))
+        max_preview = int(
+            arguments.get("max_preview_chars", definition.defaults["max_preview_chars"])
+        )
+        max_bytes = int(
+            arguments.get(
+                "max_bytes_per_file", definition.defaults["max_bytes_per_file"]
+            )
+        )
+        return (
+            len(query) > int(definition.limits["max_query_length"])
+            or max_matches < 1
+            or max_matches > int(definition.limits["max_matches"])
+            or max_files < 1
+            or max_files > int(definition.limits["max_files"])
+            or max_preview < 1
+            or max_preview > int(definition.limits["max_preview_chars"])
+            or max_bytes < 1
+            or max_bytes > int(definition.limits["max_bytes_per_file"])
+        )
+    if definition.name == GIT_STATUS:
+        max_entries = int(
+            arguments.get("max_entries", definition.defaults["max_entries"])
+        )
+        return (
+            max_entries < 1
+            or max_entries > int(definition.limits["max_entries"])
+        )
     if definition.name == READ_FILE:
         offset = int(arguments.get("offset", definition.defaults["offset"]))
         max_bytes = int(arguments.get("max_bytes", definition.defaults["max_bytes"]))

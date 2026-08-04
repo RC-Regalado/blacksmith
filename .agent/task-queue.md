@@ -133,6 +133,12 @@ The supervisor is the only agent permitted to update this file.
 | M3.6-T1 | M3.6 | Runtime implementer | Add Python-side `file_metadata` catalog, policy, path and local executor support | `ai_assistant/application/tool_catalog.py`, `ai_assistant/application/tool_policy.py`, `ai_assistant/application/path_policy.py`, `ai_assistant/infrastructure/tools/local_read_only.py` | M3.5 | implemented |
 | M3.6-T2 | M3.6 | C toolserver engineer | Add C toolserver `file_metadata` action | `c_toolserver/src/actions.c`, `c_toolserver/README.md` | M3.6-T1 | implemented |
 | M3.6-T3 | M3.6 | Test agent | Cover `file_metadata` Python and C behavior | relevant Python and C contract tests | M3.6-T2 | implemented |
+| M3.7-T1 | M3.7 | Runtime implementer | Add Python-side `search_text` catalog, policy, path and fixed `rg` execution | `ai_assistant/application/tool_catalog.py`, `ai_assistant/application/tool_policy.py`, `ai_assistant/application/path_policy.py`, `ai_assistant/infrastructure/tools/local_read_only.py` | M3.6 | implemented |
+| M3.7-T2 | M3.7 | Test agent | Cover bounded literal search, exclusions, truncation and missing `rg` | `tests/test_tool_catalog.py`, `tests/test_tool_policy.py`, `tests/test_path_policy.py`, `tests/test_local_read_only_executor.py` | M3.7-T1 | implemented |
+| M3.7-T3 | M3.7 | Integration validator | Validate M3.7 and prepare human review artifacts | `.agent/reports/M3.7.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M3.7-T2 | implemented |
+| M3.8-T1 | M3.8 | Runtime implementer | Add Python-side `git_status` catalog, policy, path and fixed Git status execution | `ai_assistant/application/tool_catalog.py`, `ai_assistant/application/tool_policy.py`, `ai_assistant/application/path_policy.py`, `ai_assistant/infrastructure/tools/local_read_only.py` | M3.7 | implemented |
+| M3.8-T2 | M3.8 | Test agent | Cover structured status, workspace repo confinement, no pager/hooks and bounded output | `tests/test_tool_catalog.py`, `tests/test_tool_policy.py`, `tests/test_path_policy.py`, `tests/test_local_read_only_executor.py` | M3.8-T1 | implemented |
+| M3.8-T3 | M3.8 | Integration validator | Validate M3.8 and prepare human review artifacts | `.agent/reports/M3.8.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M3.8-T2 | implemented |
 
 ## Task records
 
@@ -1394,6 +1400,523 @@ PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -m "not ollama and not tools
 - Assumptions: M3.6 tests cover implementation, not later prompt integration.
 - Remaining issues: None for M3.6.
 - Recommended follow-up: M3.7 `search_text` tests.
+
+### Task M3.7-T1 — Add Python Search Text Tool
+
+## Parent milestone
+
+M3.7
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Add `search_text` to the Python tool path using fixed literal `rg` execution.
+
+## Scope
+
+- Add declarative catalog metadata for `search_text`.
+- Validate search arguments, permission and limits.
+- Allow workspace-confined file or directory search roots.
+- Execute fixed-argv `rg` with bounded output parsing.
+
+## Explicit exclusions
+
+- No regex support.
+- No model-controlled executable, flags, argv, shell or environment.
+- No `grep` fallback.
+- No C toolserver changes in this milestone.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/application/tool_catalog.py`
+- `ai_assistant/application/tool_policy.py`
+- `ai_assistant/application/path_policy.py`
+- `ai_assistant/infrastructure/tools/local_read_only.py`
+
+### Read-only
+
+- `docs/roadmap-phase-3.md`
+- `docs/adr/ADR-033-search-text-limits-and-redaction.md`
+
+### Forbidden
+
+- C toolserver files
+- model providers
+- persistence schemas
+
+## Dependencies
+
+- M3.6 accepted
+
+## Applicable ADRs
+
+- ADR-026
+- ADR-027
+- ADR-028
+- ADR-033
+
+## Acceptance criteria
+
+- [x] Bounded files, bytes, matches and previews.
+- [x] Binary, hidden and sensitive files excluded.
+- [x] No regex initially.
+- [x] Truncation explicit.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py tests/test_tool_policy.py tests/test_path_policy.py tests/test_local_read_only_executor.py -q
+```
+
+## Risks
+
+- `rg` availability is environment-specific and must return a typed tool error when absent.
+- Redaction is heuristic and cannot replace hidden/sensitive path exclusion.
+
+## Result report
+
+- Summary: Added Python-side `search_text` with fixed `rg` file enumeration and literal match execution.
+- Files changed: catalog, policy, path policy and local executor.
+- Tests run: focused M3.7 suite.
+- Test results: 74 passed.
+- Assumptions: Runtime prompt/permission assignment for Phase 3 tools remains later integration scope.
+- Remaining issues: C toolserver does not execute `search_text` yet; C primarization is M3.14 scope.
+- Recommended follow-up: M3.7 tests and validation.
+
+### Task M3.7-T2 — Test Search Text Behavior
+
+## Parent milestone
+
+M3.7
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Add focused tests proving M3.7 search constraints.
+
+## Scope
+
+- Cover catalog and policy metadata.
+- Cover path-policy behavior for file and directory roots.
+- Cover successful search, truncation, hidden/sensitive exclusions and missing backend.
+
+## Explicit exclusions
+
+- No Ollama tests.
+- No broad runtime prompt tests.
+- No C contract tests for `search_text`.
+
+## File scope
+
+### Writable
+
+- `tests/test_tool_catalog.py`
+- `tests/test_tool_policy.py`
+- `tests/test_path_policy.py`
+- `tests/test_local_read_only_executor.py`
+
+### Read-only
+
+- implementation files touched by M3.7-T1
+
+### Forbidden
+
+- production code outside M3.7-T1 scope
+- persistence schemas
+
+## Dependencies
+
+- M3.7-T1
+
+## Applicable ADRs
+
+- ADR-033
+
+## Acceptance criteria
+
+- [x] Tests fail if regex is allowed.
+- [x] Tests fail if hidden/sensitive search results are returned.
+- [x] Tests fail if truncation is not explicit.
+- [x] Tests fail if missing `rg` is not typed.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py tests/test_tool_policy.py tests/test_path_policy.py tests/test_local_read_only_executor.py -q
+```
+
+## Risks
+
+- Environment may not expose `rg`; missing-backend test must not depend on host state.
+
+## Result report
+
+- Summary: Added focused tests for catalog, policy, path handling and local `search_text`.
+- Files changed: `tests/test_tool_catalog.py`, `tests/test_tool_policy.py`, `tests/test_path_policy.py`, `tests/test_local_read_only_executor.py`.
+- Tests run: focused M3.7 suite.
+- Test results: 74 passed.
+- Assumptions: Productive `rg` tests skip only if `rg` is absent; missing-backend behavior is always tested by monkeypatch.
+- Remaining issues: None for M3.7.
+- Recommended follow-up: M3.7 validation.
+
+### Task M3.7-T3 — Validate Search Text Milestone
+
+## Parent milestone
+
+M3.7
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate M3.7 acceptance criteria and prepare human review.
+
+## Scope
+
+- Run focused M3.7 tests.
+- Run core test suite.
+- Run `git diff --check`.
+- Produce `.agent/reports/M3.7.md`.
+- Update supervisor state.
+
+## Explicit exclusions
+
+- Do not mark M3.7 accepted.
+- Do not start M3.8.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M3.7.md`
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+### Read-only
+
+- repository implementation and tests
+
+### Forbidden
+
+- production behavior changes
+
+## Dependencies
+
+- M3.7-T2
+
+## Applicable ADRs
+
+- ADR-026
+- ADR-027
+- ADR-033
+
+## Acceptance criteria
+
+- [x] Every M3.7 roadmap criterion has evidence.
+- [x] Focused and core tests pass.
+- [x] Manual review queue is updated.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py tests/test_tool_policy.py tests/test_path_policy.py tests/test_local_read_only_executor.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -m "not ollama and not toolserver" -q
+git diff --check
+```
+
+## Risks
+
+- Runtime permission assignment for new Phase 3 tools remains a later integration concern.
+
+## Result report
+
+- Summary: Validated M3.7 and prepared human review artifacts.
+- Files changed: `.agent/reports/M3.7.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`.
+- Tests run: focused M3.7 suite, core suite and diff check.
+- Test results: 74 passed; 247 passed, 9 deselected; diff check passed.
+- Assumptions: M3.7 is Python local executor scope; C toolserver search is not required until a later approved milestone.
+- Remaining issues: Runtime permission assignment for new Phase 3 tools remains later integration scope.
+- Recommended follow-up: Human review of M3.7.
+
+### Task M3.8-T1 — Add Python Git Status Tool
+
+## Parent milestone
+
+M3.8
+
+## Status
+
+implemented
+
+## Owner role
+
+Runtime implementer
+
+## Objective
+
+Add `git_status` to the Python tool path using fixed read-only Git status execution.
+
+## Scope
+
+- Add catalog metadata for `git_status`.
+- Validate repository path, permission and output limits.
+- Require repository root inside workspace.
+- Execute fixed `git status --porcelain=v1 -z -unormal`.
+
+## Explicit exclusions
+
+- No arbitrary Git subcommands, revisions or flags.
+- No mutation.
+- No pager, hooks or external tools.
+- No `git_diff`.
+- No C toolserver changes.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/application/tool_catalog.py`
+- `ai_assistant/application/tool_policy.py`
+- `ai_assistant/application/path_policy.py`
+- `ai_assistant/infrastructure/tools/local_read_only.py`
+
+### Read-only
+
+- `docs/roadmap-phase-3.md`
+- `docs/adr/ADR-032-git-read-only-inspection.md`
+
+### Forbidden
+
+- C toolserver files
+- model providers
+- persistence schemas
+
+## Dependencies
+
+- M3.7 accepted
+
+## Applicable ADRs
+
+- ADR-026
+- ADR-027
+- ADR-032
+
+## Acceptance criteria
+
+- [x] Read-only structured status.
+- [x] No hooks, pager or external tools.
+- [x] Repository inside workspace.
+- [x] Bounded output.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py tests/test_tool_policy.py tests/test_path_policy.py tests/test_local_read_only_executor.py -q
+```
+
+## Risks
+
+- Git output parsing must remain bounded and must not expose hidden or sensitive paths.
+
+## Result report
+
+- Summary: Added Python-side `git_status` with fixed read-only Git execution and structured porcelain parsing.
+- Files changed: catalog, policy, path policy and local executor.
+- Tests run: focused M3.8 suite.
+- Test results: 85 passed.
+- Assumptions: Runtime permission assignment is later scope.
+- Remaining issues: C toolserver does not execute `git_status` yet; C primarization is M3.14 scope.
+- Recommended follow-up: M3.8 tests and validation.
+
+### Task M3.8-T2 — Test Git Status Behavior
+
+## Parent milestone
+
+M3.8
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Add focused tests proving M3.8 Git status constraints.
+
+## Scope
+
+- Cover catalog and policy metadata.
+- Cover path-policy repository root behavior.
+- Cover structured status, truncation and fixed Git environment.
+
+## Explicit exclusions
+
+- No Ollama tests.
+- No C contract tests.
+- No `git_diff` tests.
+
+## File scope
+
+### Writable
+
+- `tests/test_tool_catalog.py`
+- `tests/test_tool_policy.py`
+- `tests/test_path_policy.py`
+- `tests/test_local_read_only_executor.py`
+
+### Read-only
+
+- implementation files touched by M3.8-T1
+
+### Forbidden
+
+- production code outside M3.8-T1 scope
+
+## Dependencies
+
+- M3.8-T1
+
+## Applicable ADRs
+
+- ADR-032
+
+## Acceptance criteria
+
+- [x] Tests fail if repo root can escape workspace.
+- [x] Tests fail if output truncation is not explicit.
+- [x] Tests fail if pager/hooks/external tools are not disabled.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py tests/test_tool_policy.py tests/test_path_policy.py tests/test_local_read_only_executor.py -q
+```
+
+## Risks
+
+- Local Git availability is required for productive tests.
+
+## Result report
+
+- Summary: Added focused tests for catalog, policy, path handling and local `git_status`.
+- Files changed: `tests/test_tool_catalog.py`, `tests/test_tool_policy.py`, `tests/test_path_policy.py`, `tests/test_local_read_only_executor.py`.
+- Tests run: focused M3.8 suite.
+- Test results: 85 passed.
+- Assumptions: Local Git is available in the development environment.
+- Remaining issues: None for M3.8.
+- Recommended follow-up: M3.8 validation.
+
+### Task M3.8-T3 — Validate Git Status Milestone
+
+## Parent milestone
+
+M3.8
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate M3.8 acceptance criteria and prepare human review.
+
+## Scope
+
+- Run focused M3.8 tests.
+- Run core test suite.
+- Run `git diff --check`.
+- Produce `.agent/reports/M3.8.md`.
+- Update supervisor state.
+
+## Explicit exclusions
+
+- Do not mark M3.8 accepted.
+- Do not start M3.9.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M3.8.md`
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+### Read-only
+
+- repository implementation and tests
+
+### Forbidden
+
+- production behavior changes
+
+## Dependencies
+
+- M3.8-T2
+
+## Applicable ADRs
+
+- ADR-026
+- ADR-027
+- ADR-032
+
+## Acceptance criteria
+
+- [x] Every M3.8 roadmap criterion has evidence.
+- [x] Focused and core tests pass.
+- [x] Manual review queue is updated.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py tests/test_tool_policy.py tests/test_path_policy.py tests/test_local_read_only_executor.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -m "not ollama and not toolserver" -q
+git diff --check
+```
+
+## Risks
+
+- Runtime permission assignment for new Phase 3 tools remains a later integration concern.
+
+## Result report
+
+- Summary: Validated M3.8 and prepared human review artifacts.
+- Files changed: `.agent/reports/M3.8.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`.
+- Tests run: focused M3.8 suite, core suite and diff check.
+- Test results: 85 passed; 258 passed, 9 deselected; diff check passed.
+- Assumptions: M3.8 is Python local executor scope; C toolserver status is not required until a later approved milestone.
+- Remaining issues: Runtime permission assignment for new Phase 3 tools remains later integration scope.
+- Recommended follow-up: Human review of M3.8.
 
 ### Task M1-T1 — Remove Provider Debug Output
 
