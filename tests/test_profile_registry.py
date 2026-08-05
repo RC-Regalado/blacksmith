@@ -32,6 +32,14 @@ def test_default_registry_returns_fixed_core_profile() -> None:
     assert isinstance(profile.env, MappingProxyType)
 
 
+def test_default_registry_returns_fixed_build_profile() -> None:
+    profile = default_profile_registry().definition_for(ToolProfileId("python-compile"))
+
+    assert profile.argv == ("python", "-m", "compileall", "-q", "ai_assistant", "main.py")
+    assert profile.permission == ToolPermission.EXECUTE_PROJECT
+    assert profile.timeout_seconds == 180.0
+
+
 def test_unknown_profile_is_denied() -> None:
     with pytest.raises(InvalidToolCallError, match="Unknown profile"):
         default_profile_registry().definition_for(ToolProfileId("missing"))
@@ -61,6 +69,13 @@ def test_profile_rejects_invalid_env_key() -> None:
         _profile(env={"api_key": "secret"})
 
 
+def test_profile_rejects_invalid_output_limits() -> None:
+    with pytest.raises(InvalidToolCallError, match="stdout"):
+        _profile(stdout_limit_bytes=0)
+    with pytest.raises(InvalidToolCallError, match="stderr"):
+        _profile(stderr_limit_bytes=2_097_153)
+
+
 def test_profile_definitions_are_immutable() -> None:
     profiles = default_profile_registry().definitions()
 
@@ -72,11 +87,15 @@ def test_profile_definitions_are_immutable() -> None:
 def _profile(
     argv: tuple[str, ...] = ("python", "-m", "pytest", "-q"),
     env: dict[str, str] | None = None,
+    stdout_limit_bytes: int = 131072,
+    stderr_limit_bytes: int = 131072,
 ) -> ToolProfile:
     return ToolProfile(
         profile_id=ToolProfileId("custom"),
         argv=argv,
         permission=ToolPermission.EXECUTE_PROJECT,
         timeout_seconds=30.0,
+        stdout_limit_bytes=stdout_limit_bytes,
+        stderr_limit_bytes=stderr_limit_bytes,
         env=env or {"PYTHONDONTWRITEBYTECODE": "1"},
     )

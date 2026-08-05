@@ -1,6 +1,6 @@
 # ADR-027 — Permission Levels and Confirmation Grants
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-08-03
 - Deciders: Project owner
 - Supersedes:

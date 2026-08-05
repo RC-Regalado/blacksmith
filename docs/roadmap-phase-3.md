@@ -486,14 +486,14 @@ PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-
 
 Completion:
 
-- [ ] ADR-026 through ADR-035 Implemented.
-- [ ] Seven tools work through C toolserver.
-- [ ] Confirmation correctly scoped.
-- [ ] Arbitrary commands remain impossible.
-- [ ] Writes atomic and confined.
-- [ ] Retention policy implemented.
-- [ ] Automated suites pass.
-- [ ] Manual findings resolved.
+- [x] ADR-026 through ADR-035 Implemented.
+- [x] Seven tools work through C toolserver.
+- [x] Confirmation correctly scoped.
+- [x] Arbitrary commands remain impossible.
+- [x] Writes atomic and confined.
+- [x] Retention policy implemented.
+- [x] Automated suites pass.
+- [x] Manual findings resolved through M3.17 approval.
 
 # Explicit exclusions
 

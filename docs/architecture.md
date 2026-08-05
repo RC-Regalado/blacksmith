@@ -1078,6 +1078,61 @@ The implemented ADR package is:
 - ADR-024 Bounded Single Tool Round per Turn
 - ADR-025 Sensitive File Deny Policy
 
+## 18.2 Phase 3 Controlled Development Tools
+
+Phase 3 extends the same tool pipeline with controlled development tools while preserving deny-by-default, workspace confinement, sanitized audit and one bounded tool round per user turn.
+
+Productive Phase 3 tools:
+
+- `file_metadata`
+- `search_text`
+- `git_status`
+- `git_diff`
+- `run_tests`
+- `build_project`
+- `write`
+
+The C toolserver is the primary productive executor. Python remains responsible for model interaction, static catalog lookup, permission derivation, policy, path prevalidation, confirmation, coordination and audit. The C process repeats critical validation before filesystem, Git or process access.
+
+Permission and confirmation model:
+
+| Permission | Tools | Confirmation |
+|---|---|---|
+| `READ_METADATA` | `file_metadata` | no |
+| `READ_CONTENT` | `search_text` | no |
+| `READ_REPOSITORY` | `git_status`, `git_diff` | no |
+| `EXECUTE_PROJECT` | `run_tests`, `build_project` | first use |
+| `WRITE_WORKSPACE` | `write` | first use |
+
+Confirmation grants are in-memory and scoped to `session_id + workspace_id + permission`. EOF, timeout, prompt error or any answer other than literal `yes` denies the request.
+
+Implemented safeguards:
+
+- no model-controlled permissions;
+- no dynamic tools or model-defined profiles;
+- no shell, arbitrary argv, package installation or network tools;
+- process tools use fixed approved profiles with controlled environment, timeout and bounded output;
+- `search_text` uses bounded literal `rg` search and redacts sensitive previews;
+- Git tools are read-only, bounded and disable pager/hooks/external diff behavior;
+- `write` supports only bounded UTF-8 `create` and `replace`;
+- writes are workspace-confined, hidden/sensitive paths and external symlinks are denied;
+- C writes use temp file, flush and atomic rename with optional `expected_sha256`;
+- audit stores metadata and hashes, never full file content;
+- audit retention is implemented through an operator-only manual purge API with dry-run and confirmation.
+
+Implemented ADR package:
+
+- ADR-026 Controlled Development Tool Allowlist
+- ADR-027 Permission Levels and Confirmation Grants
+- ADR-028 C Toolserver as Primary Executor
+- ADR-029 Preconfigured Test and Build Profiles
+- ADR-030 Controlled Workspace Write Semantics
+- ADR-031 Atomic Writes and Optimistic Concurrency
+- ADR-032 Git Read-Only Inspection
+- ADR-033 Search Text Limits and Redaction
+- ADR-034 Audit Retention and Manual Purge
+- ADR-035 Process Output, Timeout and Environment Limits
+
 ### Interfaces
 
 ```text

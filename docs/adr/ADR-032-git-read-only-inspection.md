@@ -1,6 +1,6 @@
 # ADR-032 — Git Read-Only Inspection
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-08-03
 - Deciders: Project owner
 - Supersedes:

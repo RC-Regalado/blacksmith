@@ -1,6 +1,6 @@
 # ADR-030 — Controlled Workspace Write Semantics
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-08-03
 - Deciders: Project owner
 - Supersedes:

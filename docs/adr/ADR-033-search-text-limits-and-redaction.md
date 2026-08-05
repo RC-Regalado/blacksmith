@@ -1,6 +1,6 @@
 # ADR-033 — Search Text Limits and Redaction
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-08-03
 - Deciders: Project owner
 - Supersedes:

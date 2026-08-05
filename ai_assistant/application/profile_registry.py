@@ -17,6 +17,8 @@ class ToolProfile:
     argv: tuple[str, ...]
     permission: ToolPermission
     timeout_seconds: float
+    stdout_limit_bytes: int = 131072
+    stderr_limit_bytes: int = 131072
     env: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -26,6 +28,10 @@ class ToolProfile:
             raise InvalidToolCallError("profile permission must execute project.")
         if self.timeout_seconds <= 0:
             raise InvalidToolCallError("profile timeout must be positive.")
+        if self.stdout_limit_bytes <= 0 or self.stdout_limit_bytes > 2097152:
+            raise InvalidToolCallError("profile stdout limit is invalid.")
+        if self.stderr_limit_bytes <= 0 or self.stderr_limit_bytes > 2097152:
+            raise InvalidToolCallError("profile stderr limit is invalid.")
         object.__setattr__(self, "argv", tuple(self.argv))
         object.__setattr__(self, "env", MappingProxyType(_safe_env(self.env)))
 
@@ -66,6 +72,13 @@ def default_profile_registry() -> StaticToolProfileRegistry:
                 argv=("python", "-m", "pytest", "-m", "toolserver", "-q"),
                 permission=ToolPermission.EXECUTE_PROJECT,
                 timeout_seconds=120.0,
+                env={"PYTHONDONTWRITEBYTECODE": "1"},
+            ),
+            ToolProfile(
+                profile_id=ToolProfileId("python-compile"),
+                argv=("python", "-m", "compileall", "-q", "ai_assistant", "main.py"),
+                permission=ToolPermission.EXECUTE_PROJECT,
+                timeout_seconds=180.0,
                 env={"PYTHONDONTWRITEBYTECODE": "1"},
             ),
         ]

@@ -1,6 +1,6 @@
 # ADR-035 — Process Output, Timeout and Environment Limits
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-08-03
 - Deciders: Project owner
 - Supersedes:

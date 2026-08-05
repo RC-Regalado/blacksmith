@@ -48,13 +48,13 @@ Historical ADRs are never deleted or silently rewritten.
 | ADR-023 | Error and Log Redaction | Implemented |
 | ADR-024 | Bounded Single Tool Round per Turn | Implemented |
 | ADR-025 | Sensitive File Deny Policy | Implemented |
-| ADR-026 | Controlled Development Tool Allowlist | Accepted |
-| ADR-027 | Permission Levels and Confirmation Grants | Accepted |
-| ADR-028 | C Toolserver as Primary Executor | Accepted |
-| ADR-029 | Preconfigured Test and Build Profiles | Accepted |
-| ADR-030 | Controlled Workspace Write Semantics | Accepted |
-| ADR-031 | Atomic Writes and Optimistic Concurrency | Accepted |
-| ADR-032 | Git Read-Only Inspection | Accepted |
-| ADR-033 | Search Text Limits and Redaction | Accepted |
-| ADR-034 | Audit Retention and Manual Purge | Accepted |
-| ADR-035 | Process Output, Timeout and Environment Limits | Accepted |
+| ADR-026 | Controlled Development Tool Allowlist | Implemented |
+| ADR-027 | Permission Levels and Confirmation Grants | Implemented |
+| ADR-028 | C Toolserver as Primary Executor | Implemented |
+| ADR-029 | Preconfigured Test and Build Profiles | Implemented |
+| ADR-030 | Controlled Workspace Write Semantics | Implemented |
+| ADR-031 | Atomic Writes and Optimistic Concurrency | Implemented |
+| ADR-032 | Git Read-Only Inspection | Implemented |
+| ADR-033 | Search Text Limits and Redaction | Implemented |
+| ADR-034 | Audit Retention and Manual Purge | Implemented |
+| ADR-035 | Process Output, Timeout and Environment Limits | Implemented |

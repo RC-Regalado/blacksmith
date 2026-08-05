@@ -7,9 +7,13 @@ from ai_assistant.domain.tools import ToolDefinition, ToolPermission
 
 LIST_DIRECTORY = "list_directory"
 READ_FILE = "read_file"
+BUILD_PROJECT = "build_project"
 FILE_METADATA = "file_metadata"
 SEARCH_TEXT = "search_text"
 GIT_STATUS = "git_status"
+GIT_DIFF = "git_diff"
+RUN_TESTS = "run_tests"
+WRITE = "write"
 
 
 class StaticToolCatalog(ToolCatalog):
@@ -24,6 +28,9 @@ class StaticToolCatalog(ToolCatalog):
         max_search_preview_chars: int = 160,
         max_search_bytes_per_file: int = 262144,
         max_git_status_entries: int = 200,
+        max_git_diff_bytes: int = 16384,
+        max_process_output_bytes: int = 131072,
+        max_write_bytes: int = 65536,
     ) -> None:
         self._tools = _definitions(
             min(tool_timeout, 30.0),
@@ -35,6 +42,9 @@ class StaticToolCatalog(ToolCatalog):
             min(max_search_preview_chars, 500),
             min(max_search_bytes_per_file, 1048576),
             min(max_git_status_entries, 1000),
+            min(max_git_diff_bytes, 65536),
+            min(max_process_output_bytes, 2097152),
+            min(max_write_bytes, 65536),
         )
 
     def definition_for(self, tool_name: str) -> ToolDefinition:
@@ -57,6 +67,9 @@ def _definitions(
     max_search_preview_chars: int,
     max_search_bytes_per_file: int,
     max_git_status_entries: int,
+    max_git_diff_bytes: int,
+    max_process_output_bytes: int,
+    max_write_bytes: int,
 ) -> dict[str, ToolDefinition]:
     return {
         FILE_METADATA: ToolDefinition(
@@ -125,6 +138,105 @@ def _definitions(
             },
             limits={
                 "max_entries": 1000,
+                "max_path_length": 4096,
+                "timeout_seconds": 30.0,
+            },
+        ),
+        GIT_DIFF: ToolDefinition(
+            name=GIT_DIFF,
+            description="Return bounded read-only Git diff for staged or worktree changes.",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "scope": {"type": "string", "enum": ["worktree", "staged"]},
+                    "max_bytes": {"type": "integer"},
+                },
+                "required": ["path", "scope"],
+            },
+            permission=ToolPermission.READ_REPOSITORY,
+            defaults={
+                "max_bytes": max_git_diff_bytes,
+                "timeout_seconds": tool_timeout,
+            },
+            limits={
+                "max_bytes": 65536,
+                "max_path_length": 4096,
+                "timeout_seconds": 30.0,
+            },
+        ),
+        RUN_TESTS: ToolDefinition(
+            name=RUN_TESTS,
+            description="Run an approved fixed test profile.",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "profile_id": {"type": "string"},
+                    "stdout_limit_bytes": {"type": "integer"},
+                    "stderr_limit_bytes": {"type": "integer"},
+                },
+                "required": ["path", "profile_id"],
+            },
+            permission=ToolPermission.EXECUTE_PROJECT,
+            defaults={
+                "stdout_limit_bytes": max_process_output_bytes,
+                "stderr_limit_bytes": max_process_output_bytes,
+                "timeout_seconds": 120.0,
+            },
+            limits={
+                "stdout_limit_bytes": 2097152,
+                "stderr_limit_bytes": 2097152,
+                "max_path_length": 4096,
+                "timeout_seconds": 900.0,
+            },
+        ),
+        BUILD_PROJECT: ToolDefinition(
+            name=BUILD_PROJECT,
+            description="Run an approved fixed build profile.",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "profile_id": {"type": "string"},
+                    "stdout_limit_bytes": {"type": "integer"},
+                    "stderr_limit_bytes": {"type": "integer"},
+                },
+                "required": ["path", "profile_id"],
+            },
+            permission=ToolPermission.EXECUTE_PROJECT,
+            defaults={
+                "stdout_limit_bytes": max_process_output_bytes,
+                "stderr_limit_bytes": max_process_output_bytes,
+                "timeout_seconds": 180.0,
+            },
+            limits={
+                "stdout_limit_bytes": 2097152,
+                "stderr_limit_bytes": 2097152,
+                "max_path_length": 4096,
+                "timeout_seconds": 1200.0,
+            },
+        ),
+        WRITE: ToolDefinition(
+            name=WRITE,
+            description="Validate a bounded workspace file create or replace request.",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "content": {"type": "string"},
+                    "mode": {"type": "string", "enum": ["create", "replace"]},
+                    "expected_sha256": {"type": "string"},
+                },
+                "required": ["path", "content", "mode"],
+            },
+            permission=ToolPermission.WRITE_WORKSPACE,
+            defaults={
+                "max_bytes": max_write_bytes,
+                "timeout_seconds": 30.0,
+            },
+            limits={
+                "max_bytes": 65536,
                 "max_path_length": 4096,
                 "timeout_seconds": 30.0,
             },

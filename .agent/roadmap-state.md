@@ -10,9 +10,9 @@ Phase 3: Controlled Development Tools
 
 ## Current milestone
 
-- ID: M3.6
-- Name: Implement `file_metadata`
-- Status: implemented-awaiting-human-review
+- ID: M3.18
+- Name: Documentation and final review
+- Status: accepted
 - Source: `docs/roadmap-phase-3.md`
 
 ## Milestone status vocabulary
@@ -78,17 +78,17 @@ Phase 3: Controlled Development Tools
 | M3.5 | Implement profile registry | accepted | — | `.agent/reports/M3.5.md` | approved |
 | M3.6 | Implement `file_metadata` | accepted | — | `.agent/reports/M3.6.md` | approved |
 | M3.7 | Implement `search_text` | accepted | — | `.agent/reports/M3.7.md` | approved |
-| M3.8 | Implement `git_status` | implemented-awaiting-human-review | — | `.agent/reports/M3.8.md` | awaiting-review |
-| M3.9 | Implement `git_diff` | planned | M3.8 requires human review | — | — |
-| M3.10 | Implement `run_tests` | planned | M3.8 requires human review | — | — |
-| M3.11 | Implement `build_project` | planned | M3.8 requires human review | — | — |
-| M3.12 | Implement write policy | planned | M3.8 requires human review | — | — |
-| M3.13 | Implement atomic C `write` | planned | M3.8 requires human review | — | — |
-| M3.14 | Make C toolserver primary | planned | M3.8 requires human review | — | — |
-| M3.15 | Implement retention and purge | planned | M3.8 requires human review | — | — |
-| M3.16 | Integrate runtime and CLI | planned | M3.8 requires human review | — | — |
-| M3.17 | Security and adversarial tests | planned | M3.8 requires human review | — | — |
-| M3.18 | Documentation and final review | planned | Phase 3 implementation incomplete | — | — |
+| M3.8 | Implement `git_status` | accepted | — | `.agent/reports/M3.8.md` | approved |
+| M3.9 | Implement `git_diff` | accepted | — | `.agent/reports/M3.9.md` | approved |
+| M3.10 | Implement `run_tests` | accepted | — | `.agent/reports/M3.10.md` | approved |
+| M3.11 | Implement `build_project` | accepted | — | `.agent/reports/M3.11.md` | approved |
+| M3.12 | Implement write policy | accepted | — | `.agent/reports/M3.12.md` | approved |
+| M3.13 | Implement atomic C `write` | accepted | — | `.agent/reports/M3.13.md` | approved |
+| M3.14 | Make C toolserver primary | accepted | — | `.agent/reports/M3.14.md` | approved |
+| M3.15 | Implement retention and purge | accepted | — | `.agent/reports/M3.15.md` | approved |
+| M3.16 | Integrate runtime and CLI | accepted | — | `.agent/reports/M3.16.md` | approved |
+| M3.17 | Security and adversarial tests | accepted | — | `.agent/reports/M3.17.md` | approved |
+| M3.18 | Documentation and final review | accepted | — | `.agent/reports/M3.18.md` | approved |
 
 ## Current baseline
 
@@ -103,14 +103,14 @@ Record before Phase 3 implementation:
 - Executor baseline: Python local read-only executor is the configured bootstrap default; Unix socket C executor exists behind the `ToolExecutor` port but is not the default.
 - C toolserver: read-only `list_directory` and `read_file` contract tests pass.
 - Audit: separate SQLite audit recorder exists with sanitized metadata and explicit failure behavior.
-- Phase 3 implementation status: confirmation service, profile registry, `file_metadata`, `search_text` and `git_status` implemented; no write policy or retention policy implemented yet.
-- Phase 3 blocker: M3.8 requires human review.
+- Phase 3 implementation status: confirmation service, profile registry, all Phase 3 tool names, declarative `write` policy, atomic C `write`, C primary executor, audit retention/purge, runtime/CLI integration, adversarial coverage and final documentation implemented.
+- Phase 3 blocker: none.
 - Validation passed:
   - `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py tests/test_tool_policy.py tests/test_path_policy.py tests/test_local_read_only_executor.py tests/test_sqlite_audit.py tests/test_tool_coordinator.py tests/test_tool_coordinator_integration.py tests/test_adversarial_security.py tests/test_tools.py tests/test_agent_runtime.py -q` -> 110 passed.
   - `PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_c_toolserver_contract.py tests/test_unix_socket_tool_executor.py -q` -> 13 passed.
 
 ## Last supervisor update
 
-- Date: 2026-08-03
-- Summary: M3.8 `git_status` implemented and validated through the Python local executor path.
-- Next action: human review of M3.8.
+- Date: 2026-08-05
+- Summary: Phase 3 accepted by manual review.
+- Next action: Phase 4 planning when approved.

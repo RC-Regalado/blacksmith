@@ -1,6 +1,6 @@
 # ADR-026 — Controlled Development Tool Allowlist
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-08-03
 - Deciders: Project owner
 - Supersedes:

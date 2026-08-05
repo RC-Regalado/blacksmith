@@ -1,6 +1,6 @@
 # ADR-031 — Atomic Writes and Optimistic Concurrency
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-08-03
 - Deciders: Project owner
 - Supersedes:

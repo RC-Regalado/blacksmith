@@ -10,24 +10,35 @@ import re
 import shutil
 import stat
 import subprocess
+import time
+from collections.abc import Mapping
 from fnmatch import fnmatchcase
 from pathlib import Path
 
 from ai_assistant.application.path_policy import WorkspacePathPolicy
 from ai_assistant.application.ports.tools import ToolExecutor
 from ai_assistant.application.tool_catalog import (
+    BUILD_PROJECT,
     FILE_METADATA,
+    GIT_DIFF,
     GIT_STATUS,
     LIST_DIRECTORY,
     READ_FILE,
+    RUN_TESTS,
     SEARCH_TEXT,
     StaticToolCatalog,
 )
+from ai_assistant.application.profile_registry import (
+    StaticToolProfileRegistry,
+    default_profile_registry,
+)
+from ai_assistant.domain.errors import InvalidToolCallError
 from ai_assistant.domain.tools import (
     SanitizedToolError,
     ToolExecutionContext,
     ToolExecutionResult,
     ToolExecutionStatus,
+    ToolProfileId,
 )
 
 _MAX_RESPONSE_BYTES = 1_048_576
@@ -50,8 +61,12 @@ _SECRET_RE = re.compile(r"(?i)(api[_-]?key|token|secret|password)\s*[:=]\s*\S+")
 
 
 class LocalReadOnlyToolExecutor(ToolExecutor):
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        profile_registry: StaticToolProfileRegistry | None = None,
+    ) -> None:
         self._catalog = StaticToolCatalog()
+        self._profiles = profile_registry or default_profile_registry()
 
     def execute(self, context: ToolExecutionContext) -> ToolExecutionResult:
         try:
@@ -62,6 +77,12 @@ class LocalReadOnlyToolExecutor(ToolExecutor):
                 return _search_text(checked)
             if checked.request.tool_name == GIT_STATUS:
                 return _git_status(checked)
+            if checked.request.tool_name == GIT_DIFF:
+                return _git_diff(checked)
+            if checked.request.tool_name == RUN_TESTS:
+                return _run_tests(checked, self._profiles)
+            if checked.request.tool_name == BUILD_PROJECT:
+                return _run_tests(checked, self._profiles)
             if checked.request.tool_name == READ_FILE:
                 return _read_file(checked)
             if checked.request.tool_name == LIST_DIRECTORY:
@@ -180,6 +201,82 @@ def _git_status(context: ToolExecutionContext) -> ToolExecutionResult:
     )
 
 
+def _git_diff(context: ToolExecutionContext) -> ToolExecutionResult:
+    git = shutil.which(_GIT)
+    if git is None:
+        return _error(context, "git_unavailable", "git is unavailable.")
+    root = _git_root(context, git)
+    if isinstance(root, ToolExecutionResult):
+        return root
+    paths = _git_diff_paths(context, git, root)
+    if isinstance(paths, ToolExecutionResult):
+        return paths
+    diff = _run_git_diff(context, git, root, paths)
+    if isinstance(diff, ToolExecutionResult):
+        return diff
+    content, truncated = _bounded_diff(context, diff.stdout)
+    return ToolExecutionResult(
+        request_id=context.request.request_id,
+        tool_name=context.request.tool_name,
+        status=ToolExecutionStatus.SUCCESS,
+        content={
+            "repository": root.relative_to(Path(context.workspace_id)).as_posix(),
+            "scope": context.request.arguments["scope"],
+            "diff": content,
+            "truncated": truncated,
+        },
+        truncated=truncated,
+    )
+
+
+def _run_tests(
+    context: ToolExecutionContext,
+    profiles: StaticToolProfileRegistry,
+) -> ToolExecutionResult:
+    try:
+        profile = profiles.definition_for(
+            ToolProfileId(str(context.request.arguments["profile_id"]))
+        )
+    except InvalidToolCallError:
+        return _error(context, "unknown_profile", "Unknown test profile.")
+    started = time.monotonic()
+    try:
+        process = subprocess.run(
+            profile.argv,
+            cwd=_resolved_path(context),
+            env=_process_env(profile.env),
+            shell=False,
+            capture_output=True,
+            timeout=profile.timeout_seconds,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        return _process_timeout(context, profile.profile_id.value, started, exc)
+    stdout, stdout_truncated = _process_output(
+        process.stdout,
+        _stdout_limit(context, profile.stdout_limit_bytes),
+    )
+    stderr, stderr_truncated = _process_output(
+        process.stderr,
+        _stderr_limit(context, profile.stderr_limit_bytes),
+    )
+    return ToolExecutionResult(
+        request_id=context.request.request_id,
+        tool_name=context.request.tool_name,
+        status=ToolExecutionStatus.SUCCESS,
+        content={
+            "profile_id": profile.profile_id.value,
+            "exit_code": process.returncode,
+            "duration_ms": int((time.monotonic() - started) * 1000),
+            "stdout": stdout,
+            "stderr": stderr,
+            "stdout_truncated": stdout_truncated,
+            "stderr_truncated": stderr_truncated,
+        },
+        truncated=stdout_truncated or stderr_truncated,
+    )
+
+
 def _git_root(context: ToolExecutionContext, git: str) -> Path | ToolExecutionResult:
     result = _run_git(
         context,
@@ -206,6 +303,34 @@ def _run_git_status(
         ["status", "--porcelain=v1", "-z", "-unormal"],
         cwd=root,
     )
+
+
+def _git_diff_paths(
+    context: ToolExecutionContext, git: str, root: Path
+) -> list[str] | ToolExecutionResult:
+    scope = str(context.request.arguments["scope"])
+    args = ["diff", "--name-only", "-z"]
+    if scope == "staged":
+        args.append("--cached")
+    result = _run_git(context, git, [*args, "--"], root)
+    if isinstance(result, ToolExecutionResult):
+        return result
+    return [
+        path
+        for path in result.stdout.split("\0")
+        if path and _allowed_repo_path(path, root / path)
+    ]
+
+
+def _run_git_diff(
+    context: ToolExecutionContext, git: str, root: Path, paths: list[str]
+) -> subprocess.CompletedProcess[str] | ToolExecutionResult:
+    if not paths:
+        return subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    args = ["diff", "--no-ext-diff", "--no-color"]
+    if context.request.arguments["scope"] == "staged":
+        args.append("--cached")
+    return _run_git(context, git, [*args, "--", *paths], root)
 
 
 def _search_files(
@@ -350,6 +475,78 @@ def _run_git(
     if result.returncode == 0:
         return result
     return _error(context, "git_status_error", "Git status failed.")
+
+
+def _bounded_diff(context: ToolExecutionContext, stdout: str) -> tuple[str, bool]:
+    max_bytes = int(context.request.arguments.get("max_bytes", 16384))
+    redacted = _redact(stdout)
+    data = redacted.encode("utf-8")
+    if len(data) <= max_bytes:
+        return redacted, False
+    return data[:max_bytes].decode("utf-8", errors="ignore"), True
+
+
+def _process_timeout(
+    context: ToolExecutionContext,
+    profile_id: str,
+    started: float,
+    exc: subprocess.TimeoutExpired,
+) -> ToolExecutionResult:
+    stdout, stdout_truncated = _process_output(
+        exc.stdout or b"",
+        _stdout_limit(context, 131072),
+    )
+    stderr, stderr_truncated = _process_output(
+        exc.stderr or b"",
+        _stderr_limit(context, 131072),
+    )
+    return ToolExecutionResult(
+        request_id=context.request.request_id,
+        tool_name=context.request.tool_name,
+        status=ToolExecutionStatus.TIMEOUT,
+        content={
+            "profile_id": profile_id,
+            "duration_ms": int((time.monotonic() - started) * 1000),
+            "stdout": stdout,
+            "stderr": stderr,
+            "stdout_truncated": stdout_truncated,
+            "stderr_truncated": stderr_truncated,
+        },
+        error=SanitizedToolError(code="process_timeout", message="Process timed out."),
+        truncated=stdout_truncated or stderr_truncated,
+    )
+
+
+def _process_env(profile_env: Mapping[str, str]) -> dict[str, str]:
+    return {"PATH": os.environ.get("PATH", ""), **dict(profile_env)}
+
+
+def _stdout_limit(context: ToolExecutionContext, profile_limit: int) -> int:
+    return min(
+        int(context.request.arguments.get("stdout_limit_bytes", profile_limit)),
+        profile_limit,
+    )
+
+
+def _stderr_limit(context: ToolExecutionContext, profile_limit: int) -> int:
+    return min(
+        int(context.request.arguments.get("stderr_limit_bytes", profile_limit)),
+        profile_limit,
+    )
+
+
+def _decode_limited(data: bytes | str, limit: int) -> tuple[str, bool]:
+    raw = data if isinstance(data, bytes) else data.encode("utf-8")
+    truncated = len(raw) > limit
+    return raw[:limit].decode("utf-8", errors="replace"), truncated
+
+
+def _process_output(data: bytes | str, limit: int) -> tuple[str, bool]:
+    text = data.decode("utf-8", errors="replace") if isinstance(data, bytes) else data
+    redacted = _redact(text)
+    raw = redacted.encode("utf-8")
+    truncated = len(raw) > limit
+    return raw[:limit].decode("utf-8", errors="ignore"), truncated
 
 
 def _git_entries(

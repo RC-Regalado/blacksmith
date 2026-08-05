@@ -8,7 +8,7 @@ El core de Python coordina runtime, memoria, configuración, modelos, CLI y herr
 
 ## Estado actual
 
-Phase 1 y Phase 2 están implementadas y listas para revisión final de Phase 2.
+Phase 1, Phase 2 y Phase 3 están implementadas. Phase 3 queda lista para revisión final manual.
 
 Phase 1 entregó el core Python:
 
@@ -40,6 +40,19 @@ Phase 2 entregó herramientas read-only:
 - Toolserver C con acciones read-only.
 - Un solo tool round por turno.
 - Tests adversariales.
+
+Phase 3 entregó herramientas de desarrollo controladas:
+
+- Allowlist productivo: `file_metadata`, `search_text`, `git_status`, `git_diff`, `run_tests`, `build_project`, `write`.
+- C toolserver como executor productivo primario.
+- Permisos `READ_METADATA`, `READ_CONTENT`, `READ_REPOSITORY`, `EXECUTE_PROJECT`, `WRITE_WORKSPACE`.
+- Confirmación de primer uso para ejecución de proyecto y escritura, scoped por sesión, workspace y permiso.
+- Perfiles fijos para tests/builds; sin shell ni comandos definidos por el modelo.
+- Búsqueda literal con `rg`, límites y redacción.
+- Git status/diff read-only.
+- Escritura UTF-8 acotada con create/replace, rename atómico y `expected_sha256` opcional.
+- Retención y purga manual confirmada de auditoría.
+- Cobertura adversarial Phase 3.
 
 ## Estructura actual
 
@@ -103,8 +116,9 @@ PYTHONDONTWRITEBYTECODE=1 python -m pytest -m ollama -q
 
 - ADR-001 a ADR-015: Phase 1 implementada.
 - ADR-016 a ADR-025: Phase 2 implementada.
+- ADR-026 a ADR-035: Phase 3 implementada.
 
-## Datos disponibles para Phase 3
+## Datos disponibles para Phase 4
 
 | Área | Evidencia |
 |---|---|
@@ -120,11 +134,12 @@ PYTHONDONTWRITEBYTECODE=1 python -m pytest -m ollama -q
 | C toolserver | `c_toolserver/` |
 | Adversarial tests | `tests/test_adversarial_security.py` |
 
-## Decisiones faltantes para Phase 3
+## Decisiones faltantes para Phase 4
 
-- Nuevas familias de herramientas productivas y sus permisos.
-- Confirmaciones humanas interactivas para operaciones de mayor riesgo.
-- Si el executor C será default o seguirá siendo opcional.
-- Política de retención/exportación/borrado de auditoría.
-- Búsqueda recursiva, Git, red, shell o escritura: requieren ADR/gate nuevo.
+- Si se habilitará `unrestricted_write`.
+- Nuevas operaciones de filesystem: append, delete, move, rename, copy, mkdir.
+- Nuevas familias de herramientas productivas y permisos.
+- Persistencia de grants o revocación avanzada.
+- Exportación/borrado avanzado de auditoría.
+- Red, shell arbitrario, plugins dinámicos o ejecución multi-step: requieren ADR/gate nuevo.
 - UI/TUI/web, streaming, embeddings, RAG y multiagente siguen fuera del alcance actual.

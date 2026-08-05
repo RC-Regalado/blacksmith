@@ -4,11 +4,15 @@ from collections.abc import Mapping
 
 from ai_assistant.application.ports.tools import ToolPolicy
 from ai_assistant.application.tool_catalog import (
+    BUILD_PROJECT,
     FILE_METADATA,
+    GIT_DIFF,
     GIT_STATUS,
     LIST_DIRECTORY,
     READ_FILE,
+    RUN_TESTS,
     SEARCH_TEXT,
+    WRITE,
 )
 from ai_assistant.domain.tools import (
     PolicyDecisionKind,
@@ -84,9 +88,43 @@ def _valid_arguments(arguments: Mapping[str, object], definition: ToolDefinition
             "path",
             "max_entries",
         }
+    if definition.name == GIT_DIFF:
+        return (
+            arguments.get("scope") in {"worktree", "staged"}
+            and _optional_int(arguments, "max_bytes")
+            and set(arguments) <= {"path", "scope", "max_bytes"}
+        )
+    if definition.name in {RUN_TESTS, BUILD_PROJECT}:
+        profile_id = arguments.get("profile_id")
+        return (
+            isinstance(profile_id, str)
+            and bool(profile_id)
+            and _optional_int(arguments, "stdout_limit_bytes")
+            and _optional_int(arguments, "stderr_limit_bytes")
+            and set(arguments)
+            <= {"path", "profile_id", "stdout_limit_bytes", "stderr_limit_bytes"}
+        )
+    if definition.name == WRITE:
+        content = arguments.get("content")
+        expected_sha256 = arguments.get("expected_sha256")
+        return (
+            arguments.get("mode") in {"create", "replace"}
+            and isinstance(content, str)
+            and (
+                expected_sha256 is None
+                or (
+                    isinstance(expected_sha256, str)
+                    and len(expected_sha256) == 64
+                    and all(char in "0123456789abcdef" for char in expected_sha256)
+                )
+            )
+            and set(arguments) <= {"path", "content", "mode", "expected_sha256"}
+        )
     if definition.name == READ_FILE:
-        return _optional_int(arguments, "offset") and _optional_int(
-            arguments, "max_bytes"
+        return (
+            _optional_int(arguments, "offset")
+            and _optional_int(arguments, "max_bytes")
+            and set(arguments) <= {"path", "offset", "max_bytes"}
         )
     if definition.name == LIST_DIRECTORY:
         return (
@@ -94,6 +132,8 @@ def _valid_arguments(arguments: Mapping[str, object], definition: ToolDefinition
             and _optional_bool(arguments, "include_hidden")
             and _optional_int(arguments, "max_entries")
             and _optional_int(arguments, "max_depth")
+            and set(arguments)
+            <= {"path", "recursive", "include_hidden", "max_entries", "max_depth"}
         )
     return False
 
@@ -135,6 +175,30 @@ def _exceeds_limits(arguments: Mapping[str, object], definition: ToolDefinition)
         return (
             max_entries < 1
             or max_entries > int(definition.limits["max_entries"])
+        )
+    if definition.name == GIT_DIFF:
+        max_bytes = int(arguments.get("max_bytes", definition.defaults["max_bytes"]))
+        return (
+            max_bytes < 1
+            or max_bytes > int(definition.limits["max_bytes"])
+        )
+    if definition.name in {RUN_TESTS, BUILD_PROJECT}:
+        stdout_limit = int(
+            arguments.get("stdout_limit_bytes", definition.defaults["stdout_limit_bytes"])
+        )
+        stderr_limit = int(
+            arguments.get("stderr_limit_bytes", definition.defaults["stderr_limit_bytes"])
+        )
+        return (
+            stdout_limit < 1
+            or stdout_limit > int(definition.limits["stdout_limit_bytes"])
+            or stderr_limit < 1
+            or stderr_limit > int(definition.limits["stderr_limit_bytes"])
+        )
+    if definition.name == WRITE:
+        return (
+            len(str(arguments["content"]).encode("utf-8"))
+            > int(definition.limits["max_bytes"])
         )
     if definition.name == READ_FILE:
         offset = int(arguments.get("offset", definition.defaults["offset"]))

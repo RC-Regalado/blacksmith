@@ -32,3 +32,12 @@ class CliApplication:
             except AssistantError as error:
                 logger.error("expected assistant error type=%s", type(error).__name__)
                 print(f"Error: {error}", file=sys.stderr)
+
+
+class CliConfirmationPrompter:
+    def confirm(self, session_id: str, workspace_id: str, permission: str) -> bool:
+        prompt = (
+            f"Allow {permission} for session {session_id} "
+            f"in workspace {workspace_id}? Type yes to allow: "
+        )
+        return input(prompt).strip().lower() == "yes"

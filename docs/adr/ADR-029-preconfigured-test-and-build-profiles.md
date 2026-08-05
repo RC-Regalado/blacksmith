@@ -1,6 +1,6 @@
 # ADR-029 — Preconfigured Test and Build Profiles
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-08-03
 - Deciders: Project owner
 - Supersedes:

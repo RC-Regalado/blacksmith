@@ -24,6 +24,8 @@ _ERROR = 2
 _DENIED = 3
 _TIMEOUT = 6
 _READ_ONLY = 1
+_WRITE_WORKSPACE = 2
+_PROCESS_EXEC = 3
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,6 +142,10 @@ def _permission(permission: ToolPermission) -> int:
         ToolPermission.READ_REPOSITORY,
     }:
         return _READ_ONLY
+    if permission == ToolPermission.WRITE_WORKSPACE:
+        return _WRITE_WORKSPACE
+    if permission == ToolPermission.EXECUTE_PROJECT:
+        return _PROCESS_EXEC
     return 0
 
 

@@ -1,6 +1,6 @@
 # ADR-028 — C Toolserver as Primary Executor
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-08-03
 - Deciders: Project owner
 - Supersedes:

@@ -53,7 +53,17 @@ Generated changes are provisional until recorded here.
 | M3.5 | implemented-awaiting-human-review | approved | User | 2026-08-03 | User confirmed: "Aprobado". Fixed profile registry accepted. |
 | M3.6 | implemented-awaiting-human-review | approved | User | 2026-08-03 | User confirmed: "aprobado, pasa al M3.7". `file_metadata` accepted. |
 | M3.7 | implemented-awaiting-human-review | approved | User | 2026-08-03 | User confirmed: "Aprobado, pasa al M3.8". `search_text` accepted. |
-| M3.8 | implemented-awaiting-human-review | awaiting-review | User | 2026-08-03 | `git_status` implemented and validated through the Python local executor path. |
+| M3.8 | implemented-awaiting-human-review | approved | User | 2026-08-04 | User confirmed: "Aprobado, inicia el M3.9". `git_status` accepted. |
+| M3.9 | implemented-awaiting-human-review | approved | User | 2026-08-04 | User confirmed: "aprobado, inicia el M3.10". `git_diff` accepted. |
+| M3.10 | implemented-awaiting-human-review | approved | User | 2026-08-04 | User confirmed: "Aprobado, inicia el M3.11". `run_tests` accepted. |
+| M3.11 | implemented-awaiting-human-review | approved | User | 2026-08-04 | User confirmed: "Aprobado, pasa a M3.12". `build_project` accepted. |
+| M3.12 | implemented-awaiting-human-review | approved | User | 2026-08-04 | User confirmed: "Aprobado, pasa al M3.13". Declarative `write` policy accepted. |
+| M3.13 | implemented-awaiting-human-review | approved | User | 2026-08-04 | User confirmed: "aprobado, pasa al M3.14". Atomic C `write` accepted. |
+| M3.14 | implemented-awaiting-human-review | approved | User | 2026-08-04 | User confirmed: "aprobado, pasa al M3.15". C primary executor accepted. |
+| M3.15 | implemented-awaiting-human-review | approved | User | 2026-08-04 | User confirmed: "aprobado, pasa al M3.16". Audit retention accepted. |
+| M3.16 | implemented-awaiting-human-review | approved | User | 2026-08-05 | User confirmed: "aprobado, pasa al M3.17". Runtime and CLI integration accepted. |
+| M3.17 | implemented-awaiting-human-review | approved | User | 2026-08-05 | User confirmed: "aprobado, termina con el m3.18". Security and adversarial tests accepted. |
+| M3.18 | implemented-awaiting-human-review | approved | User | 2026-08-05 | User confirmed: "Aprobada a Phase 3". Phase 3 accepted. |
 
 ## Approval gates
 
