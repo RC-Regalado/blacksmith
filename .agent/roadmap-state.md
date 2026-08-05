@@ -6,14 +6,14 @@ AI Assistant
 
 ## Active phase
 
-Phase 3: Controlled Development Tools
+Phase 4: Autonomous Execution Platform
 
 ## Current milestone
 
-- ID: M3.18
-- Name: Documentation and final review
-- Status: accepted
-- Source: `docs/roadmap-phase-3.md`
+- ID: M4.0
+- Name: Phase 4 scaffolding
+- Status: implemented-awaiting-human-review
+- Source: `docs/roadmap-phase-4.md`
 
 ## Milestone status vocabulary
 
@@ -90,6 +90,12 @@ Phase 3: Controlled Development Tools
 | M3.17 | Security and adversarial tests | accepted | — | `.agent/reports/M3.17.md` | approved |
 | M3.18 | Documentation and final review | accepted | — | `.agent/reports/M3.18.md` | approved |
 
+## Phase 4 Milestones
+
+| ID | Milestone | Status | Blocking reason | Automated report | Human review |
+|---|---|---|---|---|---|
+| M4.0 | Phase 4 scaffolding | implemented-awaiting-human-review | — | `.agent/reports/M4.0.md` | awaiting-review |
+
 ## Current baseline
 
 Record before Phase 3 implementation:
@@ -105,6 +111,8 @@ Record before Phase 3 implementation:
 - Audit: separate SQLite audit recorder exists with sanitized metadata and explicit failure behavior.
 - Phase 3 implementation status: confirmation service, profile registry, all Phase 3 tool names, declarative `write` policy, atomic C `write`, C primary executor, audit retention/purge, runtime/CLI integration, adversarial coverage and final documentation implemented.
 - Phase 3 blocker: none.
+- Phase 4 implementation status: scaffold packages for platform domain/application/ports and capability roots added; no autonomous execution behavior enabled.
+- Phase 4 blocker: ADR package required before productive Phase 4 milestones.
 - Validation passed:
   - `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py tests/test_tool_policy.py tests/test_path_policy.py tests/test_local_read_only_executor.py tests/test_sqlite_audit.py tests/test_tool_coordinator.py tests/test_tool_coordinator_integration.py tests/test_adversarial_security.py tests/test_tools.py tests/test_agent_runtime.py -q` -> 110 passed.
   - `PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_c_toolserver_contract.py tests/test_unix_socket_tool_executor.py -q` -> 13 passed.
@@ -112,5 +120,5 @@ Record before Phase 3 implementation:
 ## Last supervisor update
 
 - Date: 2026-08-05
-- Summary: Phase 3 accepted by manual review.
-- Next action: Phase 4 planning when approved.
+- Summary: Phase 4 scaffolding prepared without enabling autonomous execution.
+- Next action: human review of M4.0 and ADR planning.

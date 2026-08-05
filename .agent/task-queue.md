@@ -171,10 +171,222 @@ The supervisor is the only agent permitted to update this file.
 | M3.18-T1 | M3.18 | Documentation agent | Update Phase 3 operator and architecture documentation | `README.md`, `docs/architecture.md`, `docs/roadmap-phase-3.md`, `c_toolserver/README.md`, `context-ai.md` | M3.17 | implemented |
 | M3.18-T2 | M3.18 | Documentation agent | Mark Phase 3 ADR package implemented | `docs/adr/README.md`, `docs/adr/ADR-026-*.md` through `docs/adr/ADR-035-*.md` | M3.18-T1 | implemented |
 | M3.18-T3 | M3.18 | Integration validator | Validate Phase 3 closure and prepare human review artifacts | `.agent/reports/M3.18.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M3.18-T2 | implemented |
+| M4.0-T1 | M4.0 | Architect | Prepare Phase 4 package structure without enabling behavior | `ai_assistant/platform/`, `ai_assistant/capabilities/`, `docs/roadmap-phase-4.md`, `context-ai.md` | M3.18 | implemented |
+| M4.0-T2 | M4.0 | Test agent | Cover Phase 4 scaffold imports and explicit validation | `tests/test_platform_structure.py`, `tests/test_phase4_docs.py` | M4.0-T1 | implemented |
+| M4.0-T3 | M4.0 | Integration validator | Validate M4.0 and prepare human review artifacts | `.agent/reports/M4.0.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M4.0-T2 | implemented |
 
 ## Task records
 
 Use `.agent/templates/task.md` for each detailed record.
+
+### Task M4.0-T1 — Phase 4 Package Structure
+
+## Parent milestone
+
+M4.0
+
+## Status
+
+implemented
+
+## Owner role
+
+Architect
+
+## Objective
+
+Prepare Phase 4 package structure without enabling autonomous behavior.
+
+## Scope
+
+- Add `ai_assistant/platform/domain`.
+- Add `ai_assistant/platform/application`.
+- Add `ai_assistant/platform/ports`.
+- Add `ai_assistant/capabilities` package roots.
+- Add `docs/roadmap-phase-4.md`.
+- Update `context-ai.md`.
+
+## Explicit exclusions
+
+- No runtime integration.
+- No multi-step execution.
+- No new tool behavior.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/platform/`
+- `ai_assistant/capabilities/`
+- `docs/roadmap-phase-4.md`
+- `context-ai.md`
+
+## Dependencies
+
+- M3.18
+
+## Applicable ADRs
+
+- ADR-016 through ADR-035 remain binding safety boundaries.
+
+## Acceptance criteria
+
+- [x] Requested package structure exists.
+- [x] Scaffolding is importable.
+- [x] Phase 4 remains ADR-first before productive implementation.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m py_compile $(find ai_assistant/platform ai_assistant/capabilities -name '*.py' | sort) tests/test_platform_structure.py
+```
+
+## Result report
+
+- Summary: Added Phase 4 platform and capability package structure.
+- Files changed: `ai_assistant/platform/`, `ai_assistant/capabilities/`, `docs/roadmap-phase-4.md`, `context-ai.md`
+- Tests run: py_compile and scaffold tests.
+- Test results: passed.
+- Assumptions: Productive Phase 4 implementation waits for ADR approval.
+- Remaining issues: M4.0 awaits manual review.
+- Recommended follow-up: Draft Phase 4 ADR package.
+
+### Task M4.0-T2 — Phase 4 Scaffold Tests
+
+## Parent milestone
+
+M4.0
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Cover Phase 4 scaffold imports and explicit validation.
+
+## Scope
+
+- Add tests for domain import and validation.
+- Add tests for abstract ports.
+- Add roadmap guard test.
+
+## Explicit exclusions
+
+- No behavior tests for future engine/scheduler.
+
+## File scope
+
+### Writable
+
+- `tests/test_platform_structure.py`
+- `tests/test_phase4_docs.py`
+
+## Dependencies
+
+- M4.0-T1
+
+## Applicable ADRs
+
+- ADR-013
+
+## Acceptance criteria
+
+- [x] Domain scaffolding imports.
+- [x] Invalid domain data fails explicitly.
+- [x] Ports remain abstract.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_platform_structure.py tests/test_phase4_docs.py -q
+```
+
+## Result report
+
+- Summary: Added scaffold tests.
+- Files changed: `tests/test_platform_structure.py`, `tests/test_phase4_docs.py`
+- Tests run: scaffold tests.
+- Test results: passed.
+- Assumptions: No Phase 4 behavior should be tested before ADRs.
+- Remaining issues: None.
+- Recommended follow-up: Validate M4.0.
+
+### Task M4.0-T3 — M4.0 Validation
+
+## Parent milestone
+
+M4.0
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate M4.0 and prepare manual review artifacts.
+
+## Scope
+
+- Run focused scaffold tests.
+- Run core suite.
+- Run diff check.
+- Update supervisor state.
+
+## Explicit exclusions
+
+- Do not mark M4.0 accepted.
+- Do not start productive Phase 4 milestones.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M4.0.md`
+- `.agent/roadmap-state.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+## Dependencies
+
+- M4.0-T2
+
+## Applicable ADRs
+
+- ADR-013
+- ADR-016 through ADR-035
+
+## Acceptance criteria
+
+- [x] Focused tests pass.
+- [x] Core suite passes.
+- [x] M4.0 is left awaiting manual review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_platform_structure.py tests/test_phase4_docs.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -m "not ollama and not toolserver" -q
+git diff --check
+```
+
+## Result report
+
+- Summary: Validated Phase 4 scaffolding and prepared manual review.
+- Files changed: `.agent/reports/M4.0.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md`
+- Tests run: scaffold tests; core suite; diff check.
+- Test results: recorded in `.agent/reports/M4.0.md`.
+- Assumptions: Full toolserver/Ollama validation is unchanged from Phase 3 and not required for scaffold-only M4.0.
+- Remaining issues: M4.0 awaits manual review.
+- Recommended follow-up: Draft Phase 4 ADRs.
 
 ### Task M3.1-T1 — Phase 2 Baseline Validation
 

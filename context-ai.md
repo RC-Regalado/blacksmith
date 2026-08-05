@@ -8,7 +8,8 @@ El core de Python coordina runtime, memoria, configuración, modelos, CLI y herr
 
 ## Estado actual
 
-Phase 1, Phase 2 y Phase 3 están implementadas. Phase 3 queda lista para revisión final manual.
+Phase 1, Phase 2 y Phase 3 están implementadas y aceptadas por revisión manual.
+Phase 4 está preparada con scaffolding inicial, pero no activa ejecución autónoma.
 
 Phase 1 entregó el core Python:
 
@@ -133,9 +134,12 @@ PYTHONDONTWRITEBYTECODE=1 python -m pytest -m ollama -q
 | Unix socket executor | `ai_assistant/infrastructure/tools/unix_socket.py` |
 | C toolserver | `c_toolserver/` |
 | Adversarial tests | `tests/test_adversarial_security.py` |
+| Phase 4 platform scaffolding | `ai_assistant/platform/` |
+| Phase 4 capability roots | `ai_assistant/capabilities/` |
 
 ## Decisiones faltantes para Phase 4
 
+- ADRs para objetivos, planes, tareas, ejecución, presupuestos, checkpoints, scheduler y evaluator.
 - Si se habilitará `unrestricted_write`.
 - Nuevas operaciones de filesystem: append, delete, move, rename, copy, mkdir.
 - Nuevas familias de herramientas productivas y permisos.
@@ -143,3 +147,10 @@ PYTHONDONTWRITEBYTECODE=1 python -m pytest -m ollama -q
 - Exportación/borrado avanzado de auditoría.
 - Red, shell arbitrario, plugins dinámicos o ejecución multi-step: requieren ADR/gate nuevo.
 - UI/TUI/web, streaming, embeddings, RAG y multiagente siguen fuera del alcance actual.
+
+## Recomendaciones
+
+- Mantener Phase 4 como ADR-first antes de conectar runtime, scheduler o capacidades.
+- Reutilizar la política Phase 3 para cualquier capability nueva.
+- No romper el límite de un tool round por turno sin aprobación explícita.
+- Agregar perfiles fijos, no comandos arbitrarios, para cualquier build/test nuevo.

@@ -64,6 +64,7 @@ Generated changes are provisional until recorded here.
 | M3.16 | implemented-awaiting-human-review | approved | User | 2026-08-05 | User confirmed: "aprobado, pasa al M3.17". Runtime and CLI integration accepted. |
 | M3.17 | implemented-awaiting-human-review | approved | User | 2026-08-05 | User confirmed: "aprobado, termina con el m3.18". Security and adversarial tests accepted. |
 | M3.18 | implemented-awaiting-human-review | approved | User | 2026-08-05 | User confirmed: "Aprobada a Phase 3". Phase 3 accepted. |
+| M4.0 | implemented-awaiting-human-review | awaiting-review | User | 2026-08-05 | Phase 4 scaffolding prepared; manual validation pending. |
 
 ## Approval gates
 
