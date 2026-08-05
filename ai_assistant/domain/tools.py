@@ -4,6 +4,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
+import re
 from types import MappingProxyType
 
 from ai_assistant.domain.errors import InvalidToolCallError
@@ -28,6 +29,29 @@ class ToolCallPlan:
 
 class ToolPermission(StrEnum):
     READ_ONLY = "read_only"
+    READ_METADATA = "read_metadata"
+    READ_CONTENT = "read_content"
+    READ_REPOSITORY = "read_repository"
+    EXECUTE_PROJECT = "execute_project"
+    WRITE_WORKSPACE = "write_workspace"
+
+
+class WriteMode(StrEnum):
+    CREATE = "create"
+    REPLACE = "replace"
+
+
+class AuditRetentionClass(StrEnum):
+    METADATA_SEARCH = "metadata_search"
+    GIT_INSPECTION = "git_inspection"
+    TEST_BUILD = "test_build"
+    WRITE = "write"
+    SECURITY_DENIAL = "security_denial"
+    CRITICAL_ERROR = "critical_error"
+
+
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_PROFILE_ID_RE = re.compile(r"^[a-z][a-z0-9_-]{0,63}$")
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,6 +103,95 @@ class ToolExecutionRequest:
             raise InvalidToolCallError("arguments must be an object.")
         if self.timeout_seconds <= 0:
             raise InvalidToolCallError("timeout_seconds must be positive.")
+
+
+@dataclass(frozen=True, slots=True)
+class ConfirmationGrant:
+    session_id: str
+    workspace_id: str
+    permission: ToolPermission
+    granted_at: datetime
+    policy_version: str
+
+    def __post_init__(self) -> None:
+        _require_text(self.session_id, "session_id")
+        _require_text(self.workspace_id, "workspace_id")
+        _require_text(self.policy_version, "policy_version")
+        if self.permission not in {
+            ToolPermission.EXECUTE_PROJECT,
+            ToolPermission.WRITE_WORKSPACE,
+        }:
+            raise InvalidToolCallError("confirmation permission must require consent.")
+
+    @property
+    def scope(self) -> tuple[str, str, ToolPermission]:
+        return (self.session_id, self.workspace_id, self.permission)
+
+
+@dataclass(frozen=True, slots=True)
+class ToolProfileId:
+    value: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.value, str) or not _PROFILE_ID_RE.fullmatch(self.value):
+            raise InvalidToolCallError("profile_id must be a safe identifier.")
+
+
+@dataclass(frozen=True, slots=True)
+class HashMetadata:
+    sha256: str
+    size_bytes: int
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.sha256, str) or not _SHA256_RE.fullmatch(self.sha256):
+            raise InvalidToolCallError("sha256 must be 64 lowercase hex characters.")
+        if self.size_bytes < 0:
+            raise InvalidToolCallError("size_bytes cannot be negative.")
+
+
+@dataclass(frozen=True, slots=True)
+class WriteRequest:
+    path: str
+    content: str
+    mode: WriteMode
+    expected_sha256: str | None = None
+
+    def __post_init__(self) -> None:
+        _require_text(self.path, "path")
+        if not isinstance(self.content, str):
+            raise InvalidToolCallError("content must be text.")
+        if self.expected_sha256 is not None and not _SHA256_RE.fullmatch(
+            self.expected_sha256
+        ):
+            raise InvalidToolCallError(
+                "expected_sha256 must be 64 lowercase hex characters."
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class WriteResult:
+    path: str
+    mode: WriteMode
+    bytes_written: int
+    before: HashMetadata | None
+    after: HashMetadata
+
+    def __post_init__(self) -> None:
+        _require_text(self.path, "path")
+        if self.bytes_written < 0:
+            raise InvalidToolCallError("bytes_written cannot be negative.")
+        if self.mode == WriteMode.REPLACE and self.before is None:
+            raise InvalidToolCallError("before hash is required for replace.")
+
+
+@dataclass(frozen=True, slots=True)
+class AuditRetentionRule:
+    retention_class: AuditRetentionClass
+    days: int
+
+    def __post_init__(self) -> None:
+        if self.days <= 0:
+            raise InvalidToolCallError("retention days must be positive.")
 
 
 @dataclass(frozen=True, slots=True)
@@ -163,7 +276,7 @@ class ToolAuditEvent:
 
 
 def _require_text(value: str, name: str) -> None:
-    if not value.strip():
+    if not isinstance(value, str) or not value.strip():
         raise InvalidToolCallError(f"{name} must be a non-empty string.")
 
 

@@ -9,6 +9,7 @@ from ai_assistant.application.ports.tools import (
     ToolExecutor,
     ToolPolicy,
 )
+from ai_assistant.application.confirmation import ConfirmationService
 from ai_assistant.application.tool_policy import REASON_PATH_DENIED, REASON_UNKNOWN_TOOL
 from ai_assistant.domain.errors import InvalidToolCallError
 from ai_assistant.domain.tools import (
@@ -20,7 +21,13 @@ from ai_assistant.domain.tools import (
     ToolExecutionResult,
     ToolExecutionStatus,
     ToolPolicyDecision,
+    ToolPermission,
 )
+
+_CONFIRMATION_REQUIRED = {
+    ToolPermission.EXECUTE_PROJECT,
+    ToolPermission.WRITE_WORKSPACE,
+}
 
 
 class ToolExecutionCoordinator:
@@ -31,12 +38,14 @@ class ToolExecutionCoordinator:
         path_policy: PathPolicy,
         audit: AuditRecorder,
         executor: ToolExecutor,
+        confirmation: ConfirmationService | None = None,
     ) -> None:
         self._catalog = catalog
         self._policy = policy
         self._path_policy = path_policy
         self._audit = audit
         self._executor = executor
+        self._confirmation = confirmation
 
     def execute(self, request: ToolExecutionRequest) -> ToolExecutionResult:
         try:
@@ -50,6 +59,16 @@ class ToolExecutionCoordinator:
             context = self._path_policy.validate(request, definition)
         except InvalidToolCallError:
             return self._deny(request, REASON_PATH_DENIED)
+        if request.permission in _CONFIRMATION_REQUIRED:
+            if self._confirmation is None:
+                return self._deny_context(context, "confirmation_required")
+            if not self._confirmation.ensure_confirmed(
+                request.session_id,
+                context.workspace_id,
+                request.permission,
+                request.request_id,
+            ):
+                return self._deny_context(context, "confirmation_denied")
         self._audit.record(_event(context, decision, ToolExecutionStatus.ALLOWED))
         result = self._execute(context)
         self._audit.record(_event(context, decision, result.status, result))
@@ -64,6 +83,22 @@ class ToolExecutionCoordinator:
         result = ToolExecutionResult(
             request_id=request.request_id,
             tool_name=request.tool_name,
+            status=ToolExecutionStatus.DENIED,
+            error=SanitizedToolError(code=reason_code, message="Tool request denied."),
+        )
+        self._audit.record(_event(context, decision, ToolExecutionStatus.DENIED, result))
+        return result
+
+    def _deny_context(
+        self, context: ToolExecutionContext, reason_code: str
+    ) -> ToolExecutionResult:
+        decision = ToolPolicyDecision(
+            kind=PolicyDecisionKind.DENY,
+            reason_code=reason_code,
+        )
+        result = ToolExecutionResult(
+            request_id=context.request.request_id,
+            tool_name=context.request.tool_name,
             status=ToolExecutionStatus.DENIED,
             error=SanitizedToolError(code=reason_code, message="Tool request denied."),
         )

@@ -19,6 +19,7 @@ from ai_assistant.domain.tools import (
     ToolExecutionRequest,
     ToolExecutionResult,
     ToolExecutionStatus,
+    ToolPermission,
 )
 
 
@@ -27,6 +28,83 @@ pytestmark = pytest.mark.unit
 
 def test_allowed_read_file_request_is_allowed() -> None:
     decision = _decide("read_file", {"path": "notes.txt", "max_bytes": 1024})
+
+    assert decision.kind == PolicyDecisionKind.ALLOW
+    assert decision.reason_code is None
+
+
+def test_allowed_file_metadata_request_is_allowed() -> None:
+    decision = _decide(
+        "file_metadata",
+        {"path": "notes.txt"},
+        permission=ToolPermission.READ_METADATA,
+    )
+
+    assert decision.kind == PolicyDecisionKind.ALLOW
+    assert decision.reason_code is None
+
+
+def test_allowed_search_text_request_is_allowed() -> None:
+    decision = _decide(
+        "search_text",
+        {"path": ".", "query": "needle", "max_matches": 2},
+        permission=ToolPermission.READ_CONTENT,
+    )
+
+    assert decision.kind == PolicyDecisionKind.ALLOW
+    assert decision.reason_code is None
+
+
+def test_allowed_git_status_request_is_allowed() -> None:
+    decision = _decide(
+        "git_status",
+        {"path": ".", "max_entries": 20},
+        permission=ToolPermission.READ_REPOSITORY,
+    )
+
+    assert decision.kind == PolicyDecisionKind.ALLOW
+    assert decision.reason_code is None
+
+
+def test_allowed_git_diff_request_is_allowed() -> None:
+    decision = _decide(
+        "git_diff",
+        {"path": ".", "scope": "worktree", "max_bytes": 2000},
+        permission=ToolPermission.READ_REPOSITORY,
+    )
+
+    assert decision.kind == PolicyDecisionKind.ALLOW
+    assert decision.reason_code is None
+
+
+def test_allowed_run_tests_request_is_allowed() -> None:
+    decision = _decide(
+        "run_tests",
+        {"path": ".", "profile_id": "core-tests", "stdout_limit_bytes": 4096},
+        permission=ToolPermission.EXECUTE_PROJECT,
+    )
+
+    assert decision.kind == PolicyDecisionKind.ALLOW
+    assert decision.reason_code is None
+
+
+def test_allowed_build_project_request_is_allowed() -> None:
+    decision = _decide(
+        "build_project",
+        {"path": ".", "profile_id": "python-compile", "stderr_limit_bytes": 4096},
+        permission=ToolPermission.EXECUTE_PROJECT,
+    )
+
+    assert decision.kind == PolicyDecisionKind.ALLOW
+    assert decision.reason_code is None
+
+
+def test_allowed_write_request_is_allowed() -> None:
+    decision = _decide(
+        "write",
+        {"path": "notes.txt", "content": "ok", "mode": "create"},
+        permission=ToolPermission.WRITE_WORKSPACE,
+    )
 
     assert decision.kind == PolicyDecisionKind.ALLOW
     assert decision.reason_code is None
@@ -47,10 +125,40 @@ def test_unknown_tool_is_denied_with_stable_reason() -> None:
         ("read_file", {"path": "notes.txt", "max_bytes": True}),
         ("list_directory", {"path": ".", "recursive": "yes"}),
         ("list_directory", {"path": ".", "include_hidden": 1}),
+        ("search_text", {"path": ".", "query": ""}),
+        ("search_text", {"path": ".", "query": "needle", "regex": True}),
+        ("search_text", {"path": ".", "query": "needle", "max_matches": True}),
+        ("git_status", {"path": ".", "scope": "all"}),
+        ("git_status", {"path": ".", "max_entries": True}),
+        ("git_diff", {"path": ".", "scope": "all"}),
+        ("git_diff", {"path": ".", "scope": "worktree", "revision": "HEAD"}),
+        ("git_diff", {"path": ".", "scope": "staged", "max_bytes": True}),
+        ("run_tests", {"path": ".", "profile_id": ""}),
+        ("run_tests", {"path": ".", "profile_id": "core-tests", "argv": ["pytest"]}),
+        ("run_tests", {"path": ".", "profile_id": "core-tests", "env": {"X": "1"}}),
+        ("run_tests", {"path": ".", "profile_id": "core-tests", "stdout_limit_bytes": True}),
+        ("build_project", {"path": ".", "profile_id": ""}),
+        ("build_project", {"path": ".", "profile_id": "python-compile", "argv": ["make"]}),
+        ("build_project", {"path": ".", "profile_id": "python-compile", "command": "make"}),
+        ("write", {"path": "notes.txt", "content": "ok", "mode": "append"}),
+        ("write", {"path": "notes.txt", "content": b"ok", "mode": "create"}),
+        ("write", {"path": "notes.txt", "content": "ok", "mode": "create", "extra": True}),
+        ("write", {"path": "notes.txt", "content": "ok", "mode": "create", "expected_sha256": "bad"}),
     ],
 )
 def test_malformed_arguments_are_denied(tool_name: str, arguments: dict[str, object]) -> None:
-    decision = _decide(tool_name, arguments)
+    permission = _permission_for(tool_name)
+    decision = _decide(tool_name, arguments, permission=permission)
+
+    assert decision.reason_code == REASON_INVALID_ARGUMENTS
+
+
+def test_file_metadata_rejects_extra_arguments() -> None:
+    decision = _decide(
+        "file_metadata",
+        {"path": "notes.txt", "max_bytes": 1},
+        permission=ToolPermission.READ_METADATA,
+    )
 
     assert decision.reason_code == REASON_INVALID_ARGUMENTS
 
@@ -62,12 +170,23 @@ def test_malformed_arguments_are_denied(tool_name: str, arguments: dict[str, obj
         ("read_file", {"path": "notes.txt", "offset": -1}),
         ("list_directory", {"path": ".", "max_entries": 1001}),
         ("list_directory", {"path": ".", "max_depth": 4}),
+        ("search_text", {"path": ".", "query": "needle", "max_matches": 101}),
+        ("search_text", {"path": ".", "query": "needle", "max_files": 201}),
+        ("search_text", {"path": ".", "query": "needle", "max_preview_chars": 501}),
+        ("search_text", {"path": ".", "query": "x" * 257}),
+        ("git_status", {"path": ".", "max_entries": 1001}),
+        ("git_diff", {"path": ".", "scope": "worktree", "max_bytes": 65537}),
+        ("run_tests", {"path": ".", "profile_id": "core-tests", "stdout_limit_bytes": 2097153}),
+        ("run_tests", {"path": ".", "profile_id": "core-tests", "stderr_limit_bytes": 2097153}),
+        ("build_project", {"path": ".", "profile_id": "python-compile", "stdout_limit_bytes": 2097153}),
+        ("write", {"path": "notes.txt", "content": "x" * 65537, "mode": "create"}),
     ],
 )
 def test_values_above_hard_maximum_are_denied(
     tool_name: str, arguments: dict[str, object]
 ) -> None:
-    decision = _decide(tool_name, arguments)
+    permission = _permission_for(tool_name)
+    decision = _decide(tool_name, arguments, permission=permission)
 
     assert decision.reason_code == REASON_LIMIT_EXCEEDED
 
@@ -84,6 +203,48 @@ def test_timeout_above_hard_maximum_is_denied() -> None:
 
 def test_permission_above_static_permission_is_denied() -> None:
     decision = _decide("read_file", {"path": "notes.txt"}, permission="write")
+
+    assert decision.reason_code == REASON_PERMISSION_DENIED
+
+
+def test_file_metadata_requires_read_metadata_permission() -> None:
+    decision = _decide("file_metadata", {"path": "notes.txt"})
+
+    assert decision.reason_code == REASON_PERMISSION_DENIED
+
+
+def test_search_text_requires_read_content_permission() -> None:
+    decision = _decide("search_text", {"path": ".", "query": "needle"})
+
+    assert decision.reason_code == REASON_PERMISSION_DENIED
+
+
+def test_git_status_requires_read_repository_permission() -> None:
+    decision = _decide("git_status", {"path": "."})
+
+    assert decision.reason_code == REASON_PERMISSION_DENIED
+
+
+def test_git_diff_requires_read_repository_permission() -> None:
+    decision = _decide("git_diff", {"path": ".", "scope": "worktree"})
+
+    assert decision.reason_code == REASON_PERMISSION_DENIED
+
+
+def test_run_tests_requires_execute_project_permission() -> None:
+    decision = _decide("run_tests", {"path": ".", "profile_id": "core-tests"})
+
+    assert decision.reason_code == REASON_PERMISSION_DENIED
+
+
+def test_build_project_requires_execute_project_permission() -> None:
+    decision = _decide("build_project", {"path": ".", "profile_id": "python-compile"})
+
+    assert decision.reason_code == REASON_PERMISSION_DENIED
+
+
+def test_write_requires_write_workspace_permission() -> None:
+    decision = _decide("write", {"path": "notes.txt", "content": "ok", "mode": "create"})
 
     assert decision.reason_code == REASON_PERMISSION_DENIED
 
@@ -155,6 +316,18 @@ def _request(
         permission=permission,  # type: ignore[arg-type]
         timeout_seconds=timeout_seconds,
     )
+
+
+def _permission_for(tool_name: str) -> object:
+    if tool_name == "search_text":
+        return ToolPermission.READ_CONTENT
+    if tool_name in {"git_status", "git_diff"}:
+        return ToolPermission.READ_REPOSITORY
+    if tool_name in {"run_tests", "build_project"}:
+        return ToolPermission.EXECUTE_PROJECT
+    if tool_name == "write":
+        return ToolPermission.WRITE_WORKSPACE
+    return "read_only"
 
 
 def _execute_if_allowed(

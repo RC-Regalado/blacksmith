@@ -57,6 +57,26 @@ MANDATORY_CASES = {
     "Phase 1 regression",
 }
 
+PHASE3_MANDATORY_CASES = {
+    "unknown tool",
+    "arbitrary command or profile injection",
+    "shell metacharacters",
+    "environment injection",
+    "output flood",
+    "process timeout and cleanup",
+    "Git hooks/pager/external diff suppression",
+    "sensitive diff",
+    "binary and resource-exhaustion search",
+    "traversal, hidden, sensitive, symlink and oversized write",
+    "hash mismatch",
+    "interrupted atomic write",
+    "confirmation denial and scope changes",
+    "missing socket without fallback",
+    "retention bypass and purge without confirmation",
+    "audit content leakage",
+    "Phase 1 and Phase 2 regression",
+}
+
 
 def test_m2_15_mandatory_cases_have_automated_coverage() -> None:
     covered = {
@@ -83,6 +103,30 @@ def test_m2_15_mandatory_cases_have_automated_coverage() -> None:
     }
 
     assert covered == MANDATORY_CASES
+
+
+def test_m3_17_mandatory_cases_have_automated_coverage() -> None:
+    covered = {
+        "unknown tool",
+        "arbitrary command or profile injection",
+        "shell metacharacters",
+        "environment injection",
+        "output flood",
+        "process timeout and cleanup",
+        "Git hooks/pager/external diff suppression",
+        "sensitive diff",
+        "binary and resource-exhaustion search",
+        "traversal, hidden, sensitive, symlink and oversized write",
+        "hash mismatch",
+        "interrupted atomic write",
+        "confirmation denial and scope changes",
+        "missing socket without fallback",
+        "retention bypass and purge without confirmation",
+        "audit content leakage",
+        "Phase 1 and Phase 2 regression",
+    }
+
+    assert covered == PHASE3_MANDATORY_CASES
 
 
 @pytest.mark.parametrize("tool_name", ["unknown_tool", "ls", "rm -rf /", "read_file;cat"])
@@ -140,6 +184,30 @@ def test_limits_and_malformed_arguments_have_stable_reason_codes() -> None:
 
     assert oversized.reason_code == "limit_exceeded"
     assert malformed.reason_code == "invalid_arguments"
+
+
+@pytest.mark.parametrize(
+    ("tool_name", "arguments"),
+    [
+        ("read_file", {"path": "notes.txt", "permission": "write_workspace"}),
+        ("list_directory", {"path": ".", "command": "rm -rf ."}),
+    ],
+)
+def test_phase2_tools_reject_model_controlled_extra_arguments(
+    tmp_path: Path,
+    tool_name: str,
+    arguments: dict[str, object],
+) -> None:
+    calls: list[str] = []
+    (tmp_path / "notes.txt").write_text("ok", encoding="utf-8")
+    result = _coordinator(tmp_path, executor=RecordingExecutor(calls)).execute(
+        _request(tool_name, arguments)
+    )
+
+    assert result.status == ToolExecutionStatus.DENIED
+    assert result.error is not None
+    assert result.error.code == "invalid_arguments"
+    assert calls == []
 
 
 def test_audit_failure_is_explicit_and_executor_is_not_called_after_denial(

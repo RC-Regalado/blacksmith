@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from ai_assistant.application.errors import ConfigurationError
 
 SUPPORTED_PROVIDERS = frozenset({"dummy", "ollama", "openai", "chatgpt"})
+SUPPORTED_TOOL_EXECUTORS = frozenset({"unix_socket", "local"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,6 +28,9 @@ class AppConfig:
     max_directory_entries: int = 200
     max_directory_depth: int = 0
     audit_database: str = "assistant_audit.sqlite3"
+    audit_auto_purge: bool = False
+    tool_executor: str = "unix_socket"
+    tool_socket: str = "c_toolserver/build/toolserver.sock"
     api_key: str | None = field(default=None, repr=False)
 
 
@@ -76,6 +80,17 @@ def load_app_config(env: Mapping[str, str] | None = None) -> AppConfig:
             "AI_ASSISTANT_AUDIT_DATABASE",
             "assistant_audit.sqlite3",
         ),
+        audit_auto_purge=_bool(
+            source.get("AI_ASSISTANT_AUDIT_AUTO_PURGE", "false"),
+            "AI_ASSISTANT_AUDIT_AUTO_PURGE",
+        ),
+        tool_executor=_tool_executor(
+            source.get("AI_ASSISTANT_TOOL_EXECUTOR", "unix_socket")
+        ),
+        tool_socket=source.get(
+            "AI_ASSISTANT_TOOL_SOCKET",
+            "c_toolserver/build/toolserver.sock",
+        ),
         api_key=source.get("OPENAI_API_KEY"),
     )
 
@@ -88,6 +103,16 @@ def _provider(value: str) -> str:
             f"Unsupported AI_ASSISTANT_PROVIDER: {value!r}; use {supported}"
         )
     return provider
+
+
+def _tool_executor(value: str) -> str:
+    executor = value.strip().lower()
+    if executor not in SUPPORTED_TOOL_EXECUTORS:
+        supported = ", ".join(sorted(SUPPORTED_TOOL_EXECUTORS))
+        raise ConfigurationError(
+            f"Unsupported AI_ASSISTANT_TOOL_EXECUTOR: {value!r}; use {supported}"
+        )
+    return executor
 
 
 def _default_base_url(provider: str) -> str:

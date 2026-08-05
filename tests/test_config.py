@@ -43,6 +43,9 @@ def test_load_app_config_reads_supported_environment_values() -> None:
             "AI_ASSISTANT_MAX_DIRECTORY_ENTRIES": "25",
             "AI_ASSISTANT_MAX_DIRECTORY_DEPTH": "2",
             "AI_ASSISTANT_AUDIT_DATABASE": "audit.sqlite3",
+            "AI_ASSISTANT_AUDIT_AUTO_PURGE": "true",
+            "AI_ASSISTANT_TOOL_EXECUTOR": "local",
+            "AI_ASSISTANT_TOOL_SOCKET": "/tmp/tool.sock",
             "OPENAI_API_KEY": "secret",
         }
     )
@@ -63,6 +66,9 @@ def test_load_app_config_reads_supported_environment_values() -> None:
     assert config.max_directory_entries == 25
     assert config.max_directory_depth == 2
     assert config.audit_database == "audit.sqlite3"
+    assert config.audit_auto_purge is True
+    assert config.tool_executor == "local"
+    assert config.tool_socket == "/tmp/tool.sock"
     assert config.api_key == "secret"
 
 
@@ -101,6 +107,11 @@ def test_invalid_context_limit_fails_clearly() -> None:
 def test_invalid_tool_execution_flag_fails_clearly() -> None:
     with pytest.raises(ConfigurationError, match="AI_ASSISTANT_TOOL_EXECUTION"):
         load_app_config({"AI_ASSISTANT_TOOL_EXECUTION": "maybe"})
+
+
+def test_invalid_tool_executor_fails_clearly() -> None:
+    with pytest.raises(ConfigurationError, match="AI_ASSISTANT_TOOL_EXECUTOR"):
+        load_app_config({"AI_ASSISTANT_TOOL_EXECUTOR": "python_fallback"})
 
 
 def test_invalid_tool_limits_fail_clearly() -> None:

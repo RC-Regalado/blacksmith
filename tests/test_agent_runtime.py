@@ -11,10 +11,12 @@ from ai_assistant.application.ports.models import ModelProvider
 from ai_assistant.agent.message import Message
 from ai_assistant.agent.planner import ToolCallDetector
 from ai_assistant.agent.runtime import AgentRuntime
+from ai_assistant.application.tool_catalog import StaticToolCatalog
 from ai_assistant.domain.tools import (
     ToolExecutionRequest,
     ToolExecutionResult,
     ToolExecutionStatus,
+    ToolPermission,
 )
 
 
@@ -225,6 +227,35 @@ def test_runtime_uses_configured_tool_timeout() -> None:
     runtime.respond("Read notes")
 
     assert coordinator.requests[0].timeout_seconds == 7.5
+
+
+def test_runtime_derives_tool_permission_from_catalog() -> None:
+    coordinator = FakeToolCoordinator(
+        ToolExecutionResult(
+            request_id="alpha:run_tests",
+            tool_name="run_tests",
+            status=ToolExecutionStatus.SUCCESS,
+            content={"exit_code": 0},
+        )
+    )
+    runtime = AgentRuntime(
+        context_builder=ContextBuilder(system_prompt="System prompt"),
+        memory=FakeConversationStore(),
+        model=SequenceModel(
+            [
+                '{"tool_call":{"name":"run_tests","arguments":{"path":".","profile_id":"core-tests"}}}',
+                "Final answer",
+            ]
+        ),
+        tool_detector=ToolCallDetector(),
+        tool_catalog=StaticToolCatalog(),
+        tool_coordinator=coordinator,
+        session_id="alpha",
+    )
+
+    runtime.respond("Run tests")
+
+    assert coordinator.requests[0].permission == ToolPermission.EXECUTE_PROJECT
 
 
 def test_runtime_stops_after_second_tool_request() -> None:
