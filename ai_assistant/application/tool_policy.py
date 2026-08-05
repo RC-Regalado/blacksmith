@@ -3,7 +3,17 @@
 from collections.abc import Mapping
 
 from ai_assistant.application.ports.tools import ToolPolicy
-from ai_assistant.application.tool_catalog import LIST_DIRECTORY, READ_FILE
+from ai_assistant.application.tool_catalog import (
+    BUILD_PROJECT,
+    FILE_METADATA,
+    GIT_DIFF,
+    GIT_STATUS,
+    LIST_DIRECTORY,
+    READ_FILE,
+    RUN_TESTS,
+    SEARCH_TEXT,
+    WRITE,
+)
 from ai_assistant.domain.tools import (
     PolicyDecisionKind,
     ToolDefinition,
@@ -52,9 +62,69 @@ def _valid_arguments(arguments: Mapping[str, object], definition: ToolDefinition
     path = arguments.get("path")
     if not isinstance(path, str) or not path:
         return False
+    if definition.name == FILE_METADATA:
+        return set(arguments) == {"path"}
+    if definition.name == SEARCH_TEXT:
+        query = arguments.get("query")
+        return (
+            isinstance(query, str)
+            and bool(query)
+            and _optional_int(arguments, "max_matches")
+            and _optional_int(arguments, "max_files")
+            and _optional_int(arguments, "max_preview_chars")
+            and _optional_int(arguments, "max_bytes_per_file")
+            and set(arguments)
+            <= {
+                "path",
+                "query",
+                "max_matches",
+                "max_files",
+                "max_preview_chars",
+                "max_bytes_per_file",
+            }
+        )
+    if definition.name == GIT_STATUS:
+        return _optional_int(arguments, "max_entries") and set(arguments) <= {
+            "path",
+            "max_entries",
+        }
+    if definition.name == GIT_DIFF:
+        return (
+            arguments.get("scope") in {"worktree", "staged"}
+            and _optional_int(arguments, "max_bytes")
+            and set(arguments) <= {"path", "scope", "max_bytes"}
+        )
+    if definition.name in {RUN_TESTS, BUILD_PROJECT}:
+        profile_id = arguments.get("profile_id")
+        return (
+            isinstance(profile_id, str)
+            and bool(profile_id)
+            and _optional_int(arguments, "stdout_limit_bytes")
+            and _optional_int(arguments, "stderr_limit_bytes")
+            and set(arguments)
+            <= {"path", "profile_id", "stdout_limit_bytes", "stderr_limit_bytes"}
+        )
+    if definition.name == WRITE:
+        content = arguments.get("content")
+        expected_sha256 = arguments.get("expected_sha256")
+        return (
+            arguments.get("mode") in {"create", "replace"}
+            and isinstance(content, str)
+            and (
+                expected_sha256 is None
+                or (
+                    isinstance(expected_sha256, str)
+                    and len(expected_sha256) == 64
+                    and all(char in "0123456789abcdef" for char in expected_sha256)
+                )
+            )
+            and set(arguments) <= {"path", "content", "mode", "expected_sha256"}
+        )
     if definition.name == READ_FILE:
-        return _optional_int(arguments, "offset") and _optional_int(
-            arguments, "max_bytes"
+        return (
+            _optional_int(arguments, "offset")
+            and _optional_int(arguments, "max_bytes")
+            and set(arguments) <= {"path", "offset", "max_bytes"}
         )
     if definition.name == LIST_DIRECTORY:
         return (
@@ -62,6 +132,8 @@ def _valid_arguments(arguments: Mapping[str, object], definition: ToolDefinition
             and _optional_bool(arguments, "include_hidden")
             and _optional_int(arguments, "max_entries")
             and _optional_int(arguments, "max_depth")
+            and set(arguments)
+            <= {"path", "recursive", "include_hidden", "max_entries", "max_depth"}
         )
     return False
 
@@ -69,6 +141,65 @@ def _valid_arguments(arguments: Mapping[str, object], definition: ToolDefinition
 def _exceeds_limits(arguments: Mapping[str, object], definition: ToolDefinition) -> bool:
     if len(str(arguments["path"])) > int(definition.limits["max_path_length"]):
         return True
+    if definition.name == FILE_METADATA:
+        return False
+    if definition.name == SEARCH_TEXT:
+        query = str(arguments["query"])
+        max_matches = int(
+            arguments.get("max_matches", definition.defaults["max_matches"])
+        )
+        max_files = int(arguments.get("max_files", definition.defaults["max_files"]))
+        max_preview = int(
+            arguments.get("max_preview_chars", definition.defaults["max_preview_chars"])
+        )
+        max_bytes = int(
+            arguments.get(
+                "max_bytes_per_file", definition.defaults["max_bytes_per_file"]
+            )
+        )
+        return (
+            len(query) > int(definition.limits["max_query_length"])
+            or max_matches < 1
+            or max_matches > int(definition.limits["max_matches"])
+            or max_files < 1
+            or max_files > int(definition.limits["max_files"])
+            or max_preview < 1
+            or max_preview > int(definition.limits["max_preview_chars"])
+            or max_bytes < 1
+            or max_bytes > int(definition.limits["max_bytes_per_file"])
+        )
+    if definition.name == GIT_STATUS:
+        max_entries = int(
+            arguments.get("max_entries", definition.defaults["max_entries"])
+        )
+        return (
+            max_entries < 1
+            or max_entries > int(definition.limits["max_entries"])
+        )
+    if definition.name == GIT_DIFF:
+        max_bytes = int(arguments.get("max_bytes", definition.defaults["max_bytes"]))
+        return (
+            max_bytes < 1
+            or max_bytes > int(definition.limits["max_bytes"])
+        )
+    if definition.name in {RUN_TESTS, BUILD_PROJECT}:
+        stdout_limit = int(
+            arguments.get("stdout_limit_bytes", definition.defaults["stdout_limit_bytes"])
+        )
+        stderr_limit = int(
+            arguments.get("stderr_limit_bytes", definition.defaults["stderr_limit_bytes"])
+        )
+        return (
+            stdout_limit < 1
+            or stdout_limit > int(definition.limits["stdout_limit_bytes"])
+            or stderr_limit < 1
+            or stderr_limit > int(definition.limits["stderr_limit_bytes"])
+        )
+    if definition.name == WRITE:
+        return (
+            len(str(arguments["content"]).encode("utf-8"))
+            > int(definition.limits["max_bytes"])
+        )
     if definition.name == READ_FILE:
         offset = int(arguments.get("offset", definition.defaults["offset"]))
         max_bytes = int(arguments.get("max_bytes", definition.defaults["max_bytes"]))

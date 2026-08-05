@@ -24,6 +24,8 @@ _ERROR = 2
 _DENIED = 3
 _TIMEOUT = 6
 _READ_ONLY = 1
+_WRITE_WORKSPACE = 2
+_PROCESS_EXEC = 3
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,8 +135,17 @@ def _error_code(fields: dict[int, bytes | int], status: int) -> str:
 
 
 def _permission(permission: ToolPermission) -> int:
-    if permission == ToolPermission.READ_ONLY:
+    if permission in {
+        ToolPermission.READ_ONLY,
+        ToolPermission.READ_METADATA,
+        ToolPermission.READ_CONTENT,
+        ToolPermission.READ_REPOSITORY,
+    }:
         return _READ_ONLY
+    if permission == ToolPermission.WRITE_WORKSPACE:
+        return _WRITE_WORKSPACE
+    if permission == ToolPermission.EXECUTE_PROJECT:
+        return _PROCESS_EXEC
     return 0
 
 

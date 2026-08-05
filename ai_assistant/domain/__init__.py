@@ -16,8 +16,13 @@ from ai_assistant.domain.errors import (
 from ai_assistant.domain.message import Message, Role
 from ai_assistant.domain.session import DEFAULT_SESSION_ID, SessionId, validate_session_id
 from ai_assistant.domain.tools import (
+    AuditRetentionClass,
+    AuditRetentionRule,
+    ConfirmationGrant,
+    HashMetadata,
     PolicyDecisionKind,
     SanitizedToolError,
+    ToolProfileId,
     ToolAuditEvent,
     ToolCall,
     ToolCallPlan,
@@ -28,6 +33,9 @@ from ai_assistant.domain.tools import (
     ToolExecutionStatus,
     ToolPermission,
     ToolPolicyDecision,
+    WriteMode,
+    WriteRequest,
+    WriteResult,
 )
 
 __all__ = [
@@ -44,9 +52,14 @@ __all__ = [
     "ModelProtocolError",
     "ModelTimeoutError",
     "Role",
+    "AuditRetentionClass",
+    "AuditRetentionRule",
+    "ConfirmationGrant",
+    "HashMetadata",
     "PolicyDecisionKind",
     "SanitizedToolError",
     "SessionId",
+    "ToolProfileId",
     "ToolAuditEvent",
     "ToolAuditStoreError",
     "ToolCall",
@@ -58,5 +71,8 @@ __all__ = [
     "ToolExecutionStatus",
     "ToolPermission",
     "ToolPolicyDecision",
+    "WriteMode",
+    "WriteRequest",
+    "WriteResult",
     "validate_session_id",
 ]

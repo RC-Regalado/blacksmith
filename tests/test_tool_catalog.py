@@ -10,16 +10,32 @@ from ai_assistant.domain.tools import ToolPermission
 pytestmark = pytest.mark.unit
 
 
-def test_static_catalog_registers_only_productive_read_only_tools() -> None:
+def test_static_catalog_registers_productive_tools() -> None:
     catalog = StaticToolCatalog()
 
     names = {definition.name for definition in catalog.definitions()}
 
-    assert names == {"list_directory", "read_file"}
-    assert all(
-        definition.permission == ToolPermission.READ_ONLY
-        for definition in catalog.definitions()
-    )
+    assert names == {
+        "build_project",
+        "file_metadata",
+        "git_diff",
+        "git_status",
+        "list_directory",
+        "read_file",
+        "run_tests",
+        "search_text",
+        "write",
+    }
+    assert "audit_purge" not in names
+    assert catalog.definition_for("build_project").permission == ToolPermission.EXECUTE_PROJECT
+    assert catalog.definition_for("file_metadata").permission == ToolPermission.READ_METADATA
+    assert catalog.definition_for("git_diff").permission == ToolPermission.READ_REPOSITORY
+    assert catalog.definition_for("git_status").permission == ToolPermission.READ_REPOSITORY
+    assert catalog.definition_for("list_directory").permission == ToolPermission.READ_ONLY
+    assert catalog.definition_for("read_file").permission == ToolPermission.READ_ONLY
+    assert catalog.definition_for("run_tests").permission == ToolPermission.EXECUTE_PROJECT
+    assert catalog.definition_for("search_text").permission == ToolPermission.READ_CONTENT
+    assert catalog.definition_for("write").permission == ToolPermission.WRITE_WORKSPACE
 
 
 @pytest.mark.parametrize(
@@ -53,11 +69,31 @@ def test_static_catalog_uses_configured_defaults_capped_by_hard_limits() -> None
 
     read_file = catalog.definition_for("read_file")
     list_directory = catalog.definition_for("list_directory")
+    build_project = catalog.definition_for("build_project")
+    file_metadata = catalog.definition_for("file_metadata")
+    git_diff = catalog.definition_for("git_diff")
+    git_status = catalog.definition_for("git_status")
+    run_tests = catalog.definition_for("run_tests")
+    search_text = catalog.definition_for("search_text")
+    write = catalog.definition_for("write")
 
     assert read_file.defaults["timeout_seconds"] == 30.0
     assert read_file.defaults["max_bytes"] == 65536
     assert list_directory.defaults["max_entries"] == 1000
     assert list_directory.defaults["max_depth"] == 3
+    assert build_project.defaults["timeout_seconds"] == 180.0
+    assert build_project.limits["timeout_seconds"] == 1200.0
+    assert file_metadata.defaults["timeout_seconds"] == 30.0
+    assert git_diff.defaults["max_bytes"] == 16384
+    assert git_diff.limits["max_bytes"] == 65536
+    assert git_status.defaults["max_entries"] == 200
+    assert git_status.limits["max_entries"] == 1000
+    assert run_tests.defaults["stdout_limit_bytes"] == 131072
+    assert run_tests.limits["stdout_limit_bytes"] == 2097152
+    assert search_text.defaults["max_matches"] == 20
+    assert search_text.limits["max_files"] == 200
+    assert write.defaults["max_bytes"] == 65536
+    assert write.limits["max_bytes"] == 65536
 
 
 def test_tool_definition_metadata_is_immutable() -> None:

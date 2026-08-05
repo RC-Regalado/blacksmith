@@ -8,6 +8,7 @@ from time import perf_counter
 from ai_assistant.application.context import ContextBuilder
 from ai_assistant.application.ports.memory import ConversationMemory
 from ai_assistant.application.ports.models import ModelProvider
+from ai_assistant.application.ports.tools import ToolCatalog
 from ai_assistant.application.tool_coordinator import ToolExecutionCoordinator
 from ai_assistant.application.tool_calls import ToolCallDetector
 from ai_assistant.domain.message import Message
@@ -16,6 +17,7 @@ from ai_assistant.domain.tools import (
     ToolCallPlan,
     ToolExecutionRequest,
     ToolExecutionResult,
+    ToolPermission,
 )
 
 
@@ -28,6 +30,7 @@ class AgentRuntime:
     memory: ConversationMemory
     model: ModelProvider
     tool_detector: ToolCallDetector
+    tool_catalog: ToolCatalog | None = None
     tool_coordinator: ToolExecutionCoordinator | None = None
     tool_timeout_seconds: float = 5.0
     session_id: SessionId = DEFAULT_SESSION_ID
@@ -123,6 +126,11 @@ class AgentRuntime:
             session_id=self.session_id,
             tool_name=tool_call.name,
             arguments=tool_call.arguments,
+            permission=(
+                self.tool_catalog.definition_for(tool_call.name).permission
+                if self.tool_catalog
+                else ToolPermission.READ_ONLY
+            ),
             timeout_seconds=self.tool_timeout_seconds,
         )
 

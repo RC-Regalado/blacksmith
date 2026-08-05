@@ -20,6 +20,7 @@ from ai_assistant.domain.tools import (
     ToolExecutionResult,
     ToolExecutionStatus,
     ToolPolicyDecision,
+    ToolPermission,
 )
 
 
@@ -126,6 +127,85 @@ def test_executor_exception_becomes_normalized_error_result() -> None:
     ]
 
 
+def test_execute_project_requires_confirmation_service() -> None:
+    calls: list[str] = []
+    coordinator = ToolExecutionCoordinator(
+        Catalog(calls),
+        Policy(calls),
+        Path(calls),
+        RecordingAudit(calls),
+        Executor(calls),
+    )
+
+    result = coordinator.execute(_request(permission=ToolPermission.EXECUTE_PROJECT))
+
+    assert result.status == ToolExecutionStatus.DENIED
+    assert result.error is not None
+    assert result.error.code == "confirmation_required"
+    assert calls == ["catalog", "policy", "path", "audit"]
+
+
+def test_write_workspace_requires_confirmation_service() -> None:
+    calls: list[str] = []
+    coordinator = ToolExecutionCoordinator(
+        Catalog(calls),
+        Policy(calls),
+        Path(calls),
+        RecordingAudit(calls),
+        Executor(calls),
+    )
+
+    result = coordinator.execute(_request(permission=ToolPermission.WRITE_WORKSPACE))
+
+    assert result.status == ToolExecutionStatus.DENIED
+    assert result.error is not None
+    assert result.error.code == "confirmation_required"
+    assert calls == ["catalog", "policy", "path", "audit"]
+
+
+def test_execute_project_confirmation_allows_execution() -> None:
+    calls: list[str] = []
+    confirmation = Confirmation(calls, approved=True)
+    coordinator = ToolExecutionCoordinator(
+        Catalog(calls),
+        Policy(calls),
+        Path(calls),
+        RecordingAudit(calls),
+        Executor(calls),
+        confirmation=confirmation,
+    )
+
+    result = coordinator.execute(_request(permission=ToolPermission.EXECUTE_PROJECT))
+
+    assert result.status == ToolExecutionStatus.SUCCESS
+    assert calls == [
+        "catalog",
+        "policy",
+        "path",
+        "confirmation",
+        "audit",
+        "executor",
+        "audit",
+    ]
+
+
+def test_write_workspace_confirmation_allows_execution() -> None:
+    calls: list[str] = []
+    coordinator = ToolExecutionCoordinator(
+        Catalog(calls),
+        Policy(calls),
+        Path(calls),
+        RecordingAudit(calls),
+        Executor(calls),
+        confirmation=Confirmation(calls, approved=True),
+    )
+
+    result = coordinator.execute(_request(permission=ToolPermission.WRITE_WORKSPACE))
+
+    assert result.status == ToolExecutionStatus.SUCCESS
+    assert "confirmation" in calls
+
+
 class Catalog(ToolCatalog):
     def __init__(self, calls: list[str]) -> None:
         self.calls = calls
@@ -215,10 +295,30 @@ class RaisingExecutor(Executor):
         raise RuntimeError("boom")
 
 
-def _request(tool_name: str = "read_file") -> ToolExecutionRequest:
+class Confirmation:
+    def __init__(self, calls: list[str], approved: bool) -> None:
+        self.calls = calls
+        self.approved = approved
+
+    def ensure_confirmed(
+        self,
+        session_id: str,
+        workspace_id: str,
+        permission: ToolPermission,
+        request_id: str,
+    ) -> bool:
+        self.calls.append("confirmation")
+        return self.approved
+
+
+def _request(
+    tool_name: str = "read_file",
+    permission: ToolPermission = ToolPermission.READ_ONLY,
+) -> ToolExecutionRequest:
     return ToolExecutionRequest(
         request_id="req-1",
         session_id="default",
         tool_name=tool_name,
         arguments={"path": "file.txt"},
+        permission=permission,
     )

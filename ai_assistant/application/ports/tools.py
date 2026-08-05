@@ -8,6 +8,7 @@ from ai_assistant.domain.tools import (
     ToolExecutionContext,
     ToolExecutionRequest,
     ToolExecutionResult,
+    ToolProfileId,
     ToolPolicyDecision,
 )
 
@@ -43,4 +44,21 @@ class ToolExecutor(ABC):
 class AuditRecorder(ABC):
     @abstractmethod
     def record(self, event: ToolAuditEvent) -> None:
+        raise NotImplementedError
+
+
+class ConfirmationPrompter(ABC):
+    @abstractmethod
+    def confirm(
+        self,
+        session_id: str,
+        workspace_id: str,
+        permission: str,
+    ) -> bool:
+        raise NotImplementedError
+
+
+class ToolProfileRegistry(ABC):
+    @abstractmethod
+    def definition_for(self, profile_id: ToolProfileId) -> object:
         raise NotImplementedError

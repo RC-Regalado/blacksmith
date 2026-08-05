@@ -21,6 +21,9 @@ AI_ASSISTANT_REQUEST_TIMEOUT=180
 
 Use `AI_ASSISTANT_CONTEXT_LIMIT=8192` only for evaluation runs where memory pressure is acceptable.
 
+For the current GTX 1060 6 GB local profile, Ollama server settings and the
+recommended `blacksmith-tools` CLI command, see `docs/ollama-local.md`.
+
 ## Smoke
 
 ```bash

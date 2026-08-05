@@ -5,7 +5,17 @@ from pathlib import Path
 
 from ai_assistant.application.errors import ConfigurationError, InvalidToolCallError
 from ai_assistant.application.ports.tools import PathPolicy
-from ai_assistant.application.tool_catalog import LIST_DIRECTORY, READ_FILE
+from ai_assistant.application.tool_catalog import (
+    BUILD_PROJECT,
+    FILE_METADATA,
+    GIT_DIFF,
+    GIT_STATUS,
+    LIST_DIRECTORY,
+    READ_FILE,
+    RUN_TESTS,
+    SEARCH_TEXT,
+    WRITE,
+)
 from ai_assistant.domain.tools import (
     ToolDefinition,
     ToolExecutionContext,
@@ -39,6 +49,8 @@ class WorkspacePathPolicy(PathPolicy):
         self, request: ToolExecutionRequest, definition: ToolDefinition
     ) -> ToolExecutionContext:
         relative = _relative_path(request, definition)
+        if definition.name == WRITE:
+            return _validate_write(request, relative, self._workspace)
         try:
             resolved = (self._workspace / relative).resolve(strict=True)
         except OSError as exc:
@@ -94,3 +106,52 @@ def _require_expected_type(path: Path, definition: ToolDefinition) -> None:
         raise InvalidToolCallError("path must be a regular file")
     if definition.name == LIST_DIRECTORY and not path.is_dir():
         raise InvalidToolCallError("path must be a directory")
+    if definition.name == FILE_METADATA and not (path.is_file() or path.is_dir()):
+        raise InvalidToolCallError("path must be a regular file or directory")
+    if definition.name == SEARCH_TEXT and not (path.is_file() or path.is_dir()):
+        raise InvalidToolCallError("path must be a regular file or directory")
+    if definition.name == GIT_STATUS and not path.is_dir():
+        raise InvalidToolCallError("path must be a directory")
+    if definition.name == GIT_DIFF and not path.is_dir():
+        raise InvalidToolCallError("path must be a directory")
+    if definition.name == RUN_TESTS and not path.is_dir():
+        raise InvalidToolCallError("path must be a directory")
+    if definition.name == BUILD_PROJECT and not path.is_dir():
+        raise InvalidToolCallError("path must be a directory")
+
+
+def _validate_write(
+    request: ToolExecutionRequest,
+    relative: Path,
+    workspace: Path,
+) -> ToolExecutionContext:
+    _require_allowed_components(relative)
+    target = workspace / relative
+    try:
+        parent = target.parent.resolve(strict=True)
+    except OSError as exc:
+        raise InvalidToolCallError("parent path does not exist") from exc
+    _require_inside_workspace(parent, workspace)
+    mode = request.arguments.get("mode")
+    if target.exists() or target.is_symlink():
+        resolved = target.resolve(strict=True)
+        _require_inside_workspace(resolved, workspace)
+        _require_allowed_components(resolved.relative_to(workspace))
+        if mode == "create":
+            raise InvalidToolCallError("path already exists")
+        if not resolved.is_file():
+            raise InvalidToolCallError("path must be a regular file")
+        return ToolExecutionContext(
+            request=request,
+            workspace_id=str(workspace),
+            resolved_path=str(resolved),
+            relative_path=relative.as_posix(),
+        )
+    if mode == "replace":
+        raise InvalidToolCallError("path does not exist")
+    return ToolExecutionContext(
+        request=request,
+        workspace_id=str(workspace),
+        resolved_path=str(target),
+        relative_path=relative.as_posix(),
+    )

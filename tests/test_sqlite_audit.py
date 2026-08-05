@@ -79,23 +79,81 @@ def test_sqlite_audit_failure_is_explicit(tmp_path: Path) -> None:
         recorder.record(_event())
 
 
+def test_audit_purge_dry_run_reports_without_deleting(tmp_path: Path) -> None:
+    database = tmp_path / "audit.sqlite3"
+    recorder = SQLiteAuditRecorder(database)
+    now = datetime(2026, 8, 1, tzinfo=UTC)
+    recorder.record(_event(started=now - timedelta(days=31), tool_name="search_text"))
+
+    result = recorder.purge_expired(dry_run=True, now=now)
+
+    assert result.deleted_count == 1
+    assert len(_rows(database)) == 1
+
+
+def test_real_audit_purge_requires_confirmation(tmp_path: Path) -> None:
+    recorder = SQLiteAuditRecorder(tmp_path / "audit.sqlite3")
+
+    with pytest.raises(ToolAuditStoreError, match="confirmation"):
+        recorder.purge_expired(dry_run=False, confirm=False)
+
+
+def test_audit_purge_enforces_minimum_retention_by_class(tmp_path: Path) -> None:
+    database = tmp_path / "audit.sqlite3"
+    recorder = SQLiteAuditRecorder(database)
+    now = datetime(2026, 8, 1, tzinfo=UTC)
+    recorder.record(_event(started=now - timedelta(days=31), tool_name="search_text"))
+    recorder.record(_event(started=now - timedelta(days=89), tool_name="git_status"))
+    recorder.record(_event(started=now - timedelta(days=90), tool_name="run_tests"))
+    recorder.record(_event(started=now - timedelta(days=364), tool_name="write"))
+    recorder.record(
+        _event(
+            started=now - timedelta(days=365),
+            tool_name="read_file",
+            decision=PolicyDecisionKind.DENY,
+            status=ToolExecutionStatus.DENIED,
+        )
+    )
+
+    result = recorder.purge_expired(dry_run=False, confirm=True, now=now)
+
+    remaining = [row["tool_name"] for row in _rows(database)]
+    assert result.deleted_count == 3
+    assert remaining == ["git_status", "write", "audit_purge"]
+
+
+def test_audit_purge_records_purge_event(tmp_path: Path) -> None:
+    database = tmp_path / "audit.sqlite3"
+    recorder = SQLiteAuditRecorder(database)
+    now = datetime(2026, 8, 1, tzinfo=UTC)
+    recorder.record(_event(started=now - timedelta(days=31), tool_name="file_metadata"))
+
+    recorder.purge_expired(dry_run=False, confirm=True, now=now)
+
+    purge = _rows(database)[0]
+    assert purge["tool_name"] == "audit_purge"
+    assert json.loads(purge["argument_summary"])["deleted_count"] == 1
+
+
 def _event(
     decision: PolicyDecisionKind = PolicyDecisionKind.ALLOW,
     status: ToolExecutionStatus = ToolExecutionStatus.SUCCESS,
     argument_summary: dict[str, object] | None = None,
+    started: datetime | None = None,
+    tool_name: str = "read_file",
 ) -> ToolAuditEvent:
-    started = datetime(2026, 8, 1, tzinfo=UTC)
+    event_started = started or datetime(2026, 8, 1, tzinfo=UTC)
     return ToolAuditEvent(
         request_id="req-1",
         session_id="default",
-        tool_name="read_file",
+        tool_name=tool_name,
         permission=ToolPermission.READ_ONLY,
         decision=decision,
         status=status,
         workspace_id="workspace",
         argument_summary=argument_summary or {"path": "notes.txt"},
-        started_at=started,
-        ended_at=started + timedelta(milliseconds=5),
+        started_at=event_started,
+        ended_at=event_started + timedelta(milliseconds=5),
         duration_ms=5,
         denial_reason="denied" if decision == PolicyDecisionKind.DENY else None,
         error_code="error" if status == ToolExecutionStatus.ERROR else None,
