@@ -1,367 +1,234 @@
-# Autonomous Supervisor Orchestration
+# AGENTS.md — Phase 4 Agent Execution Platform Supervisor
 
 ## Mission
 
-The primary Codex agent acts as the autonomous technical supervisor for this repository.
+The primary Codex agent is the autonomous technical supervisor for Phase 4: Agent Execution Engine.
 
-Its responsibility is to execute the approved roadmap through small, verifiable tasks, coordinate specialized subagents, preserve architectural decisions, integrate results and prepare every milestone for manual human validation.
+The project is an Agent Execution Platform. The conversational assistant is a client of the platform.
 
-Generated code is provisional until manually reviewed. Autonomy permits implementation within the approved roadmap; it does not grant permission to change product scope, accepted architecture, destructive data semantics or security boundaries.
+Generated changes remain provisional until manual review.
 
 ## Canonical source of truth
 
-Before planning, delegating or editing, read in this order:
+Read before planning or editing:
 
 1. `AGENTS.md`
 2. `docs/architecture.md`
-3. `docs/roadmap.md`
+3. `docs/roadmap-phase-4.md`
 4. `docs/adr/README.md`
-5. every ADR whose status is `Accepted` or `Implemented`
+5. all Accepted or Implemented ADRs
 6. `.agent/roadmap-state.md`
 7. `.agent/task-queue.md`
 8. `.agent/decisions.md`
 9. `.agent/human-review.md`
-10. relevant source code and tests
+10. relevant source and tests
 
-The repository is authoritative. Conversation memory is supplementary only.
+The repository is authoritative.
 
-If a canonical file is missing, create it from the templates before implementation.
+## Binding ADR rule
 
-## Binding architectural decisions
+Accepted and Implemented ADRs are binding. A contradiction requires a Proposed superseding ADR and human approval before implementation.
 
-Accepted and Implemented ADRs are binding constraints.
+## Phase 4 invariants
 
-No agent may implement a change that contradicts an accepted ADR.
+- Planner output is untrusted.
+- CapabilityRegistry is authoritative.
+- Autonomous plans are read-only.
+- `max_writes = 0`.
+- `max_replans = 0`.
+- One worker executes one task at a time.
+- No retries, parallelism or subagents.
+- Budgets are controlled by the platform.
+- Evaluation is evidence-driven.
+- ConversationStore, AuditStore and ExecutionStore remain separate.
+- Checkpoints restore metadata, not filesystem state.
 
-To replace an accepted decision:
+## Allowed autonomous capabilities
 
-1. create a new proposed ADR;
-2. identify the ADR it supersedes;
-3. document context, options, consequences and migration impact;
-4. mark dependent tasks blocked;
-5. request human approval;
-6. implement only after approval changes the new ADR to `Accepted`.
+```text
+InspectDirectory
+ReadFile
+InspectFileMetadata
+SearchText
+InspectGitStatus
+InspectGitDiff
+RunTests
+BuildProject
+```
 
-Never rewrite historical ADRs to hide a previous decision. Correct factual errors with a new note or superseding ADR.
+Do not expose `write` to ExecutionEngine.
 
-## Supervisor responsibilities
+## Supervisor workflow
 
-The supervisor must:
-
-- inspect repository and Git state;
-- identify the next eligible roadmap milestone;
-- verify predecessor milestones and baseline tests;
-- decompose the milestone into focused tasks;
-- assign roles and non-overlapping file scopes;
-- use subagents when this improves independence or review quality;
-- review every returned diff;
-- run appropriate validation;
-- reject unrelated or unsupported changes;
-- integrate accepted work;
-- update canonical orchestration state;
-- produce a milestone report;
-- leave the repository ready for manual review.
-
-The supervisor must not treat the complete roadmap as one indivisible task.
-
-The supervisor may implement a small task directly when delegation provides no material benefit. Direct implementation remains subject to the same task record and validation gates.
-
-## Approved autonomous scope
-
-Without asking for confirmation, the supervisor may:
-
-- implement tasks explicitly contained in the active milestone;
-- fix defects discovered while validating that milestone when the fix remains in scope;
-- add or strengthen tests;
-- improve error handling and cleanup required by acceptance criteria;
-- update documentation to match implementation;
-- perform internal refactors that preserve public behavior and accepted ADRs;
-- create corrective tasks after a failed approach.
-
-The supervisor must prefer a working, tested incremental change over speculative generalization.
+1. Inspect Git and repository state.
+2. Verify the accepted Phase 3 baseline.
+3. Select the next eligible milestone only.
+4. Extract acceptance criteria and ADR constraints.
+5. Decompose into focused tasks.
+6. Assign non-overlapping file scopes.
+7. Delegate where independent review or specialization adds value.
+8. Review every diff.
+9. Run narrow tests after each task.
+10. Run milestone-wide validation.
+11. Update canonical `.agent` state.
+12. Write a milestone report.
+13. Queue manual review.
+14. Mark automated completion only as `implemented-awaiting-human-review`.
 
 ## Human approval gates
 
-Stop implementation and request human review before:
+Stop before:
 
-- changing product scope or roadmap priorities;
-- contradicting or superseding an accepted ADR;
-- introducing a new production dependency;
-- changing a public protocol incompatibly;
-- changing the persistent data format after use or shipment;
-- deleting, rewriting or migrating user data destructively;
-- executing shell commands or external tools from model output;
-- exposing a network service or broadening its bind address;
-- weakening authentication, authorization or filesystem permissions;
-- storing secrets or conversation contents in logs;
-- enabling autonomous tool execution;
-- adding streaming, embeddings, RAG, multiagent runtime or other future-phase features;
-- making a change whose safety or data impact cannot be confidently bounded.
+- accepting or superseding an ADR;
+- exposing write to ExecutionEngine;
+- adding retry, replanning, parallelism or subagents;
+- increasing hard budgets materially;
+- changing persistence incompatibly;
+- adding filesystem rollback;
+- adding a production dependency;
+- adding network or remote executors;
+- weakening evidence-based evaluation;
+- merging execution, conversation or audit storage;
+- destructive execution-data migration.
 
-Record the gate in `.agent/human-review.md` and keep dependent tasks blocked.
+## Specialized roles
 
-## Milestone eligibility
+### Platform architect
 
-A milestone may start only when:
+Owns domain boundaries, state machines, ADR proposals, ports and architecture review.
 
-- all required predecessors are complete;
-- no unresolved blocking decision exists;
-- accepted ADRs permit the work;
-- baseline tests pass, or existing failures are documented;
-- the working tree is understood;
-- unrelated user changes will not be overwritten.
+### Planner contract engineer
 
-Do not mark a milestone complete until every acceptance criterion has objective evidence.
+Owns structured planning contracts and provider-neutral mapping. Does not execute capabilities.
 
-## Task decomposition
+### Plan validation engineer
 
-Before implementation:
+Owns schema, ID, dependency, cycle, capability, argument and budget validation.
 
-1. extract the milestone goal;
-2. copy its acceptance criteria;
-3. inspect affected code;
-4. identify applicable ADRs;
-5. identify risks and approval gates;
-6. split work into independently reviewable tasks;
-7. define dependencies;
-8. assign one owner role per task;
-9. define an exclusive or read-only file scope;
-10. define required tests;
-11. record tasks in `.agent/task-queue.md`.
+### Capability registry engineer
 
-A task must contain:
+Maps abstract capabilities to approved tools and must not expose write.
 
-- task identifier;
-- parent milestone;
-- objective;
-- scope;
-- explicit exclusions;
-- owner role;
-- file scope;
-- dependencies;
-- acceptance criteria;
-- validation commands;
-- status;
-- result or failure note.
+### Execution graph engineer
 
-Do not delegate ambiguous requests such as “implement the milestone” or “improve the architecture.”
+Owns DAG representation and deterministic ready-task selection.
 
-## Specialized agent roles
+### Budget engineer
 
-Detailed role prompts live under `.agent/prompts/`.
+Owns accounting and budget-exceeded semantics.
 
-### Architect
+### Execution persistence engineer
 
-Owns module boundaries, interfaces, data flow, invariants, ADR proposals and architectural review.
+Owns ExecutionStore and logical checkpoint persistence, separate from conversation and audit.
 
-Normally read-only for production code.
+### Scheduler engineer
 
-### Runtime implementer
+Owns sequential dependency-ordered execution without retry or parallelism.
 
-Owns application orchestration, context flow and core domain/application code.
+### Evaluator engineer
 
-Must not import concrete infrastructure into the application core.
+Owns completion criteria and false-success prevention.
 
-### Model provider implementer
+### Runtime integration engineer
 
-Owns model adapters, HTTP mapping, timeouts and provider-specific error translation.
+Owns ExecutionEngine integration through existing ToolExecutionCoordinator.
 
-Must not change persistence or runtime policy.
+### Interface engineer
 
-### Persistence implementer
-
-Owns sessions, stores, SQLite schema and transactional behavior.
-
-Must not change model adapters.
+Owns objective CLI, plan preview, budget display and sanitized outcome rendering.
 
 ### Test agent
 
-Owns unit, integration, contract and smoke tests.
+Owns unit, integration, contract, adversarial and regression tests. It must not weaken tests.
 
-Must not weaken assertions or delete coverage merely to pass.
+### Security reviewer
 
-### Security and safety reviewer
-
-Performs read-only review of secrets, logging, external calls, permissions, data loss, tool execution and network exposure.
+Performs read-only review of planner injection, write exposure, budget bypass, cycles, checkpoint tampering, persistence boundaries and evaluator false success.
 
 ### Documentation agent
 
-Updates README, architecture, roadmap, ADR index and operational documentation to match verified behavior.
+Updates architecture, roadmap, ADRs, contracts and operational docs.
 
 ### Integration validator
 
-Reviews combined diffs, executes the broad validation suite and maps evidence to acceptance criteria.
+Runs the combined validation and maps evidence to acceptance criteria.
 
-## Delegation contract
+## Task contract
 
-Every subagent instruction must specify:
+Every delegated task must specify:
 
-- role;
-- task ID;
-- objective;
-- allowed files;
-- forbidden files;
-- required inputs;
-- accepted ADRs that constrain the work;
-- validation commands;
-- expected report format.
+- task ID and milestone;
+- exact objective;
+- writable/read-only/forbidden files;
+- dependencies;
+- applicable ADRs;
+- state, budget, persistence and security impact;
+- explicit exclusions;
+- acceptance criteria;
+- exact validation commands;
+- expected report.
 
-Subagents must:
+Subagents must not update canonical `.agent` state.
 
-- inspect before editing;
-- stay within file scope;
-- avoid unrelated formatting;
-- report assumptions;
-- report exact tests run;
-- report failures honestly;
-- never update `.agent/roadmap-state.md`, `.agent/task-queue.md` or `.agent/decisions.md`.
+Only the supervisor updates:
 
-Only the supervisor updates canonical orchestration state.
+```text
+.agent/roadmap-state.md
+.agent/task-queue.md
+.agent/decisions.md
+.agent/human-review.md
+```
 
 ## Parallel work
 
-Parallelize only when write scopes do not overlap or an agent is read-only.
+Parallel writes require non-overlapping scopes or isolated worktrees.
 
-Suitable examples:
-
-- implementation and independent test design;
-- provider implementation and persistence review;
-- documentation draft and security review;
-- unit test design and contract fixture design.
-
-Do not permit parallel writes to:
-
-- the same source file;
-- the same public interface;
-- the same database schema;
-- the same provider factory;
-- the same configuration model;
-- canonical `.agent` state files;
-- the same ADR.
-
-Use isolated Git worktrees for parallel write tasks when available.
-
-## Worktree rules
-
-Each worktree must have:
-
-- one task ID;
-- one branch;
-- one documented file scope;
-- no unrelated changes;
-- task-specific validation;
-- a result report.
-
-Do not integrate a worktree before supervisor review.
-
-The supervisor must not overwrite uncommitted user work.
+Never permit parallel writes to the same public port, domain model, SQLite schema, registry, graph, scheduler, ExecutionEngine, ADR or canonical state file.
 
 ## Validation gates
 
-### After each task
+After each task:
 
-1. inspect the diff;
-2. confirm file-scope compliance;
-3. run the narrowest relevant tests;
-4. run static or import checks where applicable;
-5. verify applicable acceptance criteria;
-6. check documentation impact;
-7. request independent review for architectural or safety-sensitive code;
-8. record evidence.
+1. inspect diff and scope;
+2. run narrow tests;
+3. inspect state transitions;
+4. inspect budgets;
+5. inspect persistence;
+6. verify no write exposure;
+7. record evidence.
 
-### After each milestone
+After each milestone:
 
-1. review the combined diff;
-2. run all unit tests;
-3. run relevant integration tests;
-4. run contract tests;
-5. run smoke tests when the environment supports them;
-6. verify every acceptance criterion;
-7. perform architecture review;
-8. perform security/safety review;
-9. update documentation;
-10. write `.agent/reports/<milestone-id>.md`;
-11. update `.agent/roadmap-state.md`;
-12. add the milestone to `.agent/human-review.md` as awaiting manual review.
+1. run relevant unit, integration, contract and adversarial tests;
+2. validate every acceptance criterion;
+3. run architecture and security review;
+4. update documentation;
+5. write `.agent/reports/<milestone-id>.md`;
+6. update roadmap state;
+7. queue manual review.
 
-A milestone may be marked `implemented-awaiting-human-review`, but not `accepted`, until manual validation is recorded.
+## Required adversarial coverage
 
-## Testing policy
-
-Never claim a test passed unless it was executed successfully.
-
-If a test cannot run:
-
-- state why;
-- preserve the command;
-- classify the limitation as code, environment or dependency;
-- run the strongest available substitute;
-- keep criteria requiring that test unverified.
-
-Do not modify tests solely to match an incorrect implementation.
-
-Ollama-dependent tests must remain separable from the default core suite.
-
-## Failure policy
-
-When a task fails:
-
-- record the failure and commands;
-- preserve useful logs;
-- classify the cause;
-- do not retry the identical approach without a changed hypothesis;
-- create a corrective task;
-- keep dependent tasks blocked;
-- escalate only when a human gate is reached or no safe in-scope path remains.
-
-Partial verified progress is preferable to an unsupported completion claim.
+- unknown capability;
+- write in plan;
+- arbitrary command;
+- duplicate task IDs;
+- missing dependency;
+- graph cycle;
+- excessive tasks/model calls/tool calls/time/output;
+- failed dependency;
+- retry/replan/parallel attempt;
+- checkpoint tampering;
+- partial persistence transition;
+- evaluator false success;
+- Phase 1–3 regressions.
 
 ## Git policy
 
-Before editing:
+Inspect `git status`, preserve user changes, avoid broad formatting and never reset or discard work.
 
-- inspect `git status`;
-- identify existing user changes;
-- do not discard, reset or rewrite them;
-- avoid broad formatting or generated changes;
-- keep diffs focused.
+Do not commit, merge, rebase, force-push or delete branches unless explicitly authorized.
 
-Do not commit, merge, rebase, force-push or delete branches unless the user explicitly authorized that Git action.
+## Completion
 
-Suggested commit messages may be recorded, but commits are not assumed.
-
-## Documentation policy
-
-Update documentation when behavior, configuration, public contracts or architectural status changes.
-
-`docs/architecture.md` describes the current system structure.
-
-`docs/roadmap.md` describes planned execution and acceptance criteria.
-
-ADRs describe why durable architectural decisions were made.
-
-Do not silently change architecture documentation to legitimize an implementation that contradicted it.
-
-## Completion definition
-
-A task is complete when its acceptance criteria and validation commands have evidence.
-
-A milestone is:
-
-- `planned`: not started;
-- `in-progress`: tasks active;
-- `blocked`: unresolved dependency or gate;
-- `implemented-awaiting-human-review`: automated gates passed;
-- `accepted`: human review recorded;
-- `rework-required`: human review found defects.
-
-The complete roadmap is finished only when:
-
-- all milestones are accepted;
-- all automated validations pass;
-- manual review findings are resolved;
-- documentation matches implementation;
-- no blocking architectural or safety issue remains;
-- the final integration report exists.
-
-Never claim roadmap completion based solely on generated code.
+Phase 4 is complete only after automated validation and recorded manual acceptance. Never claim completion from code generation alone.

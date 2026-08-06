@@ -174,10 +174,359 @@ The supervisor is the only agent permitted to update this file.
 | M4.0-T1 | M4.0 | Architect | Prepare Phase 4 package structure without enabling behavior | `ai_assistant/platform/`, `ai_assistant/capabilities/`, `docs/roadmap-phase-4.md`, `context-ai.md` | M3.18 | implemented |
 | M4.0-T2 | M4.0 | Test agent | Cover Phase 4 scaffold imports and explicit validation | `tests/test_platform_structure.py`, `tests/test_phase4_docs.py` | M4.0-T1 | implemented |
 | M4.0-T3 | M4.0 | Integration validator | Validate M4.0 and prepare human review artifacts | `.agent/reports/M4.0.md`, `.agent/roadmap-state.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M4.0-T2 | implemented |
+| M4.1-T1 | M4.1 | Integration validator | Record Phase 3 accepted baseline and repository state | `.agent/roadmap-state.md`, `.agent/roadmap-state-phase-4.md` | Phase 3 accepted | implemented |
+| M4.1-T2 | M4.1 | Test agent | Align stale Phase 4 docs test with current M4.1 roadmap | `tests/test_phase4_docs.py` | M4.1-T1 | implemented |
+| M4.1-T3 | M4.1 | Integration validator | Run complete baseline validation and prepare review artifacts | `.agent/reports/M4.1.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M4.1-T2 | implemented |
+| M4.2-T1 | M4.2 | Platform architect | Mark ADR-036 through ADR-046 Accepted after human approval | `docs/adr/ADR-036-*.md` through `docs/adr/ADR-046-*.md`, `docs/adr/README.md`, `docs/adr/README-phase-4.md` | M4.1 | implemented |
+| M4.2-T2 | M4.2 | Integration validator | Validate ADR package state and prepare review artifacts | `.agent/reports/M4.2.md`, `.agent/roadmap-state.md`, `.agent/roadmap-state-phase-4.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M4.2-T1 | implemented |
 
 ## Task records
 
 Use `.agent/templates/task.md` for each detailed record.
+
+### Task M4.2-T1 — Accept Phase 4 ADR Package
+
+## Parent milestone
+
+M4.2
+
+## Status
+
+implemented
+
+## Owner role
+
+Platform architect
+
+## Objective
+
+Record human approval for ADR-036 through ADR-046.
+
+## Scope
+
+- Mark ADR-036 through ADR-046 as `Accepted`.
+- Sync ADR indexes.
+
+## Explicit exclusions
+
+- Do not mark ADRs Implemented.
+- Do not implement M4.3.
+- Do not change ADR decisions.
+
+## File scope
+
+### Writable
+
+- `docs/adr/ADR-036-*.md` through `docs/adr/ADR-046-*.md`
+- `docs/adr/README.md`
+- `docs/adr/README-phase-4.md`
+
+## Dependencies
+
+- M4.1
+
+## Applicable ADRs
+
+- ADR-036 through ADR-046
+
+## Acceptance criteria
+
+- [x] ADR-036 through ADR-046 are `Accepted`.
+- [x] Main ADR index lists ADR-036 through ADR-046.
+- [x] Phase 4 ADR index matches individual statuses.
+
+## Validation commands
+
+```bash
+for f in docs/adr/ADR-0{36,37,38,39,40,41,42,43,44,45,46}-*.md; do printf '%s: ' "$f"; rg -m1 '^[- ]*Status:' "$f"; done
+rg -n "ADR-0(36|37|38|39|40|41|42|43|44|45|46).*Accepted" docs/adr/README.md docs/adr/README-phase-4.md
+```
+
+## Result report
+
+- Summary: Marked Phase 4 ADR package Accepted after human approval.
+- Files changed: Phase 4 ADRs and ADR indexes.
+- Tests run: ADR status scans.
+- Test results: passed.
+- Assumptions: User approval applies to ADR-036 through ADR-046.
+- Remaining issues: M4.2 awaits manual review.
+- Recommended follow-up: M4.3 after M4.2 review.
+
+### Task M4.2-T2 — Validate M4.2
+
+## Parent milestone
+
+M4.2
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate accepted ADR package state and prepare M4.2 review artifacts.
+
+## Scope
+
+- Run ADR status scans.
+- Run focused Phase 4 docs test.
+- Run diff check.
+- Update supervisor state.
+- Queue manual review.
+
+## Explicit exclusions
+
+- Do not mark M4.2 accepted.
+- Do not start M4.3.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M4.2.md`
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-4.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+## Dependencies
+
+- M4.2-T1
+
+## Applicable ADRs
+
+- ADR-036 through ADR-046
+
+## Acceptance criteria
+
+- [x] ADR-036 through ADR-046 are accepted and indexed.
+- [x] Focused docs test passes.
+- [x] Diff check passes.
+- [x] M4.2 is left awaiting manual review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_phase4_docs.py -q
+git diff --check
+```
+
+## Result report
+
+- Summary: Validated M4.2 accepted ADR state and prepared manual review.
+- Files changed: `.agent/reports/M4.2.md`, supervisor state files.
+- Tests run: focused docs test; diff check; ADR scans.
+- Test results: recorded in `.agent/reports/M4.2.md`.
+- Assumptions: Productive M4.3 starts only after M4.2 review.
+- Remaining issues: M4.2 awaits manual review.
+- Recommended follow-up: M4.3 platform domain models.
+
+### Task M4.1-T1 — Record Phase 3 Baseline
+
+## Parent milestone
+
+M4.1
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Record the accepted Phase 3 baseline and current repository state.
+
+## Scope
+
+- Confirm Phase 3 accepted.
+- Confirm ADR-001 through ADR-035 are Implemented.
+- Record Git revision, Python version, Git status and manual artifacts.
+
+## Explicit exclusions
+
+- No Phase 4 productive implementation.
+- No ADR approval.
+- No destructive cleanup.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-4.md`
+
+## Dependencies
+
+- Phase 3 accepted.
+
+## Applicable ADRs
+
+- ADR-001 through ADR-035
+
+## Acceptance criteria
+
+- [x] Phase 3 acceptance is recorded.
+- [x] ADR-001 through ADR-035 are verified as Implemented.
+- [x] Baseline environment is recorded.
+
+## Validation commands
+
+```bash
+for f in docs/adr/ADR-*.md; do printf '%s: ' "$f"; rg -m1 '^[- ]*Status:' "$f" || true; done | sort
+git rev-parse HEAD
+venv/bin/python --version
+git status --short
+```
+
+## Result report
+
+- Summary: Recorded accepted Phase 3 baseline and current repository state.
+- Files changed: `.agent/roadmap-state.md`, `.agent/roadmap-state-phase-4.md`
+- Tests run: ADR status scan and environment commands.
+- Test results: ADR-001 through ADR-035 Implemented; ADR-036 through ADR-046 Accepted.
+- Assumptions: User-provided Phase 4 files are preserved as current planning input.
+- Remaining issues: None after manual approval.
+- Recommended follow-up: M4.3 after M4.2 review.
+
+### Task M4.1-T2 — Align Phase 4 Docs Test
+
+## Parent milestone
+
+M4.1
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Fix stale Phase 4 documentation test so baseline validation matches the current M4.1 roadmap.
+
+## Scope
+
+- Update the test to assert the current M4.1 baseline freeze and read-only autonomy constraints.
+
+## Explicit exclusions
+
+- No roadmap rewrite.
+- No implementation behavior.
+
+## File scope
+
+### Writable
+
+- `tests/test_phase4_docs.py`
+
+## Dependencies
+
+- M4.1-T1
+
+## Applicable ADRs
+
+- ADR-013
+
+## Acceptance criteria
+
+- [x] Focused docs test passes.
+- [x] Test no longer expects prior M4.0 roadmap text.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_phase4_docs.py -q
+```
+
+## Result report
+
+- Summary: Updated stale roadmap docs test to current M4.1 text.
+- Files changed: `tests/test_phase4_docs.py`
+- Tests run: focused docs test.
+- Test results: 1 passed.
+- Assumptions: `docs/roadmap-phase-4.md` is user-provided current source of truth.
+- Remaining issues: None.
+- Recommended follow-up: Complete suite validation.
+
+### Task M4.1-T3 — Validate M4.1 Baseline
+
+## Parent milestone
+
+M4.1
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Run complete baseline validation and prepare M4.1 review artifacts.
+
+## Scope
+
+- Run complete suite with local toolserver environment.
+- Run diff check.
+- Write M4.1 report.
+- Queue human review.
+
+## Explicit exclusions
+
+- Do not mark M4.1 accepted.
+- Do not approve ADR-036 through ADR-046.
+- Do not implement M4.2.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M4.1.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+## Dependencies
+
+- M4.1-T2
+
+## Applicable ADRs
+
+- ADR-001 through ADR-035
+
+## Acceptance criteria
+
+- [x] Complete suite passes.
+- [x] `git diff --check` passes.
+- [x] Existing manual/generated artifacts are understood.
+- [x] M4.1 is left awaiting manual review.
+
+## Validation commands
+
+```bash
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M4.1 baseline validation completed.
+- Files changed: `.agent/reports/M4.1.md`, `.agent/task-queue.md`, `.agent/human-review.md`
+- Tests run: complete suite with toolserver environment; diff check.
+- Test results: 347 passed, 1 skipped; diff check passed.
+- Assumptions: Ollama live quality remains manual; no Ollama-required failure present in full suite.
+- Remaining issues: None after manual approval.
+- Recommended follow-up: M4.2 ADR approval package.
 
 ### Task M4.0-T1 — Phase 4 Package Structure
 

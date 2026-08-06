@@ -58,3 +58,14 @@ Historical ADRs are never deleted or silently rewritten.
 | ADR-033 | Search Text Limits and Redaction | Implemented |
 | ADR-034 | Audit Retention and Manual Purge | Implemented |
 | ADR-035 | Process Output, Timeout and Environment Limits | Implemented |
+| ADR-036 | Agent Execution Platform Direction | Accepted |
+| ADR-037 | Objective, Plan, Task and Execution Models | Accepted |
+| ADR-038 | Capability Registry | Accepted |
+| ADR-039 | Execution Graph Validation | Accepted |
+| ADR-040 | Deterministic Sequential Scheduler | Accepted |
+| ADR-041 | Execution Budgets | Accepted |
+| ADR-042 | Execution State Persistence | Accepted |
+| ADR-043 | Structured Planner Contract | Accepted |
+| ADR-044 | Objective Evaluation | Accepted |
+| ADR-045 | Logical Checkpoint Semantics | Accepted |
+| ADR-046 | Read-Only Multi-Step Phase 4 | Accepted |

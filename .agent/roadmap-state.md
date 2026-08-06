@@ -10,8 +10,8 @@ Phase 4: Autonomous Execution Platform
 
 ## Current milestone
 
-- ID: M4.0
-- Name: Phase 4 scaffolding
+- ID: M4.2
+- Name: Approve Phase 4 ADRs
 - Status: implemented-awaiting-human-review
 - Source: `docs/roadmap-phase-4.md`
 
@@ -95,6 +95,9 @@ Phase 4: Autonomous Execution Platform
 | ID | Milestone | Status | Blocking reason | Automated report | Human review |
 |---|---|---|---|---|---|
 | M4.0 | Phase 4 scaffolding | implemented-awaiting-human-review | — | `.agent/reports/M4.0.md` | awaiting-review |
+| M4.1 | Freeze Phase 3 baseline | accepted | — | `.agent/reports/M4.1.md` | approved |
+| M4.2 | Approve Phase 4 ADRs | implemented-awaiting-human-review | — | `.agent/reports/M4.2.md` | awaiting-review |
+| M4.3 | Platform domain models | planned | M4.2 requires human review | — | — |
 
 ## Current baseline
 
@@ -111,8 +114,18 @@ Record before Phase 3 implementation:
 - Audit: separate SQLite audit recorder exists with sanitized metadata and explicit failure behavior.
 - Phase 3 implementation status: confirmation service, profile registry, all Phase 3 tool names, declarative `write` policy, atomic C `write`, C primary executor, audit retention/purge, runtime/CLI integration, adversarial coverage and final documentation implemented.
 - Phase 3 blocker: none.
-- Phase 4 implementation status: scaffold packages for platform domain/application/ports and capability roots added; no autonomous execution behavior enabled.
-- Phase 4 blocker: ADR package required before productive Phase 4 milestones.
+- Phase 4 implementation status: scaffold packages for platform domain/application/ports and capability roots added; no autonomous execution behavior enabled. M4.1 baseline freeze completed against current Phase 4 roadmap.
+- Phase 4 blocker: M4.2 requires human review before productive Phase 4 implementation.
+- Phase 4 baseline:
+  - Date: 2026-08-05T08:41:00-06:00
+  - Git revision: `76773bfb735296ffddab01306dee9f18d662c583`
+  - Python: `Python 3.14.6`
+  - Git status: user-provided Phase 4 files are modified/untracked; no destructive cleanup performed.
+  - Manual/generated artifacts: `__pycache__` and `*.pyc` exist and are ignored by `.gitignore`.
+  - ADR state: ADR-001 through ADR-035 Implemented; ADR-036 through ADR-046 Accepted.
+  - Initial M4.1 validation issue: stale `tests/test_phase4_docs.py` expected prior M4.0 roadmap text; updated to current M4.1 roadmap.
+  - Complete suite: `PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q` -> 347 passed, 1 skipped.
+  - Diff check: `git diff --check` -> passed.
 - Validation passed:
   - `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py tests/test_tool_policy.py tests/test_path_policy.py tests/test_local_read_only_executor.py tests/test_sqlite_audit.py tests/test_tool_coordinator.py tests/test_tool_coordinator_integration.py tests/test_adversarial_security.py tests/test_tools.py tests/test_agent_runtime.py -q` -> 110 passed.
   - `PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_c_toolserver_contract.py tests/test_unix_socket_tool_executor.py -q` -> 13 passed.
@@ -120,5 +133,5 @@ Record before Phase 3 implementation:
 ## Last supervisor update
 
 - Date: 2026-08-05
-- Summary: Phase 4 scaffolding prepared without enabling autonomous execution.
-- Next action: human review of M4.0 and ADR planning.
+- Summary: ADR-036 through ADR-046 accepted by human approval; M4.2 prepared for review.
+- Next action: human review of M4.2 before M4.3.
