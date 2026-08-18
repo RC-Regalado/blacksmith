@@ -1,6 +1,6 @@
 # ADR-040 — Deterministic Sequential Scheduler
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-08-05
 - Deciders: Project owner
 - Supersedes:

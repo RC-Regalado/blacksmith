@@ -1,6 +1,6 @@
 # ADR-036 — Agent Execution Platform Direction
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-08-05
 - Deciders: Project owner
 - Supersedes:

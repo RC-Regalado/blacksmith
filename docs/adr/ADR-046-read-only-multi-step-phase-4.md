@@ -1,6 +1,6 @@
 # ADR-046 — Read-Only Multi-Step Phase 4
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-08-05
 - Deciders: Project owner
 - Supersedes:

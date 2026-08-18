@@ -9,7 +9,19 @@ from ai_assistant.agent.message import Message
 from ai_assistant.bootstrap.config import AppConfig
 from ai_assistant.bootstrap.container import create_application
 from ai_assistant.cli.app import CliApplication, CliConfirmationPrompter
-from ai_assistant.domain.errors import AssistantError
+from ai_assistant.domain.errors import AssistantError, InvalidToolCallError
+from ai_assistant.platform.domain import (
+    BudgetUsage,
+    CapabilityName,
+    EvaluationResult,
+    EvaluationStatus,
+    ExecutionRecord,
+    ExecutionResult,
+    ExecutionStatus,
+    Objective,
+    Plan,
+    PlatformTask,
+)
 
 
 pytestmark = pytest.mark.unit
@@ -66,6 +78,7 @@ def test_bootstrap_leaves_tools_disabled_by_default(tmp_path: Path) -> None:
 def test_bootstrap_keeps_tools_unavailable_without_workspace(tmp_path: Path) -> None:
     config = AppConfig(
         database=str(tmp_path / "test.sqlite3"),
+        execution_database=str(tmp_path / "execution.sqlite3"),
         tool_execution=True,
     )
 
@@ -79,6 +92,7 @@ def test_bootstrap_wires_local_tool_coordinator_when_enabled(tmp_path: Path) -> 
     workspace.mkdir()
     config = AppConfig(
         database=str(tmp_path / "test.sqlite3"),
+        execution_database=str(tmp_path / "execution.sqlite3"),
         audit_database=str(tmp_path / "audit.sqlite3"),
         workspace=str(workspace),
         tool_execution=True,
@@ -89,6 +103,7 @@ def test_bootstrap_wires_local_tool_coordinator_when_enabled(tmp_path: Path) -> 
 
     assert app._runtime.tool_coordinator is not None
     assert app._runtime.tool_timeout_seconds == 3.0
+    assert app._objective_engine is not None
 
 
 def test_bootstrap_adds_tool_prompt_when_tools_are_enabled(tmp_path: Path) -> None:
@@ -96,6 +111,7 @@ def test_bootstrap_adds_tool_prompt_when_tools_are_enabled(tmp_path: Path) -> No
     workspace.mkdir()
     config = AppConfig(
         database=str(tmp_path / "test.sqlite3"),
+        execution_database=str(tmp_path / "execution.sqlite3"),
         audit_database=str(tmp_path / "audit.sqlite3"),
         system_prompt="base",
         workspace=str(workspace),
@@ -116,6 +132,7 @@ def test_bootstrap_wires_confirmation_service_when_tools_are_enabled(tmp_path: P
     workspace.mkdir()
     config = AppConfig(
         database=str(tmp_path / "test.sqlite3"),
+        execution_database=str(tmp_path / "execution.sqlite3"),
         audit_database=str(tmp_path / "audit.sqlite3"),
         workspace=str(workspace),
         tool_execution=True,
@@ -140,6 +157,46 @@ def test_cli_confirmation_prompter_requires_yes(
     assert CliConfirmationPrompter().confirm("session", "workspace", "write") is True
 
 
+def test_cli_objective_command_prints_sanitized_outcome(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    CliApplication(
+        FakeRuntime(),
+        FakeObjectiveEngine(),
+        session_id="session",
+        objective_id_factory=lambda: "fixed",
+    ).run(("objective", "Inspect repository"))
+
+    output = capsys.readouterr().out
+    assert "Objective: obj-fixed" in output
+    assert "Execution: completed" in output
+    assert "Evaluation: passed" in output
+    assert "Budget: tasks=1 model_calls=1 tool_calls=1 output_bytes=12" in output
+    assert "- task-1: InspectDirectory" in output
+    assert "- task-1:list_directory:success" in output
+    assert "Summary:" in output
+    assert "- Listed . (1 entries)." in output
+    assert "secret file content" not in output
+
+
+def test_cli_objective_requires_engine(capsys: pytest.CaptureFixture[str]) -> None:
+    CliApplication(FakeRuntime()).run(("objective", "Inspect repository"))
+
+    assert "objective execution requires tools and workspace" in capsys.readouterr().err
+
+
+def test_cli_objective_verbose_prints_planner_response(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    CliApplication(FakeRuntime(), FailingObjectiveEngine()).run(
+        ("objective", "--verbose", "Inspect repository")
+    )
+
+    captured = capsys.readouterr()
+    assert "Planner model response:\nnot json\n" in captured.err
+    assert "Error: planner returned invalid JSON." in captured.err
+
+
 class FakeRuntime:
     def respond(self, user_input: str) -> Message:
         return Message(role="assistant", content="ok")
@@ -148,3 +205,53 @@ class FakeRuntime:
 class FailingRuntime:
     def respond(self, user_input: str) -> Message:
         raise AssistantError("Tool execution failed.")
+
+
+class FakeObjectiveEngine:
+    def run(self, objective: Objective, session_id: str):
+        plan = Plan("plan-1", objective.objective_id, (_task(objective),))
+        return type(
+            "FakeOutcome",
+            (),
+            {
+                "objective": objective,
+                "plan": plan,
+                "execution": ExecutionRecord(
+                    "exec-1",
+                    objective.objective_id,
+                    "plan-1",
+                    ExecutionStatus.COMPLETED,
+                ),
+                "result": ExecutionResult(
+                    "exec-1",
+                    ExecutionStatus.COMPLETED,
+                    ("task-1:list_directory:success",),
+                    observations=("Listed . (1 entries).",),
+                ),
+                "evaluation": EvaluationResult(
+                    objective.objective_id,
+                    EvaluationStatus.PASSED,
+                    ("task-1:list_directory:success",),
+                    "complete",
+                ),
+                "usage": BudgetUsage(tasks=1, model_calls=1, tool_calls=1, output_bytes=12),
+                "content": "secret file content",
+            },
+        )()
+
+
+class FailingObjectiveEngine:
+    last_planner_response = "not json"
+
+    def run(self, objective: Objective, session_id: str):
+        raise InvalidToolCallError("planner returned invalid JSON.")
+
+
+def _task(objective: Objective) -> PlatformTask:
+    return PlatformTask(
+        "task-1",
+        objective.objective_id,
+        "List files",
+        CapabilityName.INSPECT_DIRECTORY,
+        {"path": "."},
+    )

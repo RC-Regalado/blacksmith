@@ -33,6 +33,10 @@ class ToolAuditStoreError(AssistantError):
     """Tool audit persistence failed."""
 
 
+class ExecutionStoreError(AssistantError):
+    """Execution persistence failed."""
+
+
 class InvalidMessageError(AssistantError):
     """A message failed validation."""
 

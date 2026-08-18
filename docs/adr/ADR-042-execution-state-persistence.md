@@ -1,6 +1,6 @@
 # ADR-042 — Execution State Persistence
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-08-05
 - Deciders: Project owner
 - Supersedes:

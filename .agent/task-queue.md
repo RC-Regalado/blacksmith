@@ -179,6 +179,55 @@ The supervisor is the only agent permitted to update this file.
 | M4.1-T3 | M4.1 | Integration validator | Run complete baseline validation and prepare review artifacts | `.agent/reports/M4.1.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M4.1-T2 | implemented |
 | M4.2-T1 | M4.2 | Platform architect | Mark ADR-036 through ADR-046 Accepted after human approval | `docs/adr/ADR-036-*.md` through `docs/adr/ADR-046-*.md`, `docs/adr/README.md`, `docs/adr/README-phase-4.md` | M4.1 | implemented |
 | M4.2-T2 | M4.2 | Integration validator | Validate ADR package state and prepare review artifacts | `.agent/reports/M4.2.md`, `.agent/roadmap-state.md`, `.agent/roadmap-state-phase-4.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M4.2-T1 | implemented |
+| M4.3-T1 | M4.3 | Platform architect | Implement provider-neutral objective, plan, task, execution, budget, checkpoint and evaluation models | `ai_assistant/platform/domain/`, `tests/test_platform_structure.py`, `tests/test_platform_domain.py` | M4.2 | implemented |
+| M4.3-T2 | M4.3 | Test agent | Cover roadmap states, invalid transitions, read-only budgets and infrastructure independence | `tests/test_platform_domain.py`, `tests/test_platform_structure.py` | M4.3-T1 | implemented |
+| M4.3-T3 | M4.3 | Integration validator | Validate M4.3 and prepare review artifacts | `.agent/reports/M4.3.md`, `.agent/roadmap-state.md`, `.agent/roadmap-state-phase-4.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M4.3-T2 | implemented |
+| M4.4-T1 | M4.4 | Planner contract engineer | Add structured planner port contract and deterministic fake | `ai_assistant/platform/ports/planner.py`, `ai_assistant/platform/application/planner.py` | M4.3 | implemented |
+| M4.4-T2 | M4.4 | Evaluator engineer | Add evidence-based evaluator port contract and deterministic fake | `ai_assistant/platform/ports/evaluator.py`, `ai_assistant/platform/application/evaluator.py` | M4.4-T1 | implemented |
+| M4.4-T3 | M4.4 | Test agent | Cover malformed planner results, evidence evaluation and infrastructure independence | `tests/test_platform_ports.py`, `tests/test_platform_structure.py` | M4.4-T2 | implemented |
+| M4.4-T4 | M4.4 | Integration validator | Validate M4.4 and prepare review artifacts | `.agent/reports/M4.4.md`, `.agent/roadmap-state.md`, `.agent/roadmap-state-phase-4.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M4.4-T3 | implemented |
+| M4.5-T1 | M4.5 | Capability registry engineer | Add read-only CapabilityRegistry contract metadata and tool mapping | `ai_assistant/platform/ports/capability_registry.py`, `ai_assistant/platform/application/capability_registry.py` | M4.4 | implemented |
+| M4.5-T2 | M4.5 | Test agent | Cover unknown capability rejection, no write exposure and planner metadata shape | `tests/test_platform_capability_registry.py`, `tests/test_platform_structure.py` | M4.5-T1 | implemented |
+| M4.5-T3 | M4.5 | Integration validator | Validate M4.5 and prepare review artifacts | `.agent/reports/M4.5.md`, `.agent/roadmap-state.md`, `.agent/roadmap-state-phase-4.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M4.5-T2 | implemented |
+| M4.6-T1 | M4.6 | Plan validation engineer | Add PlanValidator with stable rejection codes | `ai_assistant/platform/application/plan_validator.py` | M4.5 | implemented |
+| M4.6-T2 | M4.6 | Test agent | Cover duplicate IDs, missing dependencies, cycles, limits, unknown capabilities and invalid arguments | `tests/test_platform_plan_validator.py` | M4.6-T1 | implemented |
+| M4.6-T3 | M4.6 | Integration validator | Validate M4.6 and prepare review artifacts | `.agent/reports/M4.6.md`, `.agent/roadmap-state.md`, `.agent/roadmap-state-phase-4.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M4.6-T2 | implemented |
+| M4.7-T1 | M4.7 | Execution graph engineer | Add immutable ExecutionGraph for validated plans | `ai_assistant/platform/application/execution_graph.py` | M4.6 | implemented |
+| M4.7-T2 | M4.7 | Test agent | Cover deterministic ready-task selection and failed-dependency blocking | `tests/test_platform_execution_graph.py` | M4.7-T1 | implemented |
+| M4.7-T3 | M4.7 | Integration validator | Validate M4.7 and prepare review artifacts | `.agent/reports/M4.7.md`, `.agent/roadmap-state.md`, `.agent/roadmap-state-phase-4.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M4.7-T2 | implemented |
+| M4.8-T1 | M4.8 | Budget engineer | Add BudgetManager with stable budget-exceeded codes | `ai_assistant/platform/application/budget.py` | M4.7 | implemented |
+| M4.8-T2 | M4.8 | Test agent | Cover task, model, tool, duration, output, write and replan budget limits | `tests/test_platform_budget_manager.py` | M4.8-T1 | implemented |
+| M4.8-T3 | M4.8 | Integration validator | Validate M4.8 and prepare review artifacts | `.agent/reports/M4.8.md`, `.agent/roadmap-state.md`, `.agent/roadmap-state-phase-4.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M4.8-T2 | implemented |
+| M4.9-T1 | M4.9 | Execution persistence engineer | Expand ExecutionStore port and add dedicated SQLite adapter | `ai_assistant/platform/ports/execution_store.py`, `ai_assistant/infrastructure/storage/sqlite_execution.py` | M4.8 | implemented |
+| M4.9-T2 | M4.9 | Test agent | Cover restart reload, task status persistence, checkpoint persistence and transactional rollback | `tests/test_sqlite_execution_store.py` | M4.9-T1 | implemented |
+| M4.9-T3 | M4.9 | Integration validator | Validate M4.9 and prepare review artifacts | `.agent/reports/M4.9.md`, `.agent/roadmap-state.md`, `.agent/roadmap-state-phase-4.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M4.9-T2 | implemented |
+| M4.10-T1 | M4.10 | Execution persistence engineer | Add logical CheckpointService over ExecutionStore | `ai_assistant/platform/application/checkpoint.py` | M4.9 | implemented |
+| M4.10-T2 | M4.10 | Test agent | Cover successful-task checkpointing, metadata restore and filesystem rollback rejection | `tests/test_platform_checkpoint_service.py` | M4.10-T1 | implemented |
+| M4.10-T3 | M4.10 | Integration validator | Validate M4.10 and prepare review artifacts | `.agent/reports/M4.10.md`, `.agent/roadmap-state.md`, `.agent/roadmap-state-phase-4.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M4.10-T2 | implemented |
+| M4.11-T1 | M4.11 | Scheduler engineer | Add deterministic sequential TaskScheduler | `ai_assistant/platform/application/scheduler.py` | M4.10 | implemented |
+| M4.11-T2 | M4.11 | Test agent | Cover one-task-at-a-time, persisted transitions and failed dependency blocking | `tests/test_platform_scheduler.py` | M4.11-T1 | implemented |
+| M4.11-T3 | M4.11 | Integration validator | Validate M4.11 and prepare review artifacts | `.agent/reports/M4.11.md`, `.agent/roadmap-state.md`, `.agent/roadmap-state-phase-4.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M4.11-T2 | implemented |
+| M4.12-T1 | M4.12 | Planner contract engineer | Add ModelBackedPlanner over ModelProvider with strict JSON mapping | `ai_assistant/platform/application/planner.py` | M4.11 | implemented |
+| M4.12-T2 | M4.12 | Test agent | Cover valid JSON mapping, invalid JSON, unknown capabilities and malformed tasks | `tests/test_platform_structured_planner.py` | M4.12-T1 | implemented |
+| M4.12-T3 | M4.12 | Integration validator | Validate M4.12 and prepare review artifacts | `.agent/reports/M4.12.md`, `.agent/roadmap-state.md`, `.agent/roadmap-state-phase-4.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M4.12-T2 | implemented |
+| M4.13-T1 | M4.13 | Evaluator engineer | Add evidence-driven ObjectiveEvaluator with task-state checks | `ai_assistant/platform/application/evaluator.py`, `ai_assistant/platform/ports/evaluator.py` | M4.12 | implemented |
+| M4.13-T2 | M4.13 | Test agent | Cover execution failure, task failure, missing evidence and success criteria | `tests/test_platform_objective_evaluator.py`, `tests/test_platform_ports.py` | M4.13-T1 | implemented |
+| M4.13-T3 | M4.13 | Integration validator | Validate M4.13 and prepare review artifacts | `.agent/reports/M4.13.md`, `.agent/roadmap-state.md`, `.agent/roadmap-state-phase-4.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M4.13-T2 | implemented |
+| M4.14-T1 | M4.14 | Runtime integration engineer | Add ExecutionEngine coordination over Phase 4 ports and ToolExecutionCoordinator | `ai_assistant/platform/application/engine.py` | M4.13 | implemented |
+| M4.14-T2 | M4.14 | Test agent | Cover read-only tool execution, no retry, no write permission and no concrete adapter imports | `tests/test_platform_execution_engine.py` | M4.14-T1 | implemented |
+| M4.14-T3 | M4.14 | Integration validator | Validate M4.14 and prepare review artifacts | `.agent/reports/M4.14.md`, `.agent/roadmap-state.md`, `.agent/roadmap-state-phase-4.md`, `.agent/task-queue.md`, `.agent/human-review.md` | M4.14-T2 | implemented |
+| M4.15-T1 | M4.15 | Interface engineer | Add explicit `objective` CLI command without changing chat loop | `ai_assistant/interfaces/cli/app.py`, `ai_assistant/main.py` | M4.14 | implemented |
+| M4.15-T2 | M4.15 | Runtime integration engineer | Wire ExecutionEngine through bootstrap with separate execution persistence | `ai_assistant/bootstrap/config.py`, `ai_assistant/bootstrap/container.py` | M4.15-T1 | implemented |
+| M4.15-T3 | M4.15 | Test agent | Cover objective CLI output, disabled-engine errors and config parsing | `tests/test_cli_app.py`, `tests/test_config.py` | M4.15-T2 | implemented |
+| M4.16-T1 | M4.16 | Runtime integration engineer | Add metadata-only execution, plan, budget and final status logs | `ai_assistant/platform/application/engine.py` | M4.15 | implemented |
+| M4.16-T2 | M4.16 | Scheduler engineer | Add metadata-only task transition logs | `ai_assistant/platform/application/scheduler.py` | M4.16-T1 | implemented |
+| M4.16-T3 | M4.16 | Execution persistence engineer | Add metadata-only checkpoint logs | `ai_assistant/platform/application/checkpoint.py` | M4.16-T1 | implemented |
+| M4.16-T4 | M4.16 | Test agent | Verify observability events omit prompts, file paths and tool content | `tests/test_platform_execution_engine.py` | M4.16-T1, M4.16-T2, M4.16-T3 | implemented |
+| M4.17-T1 | M4.17 | Test agent | Add engine adversarial coverage for failed dependencies and excessive tool calls | `tests/test_platform_execution_engine.py`, `ai_assistant/platform/application/engine.py` | M4.16 | implemented |
+| M4.17-T2 | M4.17 | Integration validator | Map required adversarial cases to existing tests and run Phase 1-4 regression | `.agent/reports/M4.17.md` | M4.17-T1 | implemented |
+| M4.18-T1 | M4.18 | Documentation agent | Update architecture, README, roadmap and context for Phase 4 closure and Phase 5 handoff | `docs/architecture.md`, `docs/roadmap-phase-4.md`, `README.md`, `context-ai.md`, `context-ia.md` | M4.17 | implemented |
+| M4.18-T2 | M4.18 | Platform architect | Mark ADR-036 through ADR-046 implemented in ADR files and indexes | `docs/adr/` | M4.18-T1 | implemented |
+| M4.18-T3 | M4.18 | Integration validator | Run final documentation and regression validation and prepare report | `.agent/reports/M4.18.md`, `.agent/roadmap-state.md`, `.agent/roadmap-state-phase-4.md`, `.agent/human-review.md`, `.agent/task-queue.md` | M4.18-T2 | implemented |
 
 ## Task records
 
@@ -12264,3 +12313,504 @@ git diff --check
 - Assumptions: Manual approval was provided by the user after real `gemma4:latest` validation.
 - Remaining issues: None for Phase 2.
 - Recommended follow-up: Plan Phase 3 separately.
+
+### Task M4.3-T1 — Platform Domain Models
+
+## Parent milestone
+
+M4.3
+
+## Status
+
+implemented
+
+## Owner role
+
+Platform architect
+
+## Objective
+
+Implement provider-neutral Phase 4 domain concepts and validated state transitions.
+
+## Scope
+
+- Objective, plan, task, execution, budget, checkpoint and evaluation result models.
+- Explicit transition methods for stateful models.
+- Read-only autonomous capability names only.
+
+## Explicit exclusions
+
+- Do not implement planner, registry, validator, graph, scheduler, store or engine behavior.
+- Do not expose `write` to autonomous execution.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/platform/domain/`
+
+### Read-only
+
+- `docs/roadmap-phase-4.md`
+- `docs/adr/ADR-037-objective-plan-task-and-execution-models.md`
+- `docs/adr/ADR-041-execution-budgets.md`
+- `docs/adr/ADR-046-read-only-multi-step-phase-4.md`
+
+### Forbidden
+
+- `ai_assistant/application/tool_coordinator.py`
+- `ai_assistant/infrastructure/`
+- `c_toolserver/`
+
+## Dependencies
+
+- M4.2
+
+## Applicable ADRs
+
+- ADR-037
+- ADR-041
+- ADR-044
+- ADR-045
+- ADR-046
+
+## Acceptance criteria
+
+- [x] Provider-neutral models exist for roadmap concepts.
+- [x] Invalid state transitions raise explicit errors.
+- [x] `write`, retry and replanning are not exposed through domain defaults.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m py_compile ai_assistant/platform/domain/*.py
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_platform_structure.py tests/test_platform_domain.py -q
+```
+
+## Result report
+
+- Summary: Domain models and transition guards implemented.
+- Files changed: `ai_assistant/platform/domain/`
+- Tests run: py_compile and focused platform tests.
+- Test results: passed.
+- Remaining issues: Downstream planner/evaluator ports are deferred to M4.4.
+
+### Task M4.3-T2 — Domain Tests
+
+## Parent milestone
+
+M4.3
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Cover M4.3 domain invariants and provider-neutral boundaries.
+
+## Scope
+
+- Test roadmap states, invalid transitions, duplicate IDs, checkpoint metadata and evaluation evidence.
+- Test no domain leak of SQLite, Ollama, protobuf or toolserver terms.
+
+## Explicit exclusions
+
+- Do not weaken Phase 1 through Phase 3 tests.
+
+## File scope
+
+### Writable
+
+- `tests/test_platform_domain.py`
+- `tests/test_platform_structure.py`
+
+### Read-only
+
+- `ai_assistant/platform/domain/`
+
+### Forbidden
+
+- Production adapters and C toolserver files.
+
+## Dependencies
+
+- M4.3-T1
+
+## Applicable ADRs
+
+- ADR-037
+- ADR-041
+- ADR-044
+- ADR-045
+- ADR-046
+
+## Acceptance criteria
+
+- [x] Unit tests fail on invalid transitions and forbidden write budgets.
+- [x] Tests verify no infrastructure terms in domain package.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_platform_structure.py tests/test_platform_domain.py -q
+```
+
+## Result report
+
+- Summary: Added focused M4.3 domain coverage.
+- Files changed: `tests/test_platform_domain.py`, `tests/test_platform_structure.py`
+- Tests run: focused platform tests.
+- Test results: 7 passed.
+
+### Task M4.3-T3 — M4.3 Validation
+
+## Parent milestone
+
+M4.3
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Validate M4.3 and prepare human review artifacts.
+
+## Scope
+
+- Run focused and regression validations.
+- Update supervisor state and report.
+
+## Explicit exclusions
+
+- Do not mark M4.3 accepted.
+- Do not start M4.4.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M4.3.md`
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-4.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+
+### Read-only
+
+- Current source and tests.
+
+### Forbidden
+
+- ADR status changes.
+
+## Dependencies
+
+- M4.3-T2
+
+## Applicable ADRs
+
+- ADR-036 through ADR-046
+
+## Acceptance criteria
+
+- [x] M4.3 report exists.
+- [x] Roadmap state marks M4.3 `implemented-awaiting-human-review`.
+- [x] Human review queue contains M4.3 awaiting review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_tool_catalog.py tests/test_tool_policy.py tests/test_path_policy.py tests/test_local_read_only_executor.py tests/test_tool_coordinator.py tests/test_agent_runtime.py tests/test_adversarial_security.py tests/test_phase4_docs.py tests/test_platform_structure.py tests/test_platform_domain.py -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M4.3 ready for manual review.
+- Files changed: `.agent/*`
+- Tests run: focused regression and diff check.
+- Test results: passed.
+
+### Task M5.1-T1 — Freeze Phase 4 Baseline
+
+## Parent milestone
+
+M5.1
+
+## Status
+
+implemented
+
+## Owner role
+
+Integration validator
+
+## Objective
+
+Record the accepted Phase 4 baseline before any productive Context & Knowledge Engine implementation.
+
+## Scope
+
+- Verify Phase 4 manual acceptance.
+- Record repository revision, dirty worktree state, Python version and validation commands.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+
+### Read-only
+
+- `AGENTS.md`
+- `docs/architecture.md`
+- `docs/roadmap-phase-5.md`
+- `.agent/human-review.md`
+- repository source and tests
+
+### Forbidden
+
+- Production source edits
+- ADR status changes
+- Knowledge Engine implementation
+
+## Dependencies
+
+- Phase 4 accepted
+
+## Applicable ADRs
+
+- ADR-001 through ADR-046
+
+## Acceptance criteria
+
+- [x] Phase 4 acceptance is recorded.
+- [x] Baseline revision and dirty worktree state are recorded.
+- [x] Phase 5 ADR gate is recorded.
+
+## Validation commands
+
+```bash
+git status --short
+python --version
+```
+
+## Result report
+
+- Summary: Phase 4 accepted baseline recorded for Phase 5.
+- Files changed: `.agent/roadmap-state.md`, `.agent/roadmap-state-phase-5.md`
+- Tests run: repository inspection only.
+- Test results: baseline captured.
+
+### Task M5.1-T2 — Validate Phase 4 Baseline
+
+## Parent milestone
+
+M5.1
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Verify Phase 4 behavior and corrected objective synthesis remain green before Phase 5 starts.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M5.1.md`
+
+### Read-only
+
+- `tests/test_phase4_docs.py`
+- `tests/test_platform_execution_engine.py`
+- `tests/test_cli_app.py`
+- all tests
+
+### Forbidden
+
+- Test weakening
+- Production source edits
+
+## Dependencies
+
+- M5.1-T1
+
+## Applicable ADRs
+
+- ADR-036 through ADR-046
+
+## Acceptance criteria
+
+- [x] Focused Phase 4 validation passes.
+- [x] Full baseline validation passes.
+- [x] Corrected sanitized objective `Summary` behavior remains covered.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_phase4_docs.py tests/test_platform_execution_engine.py tests/test_cli_app.py -q
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+```
+
+## Result report
+
+- Summary: Phase 4 focused and full baseline validation passed.
+- Files changed: `.agent/reports/M5.1.md`
+- Test results: 23 passed focused; 412 passed, 1 skipped full.
+
+### Task M5.1-T3 — Verify ADR Gate
+
+## Parent milestone
+
+M5.1
+
+## Status
+
+implemented
+
+## Owner role
+
+Security reviewer
+
+## Objective
+
+Confirm accepted ADR constraints before Phase 5 implementation and identify the next human gate.
+
+## File scope
+
+### Writable
+
+- `.agent/reports/M5.1.md`
+
+### Read-only
+
+- `docs/adr/README.md`
+- `docs/adr/README-phase-5.md`
+- `docs/adr/ADR-*.md`
+
+### Forbidden
+
+- ADR status changes
+- Superseding ADRs
+
+## Dependencies
+
+- M5.1-T1
+
+## Applicable ADRs
+
+- ADR-001 through ADR-046
+
+## Acceptance criteria
+
+- [x] ADR-001 through ADR-046 are Implemented.
+- [x] ADR-047 through ADR-061 are Proposed.
+- [x] Productive Phase 5 implementation remains blocked until M5.2 approval.
+
+## Validation commands
+
+```bash
+python - <<'PY'
+from pathlib import Path
+missing=[]
+wrong=[]
+for i in range(1,47):
+    files=list(Path('docs/adr').glob(f'ADR-{i:03d}-*.md'))
+    if not files:
+        missing.append(i); continue
+    if 'Status: Implemented' not in files[0].read_text(encoding='utf-8'):
+        wrong.append((i, files[0].name))
+print('missing', missing)
+print('not_implemented', wrong)
+PY
+```
+
+## Result report
+
+- Summary: ADR gate confirmed.
+- Files changed: `.agent/reports/M5.1.md`
+- Test results: no missing or non-implemented ADR-001 through ADR-046.
+
+### Task M5.1-T4 — Queue Manual Review
+
+## Parent milestone
+
+M5.1
+
+## Status
+
+implemented
+
+## Owner role
+
+Supervisor
+
+## Objective
+
+Finish M5.1 artifacts and queue manual review without accepting the milestone.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.1.md`
+
+### Read-only
+
+- repository source and tests
+
+### Forbidden
+
+- Production source edits
+- ADR status changes
+- Starting M5.2
+
+## Dependencies
+
+- M5.1-T2
+- M5.1-T3
+
+## Applicable ADRs
+
+- ADR-001 through ADR-046
+
+## Acceptance criteria
+
+- [x] `.agent/reports/M5.1.md` exists.
+- [x] Roadmap state marks M5.1 `implemented-awaiting-human-review`.
+- [x] Human review queue contains M5.1 awaiting review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_phase4_docs.py -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.1 ready for manual review.
+- Files changed: `.agent/*`
+- Test results: `tests/test_phase4_docs.py` passed; `git diff --check` passed.

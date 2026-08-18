@@ -66,7 +66,24 @@ Generated changes are provisional until recorded here.
 | M3.18 | implemented-awaiting-human-review | approved | User | 2026-08-05 | User confirmed: "Aprobada a Phase 3". Phase 3 accepted. |
 | M4.0 | implemented-awaiting-human-review | awaiting-review | User | 2026-08-05 | Phase 4 scaffolding prepared; manual validation pending. |
 | M4.1 | implemented-awaiting-human-review | approved | User | 2026-08-05 | User confirmed: "Aprobados los ADR, inivia el M4.2". Baseline freeze accepted. |
-| M4.2 | implemented-awaiting-human-review | awaiting-review | User | 2026-08-05 | ADR-036 through ADR-046 accepted by human approval; manual validation pending. |
+| M4.2 | implemented-awaiting-human-review | approved | User | 2026-08-05 | User confirmed: "Aprobado, pasa al M4.3". Phase 4 ADR approval package accepted. |
+| M4.3 | implemented-awaiting-human-review | approved | User | 2026-08-10 | User confirmed: "Aprobado, inicia el M4.4". Platform domain models accepted. |
+| M4.4 | implemented-awaiting-human-review | approved | User | 2026-08-10 | User confirmed: "aprobado, inicia el M4.5". Planner and evaluator ports accepted. |
+| M4.5 | implemented-awaiting-human-review | approved | User | 2026-08-10 | User confirmed: "aprobado, inicia el M4.6". CapabilityRegistry accepted. |
+| M4.6 | implemented-awaiting-human-review | approved | User | 2026-08-10 | User confirmed: "aprobado, inicia el M4.7". PlanValidator accepted. |
+| M4.7 | implemented-awaiting-human-review | approved | User | 2026-08-10 | User confirmed: "aprobado, inicia el M4.8". ExecutionGraph accepted. |
+| M4.8 | implemented-awaiting-human-review | approved | User | 2026-08-10 | User confirmed: "aprobado, inicia el M4.9". BudgetManager accepted. |
+| M4.9 | implemented-awaiting-human-review | approved | User | 2026-08-16 | User confirmed: "Aprobado, pasa al M4.10". Dedicated SQLite ExecutionStore accepted. |
+| M4.10 | implemented-awaiting-human-review | approved | User | 2026-08-16 | User confirmed: "Aprobado, pasa al M4.11". Logical checkpoint service accepted. |
+| M4.11 | implemented-awaiting-human-review | approved | User | 2026-08-16 | User confirmed: "Aprobado, pasa al M4.12". Sequential scheduler accepted. |
+| M4.12 | implemented-awaiting-human-review | approved | User | 2026-08-16 | User confirmed: "Aprobado, pasa al M4.13". Structured planner adapter accepted. |
+| M4.13 | implemented-awaiting-human-review | approved | User | 2026-08-17 | User confirmed: "Aprobado, pasa al M4.14". Objective evaluator accepted. |
+| M4.14 | implemented-awaiting-human-review | approved | User | 2026-08-17 | User confirmed: "Aprobado, pasa al M4.15". ExecutionEngine accepted. |
+| M4.15 | implemented-awaiting-human-review | approved | User | 2026-08-17 | User confirmed: "Lisot. Aprobado, pasa al M4.16". Objective CLI interface accepted. |
+| M4.16 | implemented-awaiting-human-review | approved | User | 2026-08-17 | User confirmed approval and recorded manual objective validation in `ia_make-plan.log`; objective completed with evaluation passed. |
+| M4.17 | implemented-awaiting-human-review | approved | User | 2026-08-17 | User confirmed: "Aprobado, finaliza con el M4.18". Adversarial and regression coverage accepted. |
+| M4.18 | implemented-awaiting-human-review | approved | User | 2026-08-17 | User confirmed: "Aprobado". Phase 4 documentation, context update and sanitized objective summary output accepted. |
+| M5.1 | implemented-awaiting-human-review | awaiting-review | User | 2026-08-17 | Phase 4 accepted baseline frozen; ADR-047 through ADR-061 remain Proposed and require approval before productive Phase 5 implementation. |
 
 ## Approval gates
 

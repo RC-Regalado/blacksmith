@@ -10,4 +10,3 @@ class Planner(ABC):
     @abstractmethod
     def create_plan(self, objective: Objective) -> Plan:
         raise NotImplementedError
-

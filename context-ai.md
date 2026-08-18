@@ -2,16 +2,19 @@
 
 ## Fin del proyecto
 
-Construir un asistente de IA local-first, modular, seguro y extensible.
+Construir un asistente de IA local-first, modular, seguro y extensible que evoluciona hacia una plataforma de ejecución de agentes.
 
-El core de Python coordina runtime, memoria, configuración, modelos, CLI y herramientas. Todo sistema externo debe vivir detrás de puertos/adaptadores. Las herramientas productivas requieren política determinística, validación de paths, límites, auditoría y errores sanitizados.
+El core Python coordina runtime conversacional, modelos, memoria, configuración, CLI, herramientas controladas y ejecución de objetivos. Todo sistema externo debe vivir detrás de puertos/adaptadores. Las herramientas productivas pasan por política determinística, validación de workspace, límites, auditoría y errores sanitizados.
 
 ## Estado actual
 
-Phase 1, Phase 2 y Phase 3 están implementadas y aceptadas por revisión manual.
-Phase 4 está preparada con scaffolding inicial, pero no activa ejecución autónoma.
+Phase 1, Phase 2, Phase 3 y Phase 4 están implementadas y aceptadas.
 
-Phase 1 entregó el core Python:
+Phase 4 quedó aceptada tras revisión humana final de M4.18.
+
+## Phase 1 — Python Core
+
+Implementado:
 
 - CLI con `python main.py`.
 - Runtime framework-agnostic.
@@ -28,7 +31,9 @@ Phase 1 entregó el core Python:
 - Pytest y CI separado.
 - Arquitectura por capas.
 
-Phase 2 entregó herramientas read-only:
+## Phase 2 — Read-Only Tools
+
+Implementado:
 
 - Allowlist productivo: `list_directory`, `read_file`.
 - Política deny-by-default.
@@ -39,10 +44,12 @@ Phase 2 entregó herramientas read-only:
 - `LocalReadOnlyToolExecutor`.
 - `UnixSocketToolExecutor`.
 - Toolserver C con acciones read-only.
-- Un solo tool round por turno.
+- Un solo tool round por turno conversacional.
 - Tests adversariales.
 
-Phase 3 entregó herramientas de desarrollo controladas:
+## Phase 3 — Controlled Development Tools
+
+Implementado:
 
 - Allowlist productivo: `file_metadata`, `search_text`, `git_status`, `git_diff`, `run_tests`, `build_project`, `write`.
 - C toolserver como executor productivo primario.
@@ -55,13 +62,42 @@ Phase 3 entregó herramientas de desarrollo controladas:
 - Retención y purga manual confirmada de auditoría.
 - Cobertura adversarial Phase 3.
 
+## Phase 4 — Agent Execution Engine
+
+Implementado:
+
+- CLI explícito de objetivos: `python main.py objective "..."`.
+- Modelos provider-neutral: `Objective`, `Plan`, `PlatformTask`, `ExecutionRecord`, `ExecutionBudget`, `BudgetUsage`, `Checkpoint`, `ExecutionResult`, `EvaluationResult`.
+- `ModelBackedPlanner` usando `ModelProvider` existente.
+- Parser tolerante para modelos locales: JSON puro, fenced JSON, JSON con texto alrededor, `action/input/parameters` como aliases controlados.
+- `CapabilityRegistry` que mapea capacidades abstractas a herramientas aprobadas.
+- Capacidades autónomas read-only: `InspectDirectory`, `ReadFile`, `InspectFileMetadata`, `SearchText`, `InspectGitStatus`, `InspectGitDiff`, `RunTests`, `BuildProject`.
+- Exclusión de `write` en ejecución autónoma.
+- `PlanValidator` para schema, IDs, dependencias, ciclos, capacidades, argumentos y límites.
+- `ExecutionGraph` inmutable con selección determinística de tareas listas.
+- `TaskScheduler` secuencial: un worker, una tarea a la vez, sin retry, replanning, paralelismo ni subagentes.
+- `BudgetManager` con límites platform-owned: `max_writes=0`, `max_replans=0`.
+- `SQLiteExecutionStore` dedicado, separado de conversación y auditoría.
+- Checkpoints lógicos de metadata; sin snapshots ni rollback de filesystem.
+- `ObjectiveEvaluator` basado en evidencia; texto del modelo no puede convertir fallos en éxito.
+- Observabilidad metadata-only: objetivo, plan, ejecución, transiciones, presupuesto, checkpoints y estado final sin prompts ni contenido de archivos.
+- Resumen CLI determinístico y sanitizado para objetivos, derivado solo de resultados de herramientas ejecutadas; incluye guías simples para Makefile y CMake cuando hay evidencia.
+- Cobertura adversarial y regresión Phase 1-3.
+
 ## Estructura actual
 
 ```text
 ai_assistant/
 |-- domain/
 |-- application/
+|-- platform/
+|   |-- domain/
+|   |-- application/
+|   `-- ports/
+|-- capabilities/
 |-- infrastructure/
+|   |-- models/
+|   |-- storage/
 |   `-- tools/
 |-- interfaces/
 |-- bootstrap/
@@ -75,27 +111,35 @@ ai_assistant/
 
 ## Ejecución
 
+Chat normal:
+
 ```bash
 python main.py
 ```
 
-Por defecto usa `AI_ASSISTANT_PROVIDER=dummy`.
-
-Ejemplo con herramientas locales:
+Objetivo Phase 4:
 
 ```bash
+AI_ASSISTANT_PROVIDER=ollama \
+AI_ASSISTANT_MODEL=blacksmith-tools \
+AI_ASSISTANT_WORKSPACE="$PWD" \
 AI_ASSISTANT_TOOL_EXECUTION=true \
-AI_ASSISTANT_WORKSPACE=/ruta/al/workspace \
-python main.py
+AI_ASSISTANT_TOOL_SOCKET=/tmp/blacksmith-toolserver.sock \
+AI_ASSISTANT_REQUEST_TIMEOUT=240 \
+python main.py objective --verbose "Inspect repository status"
 ```
+
+## Persistencia local
+
+Stores separados:
+
+- Conversación: `AI_ASSISTANT_DATABASE`, default `assistant.sqlite3`.
+- Auditoría: `AI_ASSISTANT_AUDIT_DATABASE`, default `assistant_audit.sqlite3`.
+- Ejecución: `AI_ASSISTANT_EXECUTION_DATABASE`, default `assistant_execution.sqlite3`.
+
+No mezclar estos stores sin ADR nuevo y aprobación humana.
 
 ## Validación
-
-Core sin Ollama ni C toolserver:
-
-```bash
-PYTHONDONTWRITEBYTECODE=1 python -m pytest -m "not ollama and not toolserver" -q
-```
 
 Suite completa en entorno con `protobuf-c`:
 
@@ -105,52 +149,62 @@ LD_LIBRARY_PATH=/home/rc-regalado/.local/lib \
 PYTHONDONTWRITEBYTECODE=1 python -m pytest -q
 ```
 
-Ollama real:
+Última evidencia M4.18:
 
-```bash
-AI_ASSISTANT_MODEL=gemma3:1b \
-AI_ASSISTANT_REQUEST_TIMEOUT=180 \
-PYTHONDONTWRITEBYTECODE=1 python -m pytest -m ollama -q
+```text
+412 passed, 1 skipped
 ```
+
+Evidencia manual Phase 4:
+
+- `ia_make-plan.log`: objetivo ejecutado con plan de 3 tareas, checkpoints, presupuesto, evaluación `passed`.
 
 ## ADRs
 
 - ADR-001 a ADR-015: Phase 1 implementada.
 - ADR-016 a ADR-025: Phase 2 implementada.
 - ADR-026 a ADR-035: Phase 3 implementada.
+- ADR-036 a ADR-046: Phase 4 implementada.
 
-## Datos disponibles para Phase 4
+## Siguiente fase — Context & Knowledge Engine
 
-| Área | Evidencia |
+Objetivo:
+
+> Reducir el trabajo que debe realizar el LLM principal transformando previamente datos locales en conocimiento indexado, recuperable, versionado y compilable en contexto de alta relevancia.
+
+## Datos disponibles para Phase 5
+
+| Área | Disponible |
 |---|---|
-| Tool domain models | `ai_assistant/domain/tools.py` |
-| Application ports | `ai_assistant/application/ports/tools.py` |
-| Static catalog | `ai_assistant/application/tool_catalog.py` |
-| Deny-by-default policy | `ai_assistant/application/tool_policy.py` |
+| Runtime conversacional | `ai_assistant/application/runtime.py` |
+| Context builder | `ai_assistant/application/context.py` |
+| Model providers | `ai_assistant/infrastructure/models/` |
+| Tool catalog y policy | `ai_assistant/application/tool_catalog.py`, `tool_policy.py` |
 | Workspace path policy | `ai_assistant/application/path_policy.py` |
-| Coordinator | `ai_assistant/application/tool_coordinator.py` |
+| Tool coordinator | `ai_assistant/application/tool_coordinator.py` |
 | Audit store | `ai_assistant/infrastructure/storage/sqlite_audit.py` |
-| Local executor | `ai_assistant/infrastructure/tools/local_read_only.py` |
-| Unix socket executor | `ai_assistant/infrastructure/tools/unix_socket.py` |
+| Execution platform | `ai_assistant/platform/` |
+| Execution store | `ai_assistant/infrastructure/storage/sqlite_execution.py` |
 | C toolserver | `c_toolserver/` |
-| Adversarial tests | `tests/test_adversarial_security.py` |
-| Phase 4 platform scaffolding | `ai_assistant/platform/` |
-| Phase 4 capability roots | `ai_assistant/capabilities/` |
+| Manual objective evidence | `ia_make-plan.log` |
+| Adversarial tests | `tests/test_adversarial_security.py`, `tests/test_platform_*` |
 
-## Decisiones faltantes para Phase 4
+## Decisiones faltantes para Phase 5
 
-- ADRs para objetivos, planes, tareas, ejecución, presupuestos, checkpoints, scheduler y evaluator.
-- Si se habilitará `unrestricted_write`.
-- Nuevas operaciones de filesystem: append, delete, move, rename, copy, mkdir.
-- Nuevas familias de herramientas productivas y permisos.
-- Persistencia de grants o revocación avanzada.
-- Exportación/borrado avanzado de auditoría.
-- Red, shell arbitrario, plugins dinámicos o ejecución multi-step: requieren ADR/gate nuevo.
-- UI/TUI/web, streaming, embeddings, RAG y multiagente siguen fuera del alcance actual.
+- Definir ADRs del Context & Knowledge Engine antes de implementar.
+- Definir `KnowledgeStore` separado de ConversationStore, AuditStore y ExecutionStore.
+- Definir formato de documentos, chunks, metadata, versiones y snapshots lógicos.
+- Decidir si Phase 5 usará embeddings, índice lexical, SQLite FTS o una combinación.
+- Definir política de invalidación/reindexado ante cambios de archivos.
+- Definir presupuesto de recuperación y compilación de contexto.
+- Definir cómo se citará evidencia recuperada y cómo se evitará mezclar contenido sensible.
+- Definir si el motor de conocimiento puede usar capacidades existentes y bajo qué permisos.
 
 ## Recomendaciones
 
-- Mantener Phase 4 como ADR-first antes de conectar runtime, scheduler o capacidades.
-- Reutilizar la política Phase 3 para cualquier capability nueva.
-- No romper el límite de un tool round por turno sin aprobación explícita.
-- Agregar perfiles fijos, no comandos arbitrarios, para cualquier build/test nuevo.
+- Mantener Phase 5 ADR-first.
+- Empezar con índice lexical/metadata antes de embeddings si el objetivo es reducir carga en hardware limitado.
+- Reutilizar `WorkspacePathPolicy`, redacción, límites y auditoría existentes.
+- Mantener `KnowledgeStore` como puerto/adaptador independiente.
+- Compilar contexto con límites estrictos y evidencia trazable.
+- No permitir que el LLM principal decida paths, comandos o expansión de alcance sin pasar por validadores existentes.

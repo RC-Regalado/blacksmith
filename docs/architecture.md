@@ -26,9 +26,11 @@ El documento distingue explícitamente entre:
 
 ### 2.1 Fase actual
 
-**Phase 1: Python Core**
+**Phase 4: Agent Execution Engine**
 
-Phase 1 está implementada y lista para revisión final. El núcleo funcional en Python incluye:
+Phase 1, Phase 2, Phase 3 y Phase 4 están implementadas. El producto ya funciona como asistente local-first y como plataforma de ejecución de objetivos read-only.
+
+El núcleo funcional en Python incluye:
 
 - Gateway delgado.
 - Runtime de agente framework-agnostic.
@@ -45,23 +47,28 @@ Phase 1 está implementada y lista para revisión final. El núcleo funcional en
 - Logging básico.
 - Configuración mediante variables de entorno.
 - Pruebas con `pytest`.
+- Herramientas locales controladas.
+- Toolserver C como ejecutor productivo primario.
+- Objetivos, planes, tareas, grafo de ejecución, scheduler secuencial, presupuestos, checkpoints lógicos, evaluación por evidencia y CLI de objetivos.
 
-### 2.2 Fuera de alcance en Phase 1
+### 2.2 Fuera de alcance actual
 
-No forman parte de esta fase:
+No forman parte de Phase 4:
 
 - UI web.
 - TUI avanzada.
 - Integraciones con Telegram u otras plataformas.
-- Ejecución real de herramientas.
 - Embeddings.
 - RAG.
 - Memoria semántica.
 - Multiagente.
 - Streaming.
-- Servidor C productivo de herramientas.
 - Plugins dinámicos.
 - Sincronización entre dispositivos.
+- Escritura autónoma.
+- Reintentos, replanning, paralelismo y subagentes en ejecución autónoma.
+
+La siguiente fase prevista es **Context & Knowledge Engine**. Su objetivo será reducir el trabajo del LLM principal transformando datos locales en conocimiento indexado, recuperable, versionado y compilable en contexto de alta relevancia.
 
 ---
 
@@ -230,6 +237,11 @@ flowchart TB
 
     subgraph Application
         Runtime[AgentRuntime / RespondToMessage]
+        Engine[ExecutionEngine]
+        Planner[ModelBackedPlanner]
+        Validator[PlanValidator]
+        Scheduler[TaskScheduler]
+        Evaluator[ObjectiveEvaluator]
         ContextBuilder[ContextBuilder]
         ToolInterpreter[ToolCallInterpreter]
         Ports[Application Ports]
@@ -261,6 +273,12 @@ flowchart TB
     Runtime --> ToolInterpreter
     Runtime --> Message
     Runtime --> SessionId
+    CLI --> Engine
+    Engine --> Planner
+    Engine --> Validator
+    Engine --> Scheduler
+    Engine --> Evaluator
+    Engine --> Ports
 
     SQLiteStore -. implements .-> Ports
     InMemoryStore -. implements .-> Ports
@@ -651,6 +669,99 @@ openai-compatible
 No debe imprimir el proveedor.
 
 Debe generar un error de configuración ante valores desconocidos.
+
+---
+
+## 8.12 `ExecutionEngine`
+
+Caso de uso principal de Phase 4.
+
+Flujo:
+
+```text
+Objective -> Planner -> PlanValidator -> ExecutionGraph -> Scheduler -> ToolExecutionCoordinator -> Evaluator
+```
+
+Responsabilidades:
+
+- Persistir objetivo, plan, ejecución, estados de tarea y checkpoints mediante `ExecutionStore`.
+- Ejecutar una tarea lista a la vez.
+- Enforzar presupuestos controlados por la plataforma.
+- Usar `CapabilityRegistry` para mapear capacidades abstractas a herramientas aprobadas.
+- Evaluar resultado con evidencia objetiva.
+- Emitir logs metadata-only.
+
+No debe:
+
+- Importar adaptadores concretos de Ollama, SQLite, protobuf o toolserver C.
+- Exponer `write`.
+- Hacer retry, replanning, paralelismo o subagentes.
+- Registrar prompts ni contenido de archivos.
+
+---
+
+## 8.13 Platform Domain
+
+Modelos implementados:
+
+- `Objective`
+- `Plan`
+- `PlatformTask`
+- `ExecutionRecord`
+- `ExecutionBudget`
+- `BudgetUsage`
+- `Checkpoint`
+- `ExecutionResult`
+- `EvaluationResult`
+
+Los modelos validan transiciones e invariantes sin depender de SQLite, Ollama, CLI ni toolserver.
+
+---
+
+## 8.14 CapabilityRegistry
+
+Mapea capacidades abstractas a herramientas aprobadas:
+
+```text
+InspectDirectory -> list_directory
+ReadFile -> read_file
+InspectFileMetadata -> file_metadata
+SearchText -> search_text
+InspectGitStatus -> git_status
+InspectGitDiff -> git_diff
+RunTests -> run_tests
+BuildProject -> build_project
+```
+
+`write` queda excluida de ejecución autónoma. La ruta de escritura controlada de Phase 3 sigue disponible fuera de `ExecutionEngine`.
+
+---
+
+## 8.15 ExecutionStore
+
+`SQLiteExecutionStore` persiste objetivos, planes, tareas, ejecuciones y checkpoints en una base dedicada:
+
+```text
+AI_ASSISTANT_EXECUTION_DATABASE=assistant_execution.sqlite3
+```
+
+Debe permanecer separado de:
+
+- `ConversationStore`
+- `AuditStore`
+
+---
+
+## 8.16 Context & Knowledge Engine futuro
+
+La siguiente fase transformará datos locales en conocimiento indexado, recuperable, versionado y compilable en contexto de alta relevancia.
+
+Debe respetar los límites existentes:
+
+- No mezclar KnowledgeStore con ConversationStore, AuditStore o ExecutionStore.
+- No ejecutar herramientas desde el motor de conocimiento sin pasar por políticas existentes.
+- No introducir embeddings, índices o cachés sin ADR y límites claros.
+- Compilar contexto como entrada de alta señal para el LLM principal, no como sustituto de validación/evidencia.
 
 ---
 

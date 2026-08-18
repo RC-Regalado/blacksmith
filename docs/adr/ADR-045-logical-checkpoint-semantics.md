@@ -1,6 +1,6 @@
 # ADR-045 — Logical Checkpoint Semantics
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-08-05
 - Deciders: Project owner
 - Supersedes:

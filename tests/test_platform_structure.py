@@ -4,6 +4,7 @@ import pytest
 
 from ai_assistant.domain.errors import InvalidToolCallError
 from ai_assistant.platform.domain import (
+    CapabilityName,
     ExecutionBudget,
     Objective,
     Plan,
@@ -22,9 +23,14 @@ pytestmark = pytest.mark.unit
 
 def test_phase4_domain_models_are_importable() -> None:
     objective = Objective("obj-1", "Prepare Phase 4")
-    task = PlatformTask("task-1", objective.objective_id, "Create structure")
+    task = PlatformTask(
+        "task-1",
+        objective.objective_id,
+        "Create structure",
+        CapabilityName.INSPECT_DIRECTORY,
+    )
     plan = Plan("plan-1", objective.objective_id, (task,))
-    budget = ExecutionBudget(max_steps=1, max_tool_calls=0, max_seconds=1.0)
+    budget = ExecutionBudget(max_tasks=1, max_tool_calls=0, max_duration_seconds=1.0)
 
     assert plan.tasks == (task,)
     assert budget.max_tool_calls == 0

@@ -15,18 +15,30 @@ from ai_assistant.bootstrap.config import AppConfig, load_app_config
 from ai_assistant.bootstrap.logging import configure_logging
 from ai_assistant.infrastructure.models.adapter import ModelAdapter, ModelAdapterConfig
 from ai_assistant.infrastructure.storage.sqlite_audit import SQLiteAuditRecorder
+from ai_assistant.infrastructure.storage.sqlite_execution import SQLiteExecutionStore
 from ai_assistant.infrastructure.storage.sqlite_memory import SQLiteConversationStore
 from ai_assistant.infrastructure.tools import (
     LocalReadOnlyToolExecutor,
     UnixSocketToolExecutor,
 )
 from ai_assistant.interfaces.cli.app import CliApplication, CliConfirmationPrompter
+from ai_assistant.platform.application import (
+    BudgetManager,
+    CheckpointService,
+    ExecutionEngine,
+    ModelBackedPlanner,
+    ObjectiveEvaluator,
+    PlanValidator,
+    StaticCapabilityRegistry,
+    TaskScheduler,
+)
 
 
 def create_application(config: AppConfig | None = None) -> CliApplication:
     app_config = config or load_app_config()
     configure_logging(app_config.log_level)
     catalog = _tool_catalog(app_config) if app_config.tool_execution else None
+    coordinator = _tool_coordinator(app_config, catalog)
     runtime = AgentRuntime(
         context_builder=ContextBuilder(
             system_prompt=_system_prompt(app_config),
@@ -36,11 +48,15 @@ def create_application(config: AppConfig | None = None) -> CliApplication:
         model=ModelAdapter.from_config(_model_config(app_config)),
         tool_detector=ToolCallDetector(),
         tool_catalog=catalog,
-        tool_coordinator=_tool_coordinator(app_config, catalog),
+        tool_coordinator=coordinator,
         tool_timeout_seconds=app_config.tool_timeout,
         session_id=app_config.session,
     )
-    return CliApplication(runtime)
+    return CliApplication(
+        runtime,
+        _execution_engine(app_config, catalog, coordinator),
+        app_config.session,
+    )
 
 
 def _system_prompt(config: AppConfig) -> str:
@@ -101,3 +117,25 @@ def _tool_executor(config: AppConfig) -> ToolExecutor:
     if config.tool_executor == "local":
         return LocalReadOnlyToolExecutor()
     return UnixSocketToolExecutor(Path(config.tool_socket))
+
+
+def _execution_engine(
+    config: AppConfig,
+    catalog: StaticToolCatalog | None,
+    coordinator: ToolExecutionCoordinator | None,
+) -> ExecutionEngine | None:
+    if catalog is None or coordinator is None:
+        return None
+    registry = StaticCapabilityRegistry(catalog)
+    store = SQLiteExecutionStore(config.execution_database)
+    return ExecutionEngine(
+        planner=ModelBackedPlanner(ModelAdapter.from_config(_model_config(config)), registry),
+        validator=PlanValidator(registry),
+        registry=registry,
+        scheduler=TaskScheduler(store),
+        budget_manager=BudgetManager(),
+        store=store,
+        checkpoints=CheckpointService(store),
+        evaluator=ObjectiveEvaluator(),
+        tools=coordinator,
+    )

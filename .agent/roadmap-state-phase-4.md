@@ -10,9 +10,9 @@ Phase 4: Agent Execution Engine
 
 ## Current milestone
 
-- ID: M4.2
-- Name: Approve Phase 4 ADRs
-- Status: implemented-awaiting-human-review
+- ID: M4.18
+- Name: Documentation and final review
+- Status: accepted
 
 ## Status vocabulary
 
@@ -37,6 +37,6 @@ Phase 4: Agent Execution Engine
 
 ## Last update
 
-- Date: 2026-08-05
-- Summary: ADR-036 through ADR-046 accepted by human approval.
-- Next action: human review of M4.2 before M4.3.
+- Date: 2026-08-17
+- Summary: M4.18 updated Phase 4 documentation, ADR status, project context and sanitized objective summaries for the next Context & Knowledge Engine phase.
+- Next action: prepare Phase 5 Context & Knowledge Engine.

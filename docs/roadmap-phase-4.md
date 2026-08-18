@@ -1,5 +1,11 @@
 # Phase 4 Roadmap — Agent Execution Engine
 
+Status: accepted.
+
+Next phase: Context & Knowledge Engine.
+
+Next phase objective: reduce the work required from the main LLM by transforming local data into indexed, retrievable, versioned knowledge that can be compiled into high-relevance context.
+
 ## Objective
 
 Evolve the project into a local-first **Agent Execution Platform**.
@@ -291,3 +297,26 @@ Phase 4 is accepted only when:
 - Phase 1–3 behavior remains compatible;
 - automated tests pass;
 - manual review findings are resolved.
+
+## Implementation record
+
+| Milestone | Status |
+|---|---|
+| M4.1 | Implemented |
+| M4.2 | Implemented |
+| M4.3 | Implemented |
+| M4.4 | Implemented |
+| M4.5 | Implemented |
+| M4.6 | Implemented |
+| M4.7 | Implemented |
+| M4.8 | Implemented |
+| M4.9 | Implemented |
+| M4.10 | Implemented |
+| M4.11 | Implemented |
+| M4.12 | Implemented |
+| M4.13 | Implemented |
+| M4.14 | Implemented |
+| M4.15 | Implemented |
+| M4.16 | Implemented |
+| M4.17 | Implemented |
+| M4.18 | Accepted |
