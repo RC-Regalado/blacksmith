@@ -10,8 +10,8 @@ Phase 5: Context & Knowledge Engine
 
 ## Current milestone
 
-- ID: M5.1
-- Name: Freeze Phase 4 baseline
+- ID: M5.17
+- Name: Synthesis integration
 - Status: implemented-awaiting-human-review
 - Source: `docs/roadmap-phase-5.md`
 
@@ -118,27 +118,27 @@ Phase 5: Context & Knowledge Engine
 
 | ID | Milestone | Status | Blocking reason | Automated report | Human review |
 |---|---|---|---|---|---|
-| M5.1 | Freeze Phase 4 baseline | implemented-awaiting-human-review | — | `.agent/reports/M5.1.md` | awaiting-review |
-| M5.2 | Approve ADR-047..061 | planned | M5.1 human review required | — | — |
-| M5.3 | Knowledge domain models | planned | ADR-047..061 approval required | — | — |
-| M5.4 | KnowledgeSource ports | planned | M5.3 required | — | — |
-| M5.5 | SQLite KnowledgeStore | planned | M5.4 required | — | — |
-| M5.6 | Hashing and invalidation | planned | M5.5 required | — | — |
-| M5.7 | Normalization and chunking | planned | M5.6 required | — | — |
-| M5.8 | Metadata and symbols | planned | M5.7 required | — | — |
-| M5.9 | SQLite FTS5 | planned | M5.8 required | — | — |
-| M5.10 | Manual knowledge CLI | planned | M5.9 required | — | — |
-| M5.11 | EmbeddingProvider | planned | M5.10 required | — | — |
-| M5.12 | Embedding storage and similarity | planned | M5.11 required | — | — |
-| M5.13 | HybridRetriever | planned | M5.12 required | — | — |
-| M5.14 | Deterministic KnowledgeRanker | planned | M5.13 required | — | — |
-| M5.15 | ContextCompiler | planned | M5.14 required | — | — |
-| M5.16 | Planner integration | planned | M5.15 required | — | — |
-| M5.17 | Synthesis integration | planned | M5.16 required | — | — |
-| M5.18 | Efficiency observability | planned | M5.17 required | — | — |
-| M5.19 | Security/freshness/regression suite | planned | M5.18 required | — | — |
-| M5.20 | Functional evaluation | planned | M5.19 required | — | — |
-| M5.21 | Documentation and final review | planned | M5.20 required | — | — |
+| M5.1 | Freeze Phase 4 baseline | accepted | — | `.agent/reports/M5.1.md` | approved |
+| M5.2 | Approve ADR-047..061 | accepted | — | `.agent/reports/M5.2.md` | approved |
+| M5.3 | Knowledge domain models | accepted | — | `.agent/reports/M5.3.md` | approved |
+| M5.4 | KnowledgeSource ports | accepted | — | `.agent/reports/M5.4.md` | approved |
+| M5.5 | SQLite KnowledgeStore | accepted | — | `.agent/reports/M5.5.md` | approved |
+| M5.6 | Hashing and invalidation | accepted | — | `.agent/reports/M5.6.md` | approved |
+| M5.7 | Normalization and chunking | accepted | — | `.agent/reports/M5.7.md` | approved |
+| M5.8 | Metadata and symbols | accepted | — | `.agent/reports/M5.8.md` | approved |
+| M5.9 | SQLite FTS5 | accepted | — | `.agent/reports/M5.9.md` | approved |
+| M5.10 | Manual knowledge CLI | accepted | — | `.agent/reports/M5.10.md` | approved |
+| M5.11 | EmbeddingProvider | accepted | — | `.agent/reports/M5.11.md` | approved |
+| M5.12 | Embedding storage and similarity | accepted | — | `.agent/reports/M5.12.md` | approved |
+| M5.13 | HybridRetriever | accepted | — | `.agent/reports/M5.13.md` | approved |
+| M5.14 | Deterministic KnowledgeRanker | accepted | — | `.agent/reports/M5.14.md` | approved |
+| M5.15 | ContextCompiler | accepted | — | `.agent/reports/M5.15.md` | approved |
+| M5.16 | Planner integration | accepted | — | `.agent/reports/M5.16.md` | approved |
+| M5.17 | Synthesis integration | accepted | — | `.agent/reports/M5.17.md` | approved |
+| M5.18 | Efficiency observability | accepted | — | `.agent/reports/M5.18.md` | approved |
+| M5.19 | Security/freshness/regression suite | accepted | — | `.agent/reports/M5.19.md` | approved |
+| M5.20 | Functional evaluation | accepted | — | `.agent/reports/M5.20.md` | approved |
+| M5.21 | Documentation and final review | implemented-awaiting-human-review | — | `.agent/reports/M5.21.md` | awaiting-review |
 
 ## Current baseline
 
@@ -173,6 +173,6 @@ Record before Phase 3 implementation:
 
 ## Last supervisor update
 
-- Date: 2026-08-17
-- Summary: M5.1 froze the accepted Phase 4 baseline and confirmed Phase 5 is blocked on ADR-047 through ADR-061 approval before productive implementation.
-- Next action: human review of M5.1, then M5.2 ADR approval gate.
+- Date: 2026-08-18
+- Summary: M5.21 updated final Phase 5 documentation, operator guidance and project context.
+- Next action: human review of M5.21 and final Phase 5 acceptance decision.

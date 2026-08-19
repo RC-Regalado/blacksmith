@@ -32,6 +32,7 @@ def test_load_app_config_reads_supported_environment_values() -> None:
             "AI_ASSISTANT_BASE_URL": "http://example.test/v1",
             "AI_ASSISTANT_DATABASE": "test.sqlite3",
             "AI_ASSISTANT_EXECUTION_DATABASE": "execution.sqlite3",
+            "AI_ASSISTANT_KNOWLEDGE_DATABASE": "knowledge.sqlite3",
             "AI_ASSISTANT_SESSION": "test-session",
             "AI_ASSISTANT_SYSTEM_PROMPT": "system",
             "AI_ASSISTANT_LOG_LEVEL": "debug",
@@ -56,6 +57,7 @@ def test_load_app_config_reads_supported_environment_values() -> None:
     assert config.base_url == "http://example.test/v1"
     assert config.database == "test.sqlite3"
     assert config.execution_database == "execution.sqlite3"
+    assert config.knowledge_database == "knowledge.sqlite3"
     assert config.session == "test-session"
     assert config.system_prompt == "system"
     assert config.log_level == "DEBUG"

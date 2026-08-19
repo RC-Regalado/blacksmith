@@ -10,6 +10,7 @@ from ai_assistant.bootstrap.config import AppConfig
 from ai_assistant.bootstrap.container import create_application
 from ai_assistant.cli.app import CliApplication, CliConfirmationPrompter
 from ai_assistant.domain.errors import AssistantError, InvalidToolCallError
+from ai_assistant.knowledge import ContextMetrics, ContextPurpose
 from ai_assistant.platform.domain import (
     BudgetUsage,
     CapabilityName,
@@ -197,6 +198,24 @@ def test_cli_objective_verbose_prints_planner_response(
     assert "Error: planner returned invalid JSON." in captured.err
 
 
+def test_cli_objective_metrics_prints_usage_and_context_metrics(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    CliApplication(
+        FakeRuntime(),
+        FakeObjectiveEngine(),
+        session_id="session",
+        objective_id_factory=lambda: "fixed",
+    ).run(("objective", "--metrics", "Inspect repository"))
+
+    output = capsys.readouterr().out
+    assert "Metrics:" in output
+    assert "- duration_seconds=1.2500" in output
+    assert "context_planning: candidates=2 ranked=1 selected=1 raw_tokens=10 compiled_tokens=4" in output
+    assert "context_synthesis: candidates=1 ranked=1 selected=1 raw_tokens=4 compiled_tokens=4" in output
+    assert "secret file content" not in output
+
+
 class FakeRuntime:
     def respond(self, user_input: str) -> Message:
         return Message(role="assistant", content="ok")
@@ -208,6 +227,9 @@ class FailingRuntime:
 
 
 class FakeObjectiveEngine:
+    last_planning_context_metrics = ContextMetrics(ContextPurpose.PLANNING, 2, 1, 10, 4, 1)
+    last_synthesis_context_metrics = ContextMetrics(ContextPurpose.SYNTHESIS, 1, 1, 4, 4, 1)
+
     def run(self, objective: Objective, session_id: str):
         plan = Plan("plan-1", objective.objective_id, (_task(objective),))
         return type(
@@ -234,7 +256,13 @@ class FakeObjectiveEngine:
                     ("task-1:list_directory:success",),
                     "complete",
                 ),
-                "usage": BudgetUsage(tasks=1, model_calls=1, tool_calls=1, output_bytes=12),
+                "usage": BudgetUsage(
+                    tasks=1,
+                    model_calls=1,
+                    tool_calls=1,
+                    output_bytes=12,
+                    duration_seconds=1.25,
+                ),
                 "content": "secret file content",
             },
         )()

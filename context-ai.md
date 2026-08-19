@@ -12,6 +12,8 @@ Phase 1, Phase 2, Phase 3 y Phase 4 están implementadas y aceptadas.
 
 Phase 4 quedó aceptada tras revisión humana final de M4.18.
 
+Phase 5 está implementada hasta M5.21 y queda pendiente de aprobación humana final.
+
 ## Phase 1 — Python Core
 
 Implementado:
@@ -84,6 +86,26 @@ Implementado:
 - Resumen CLI determinístico y sanitizado para objetivos, derivado solo de resultados de herramientas ejecutadas; incluye guías simples para Makefile y CMake cuando hay evidencia.
 - Cobertura adversarial y regresión Phase 1-3.
 
+## Phase 5 — Context & Knowledge Engine
+
+Implementado:
+
+- `KnowledgeStore` SQLite dedicado, derivado y reconstruible.
+- CLI manual: `python main.py knowledge status|index|rebuild|query`.
+- Hashing SHA-256, frescura, invalidación incremental y rebuild.
+- Normalización, chunking, metadata y símbolos derivados.
+- SQLite FTS5 para búsqueda léxica local.
+- `EmbeddingProvider` separado de `ModelProvider`.
+- `DummyEmbeddingProvider` CPU-only y determinista.
+- Persistencia local de embeddings y similitud coseno bounded en CPU.
+- `HybridRetriever` que combina FTS5, símbolos y búsqueda semántica.
+- `KnowledgeRanker` determinista con componentes inspectables.
+- `ContextCompiler` con provenance, frescura y `ContextBudget`.
+- Integración de contexto en planner y síntesis de objetivos.
+- Métricas de contexto y `python main.py objective --metrics "..."`.
+- Suite adversarial de seguridad, frescura, presupuesto, provenance y regresiones Phase 1-4.
+- Guías operativas: `docs/knowledge-engine.md` y `docs/phase5-functional-evaluation.md`.
+
 ## Estructura actual
 
 ```text
@@ -91,9 +113,7 @@ ai_assistant/
 |-- domain/
 |-- application/
 |-- platform/
-|   |-- domain/
-|   |-- application/
-|   `-- ports/
+|-- knowledge/
 |-- capabilities/
 |-- infrastructure/
 |   |-- models/
@@ -129,6 +149,14 @@ AI_ASSISTANT_REQUEST_TIMEOUT=240 \
 python main.py objective --verbose "Inspect repository status"
 ```
 
+Knowledge Engine Phase 5:
+
+```bash
+AI_ASSISTANT_WORKSPACE="$PWD" python main.py knowledge rebuild .
+AI_ASSISTANT_WORKSPACE="$PWD" python main.py knowledge query "ExecutionEngine"
+python main.py objective --metrics "Explain why ExecutionEngine cannot write files"
+```
+
 ## Persistencia local
 
 Stores separados:
@@ -136,6 +164,7 @@ Stores separados:
 - Conversación: `AI_ASSISTANT_DATABASE`, default `assistant.sqlite3`.
 - Auditoría: `AI_ASSISTANT_AUDIT_DATABASE`, default `assistant_audit.sqlite3`.
 - Ejecución: `AI_ASSISTANT_EXECUTION_DATABASE`, default `assistant_execution.sqlite3`.
+- Conocimiento derivado: `AI_ASSISTANT_KNOWLEDGE_DATABASE`, default `assistant_knowledge.sqlite3`.
 
 No mezclar estos stores sin ADR nuevo y aprobación humana.
 
@@ -149,10 +178,10 @@ LD_LIBRARY_PATH=/home/rc-regalado/.local/lib \
 PYTHONDONTWRITEBYTECODE=1 python -m pytest -q
 ```
 
-Última evidencia M4.18:
+Última evidencia M5.20:
 
 ```text
-412 passed, 1 skipped
+475 passed, 1 skipped
 ```
 
 Evidencia manual Phase 4:
@@ -165,14 +194,21 @@ Evidencia manual Phase 4:
 - ADR-016 a ADR-025: Phase 2 implementada.
 - ADR-026 a ADR-035: Phase 3 implementada.
 - ADR-036 a ADR-046: Phase 4 implementada.
+- ADR-047 a ADR-061: Phase 5 implementada.
 
-## Siguiente fase — Context & Knowledge Engine
+## Estado Phase 5
 
 Objetivo:
 
 > Reducir el trabajo que debe realizar el LLM principal transformando previamente datos locales en conocimiento indexado, recuperable, versionado y compilable en contexto de alta relevancia.
 
-## Datos disponibles para Phase 5
+Estado:
+
+- M5.1 a M5.20 aceptados por revisión humana.
+- M5.21 implementado y pendiente de revisión humana final.
+- Phase 5 no debe marcarse aceptada sin aprobación manual.
+
+## Datos disponibles tras Phase 5
 
 | Área | Disponible |
 |---|---|
@@ -185,26 +221,27 @@ Objetivo:
 | Audit store | `ai_assistant/infrastructure/storage/sqlite_audit.py` |
 | Execution platform | `ai_assistant/platform/` |
 | Execution store | `ai_assistant/infrastructure/storage/sqlite_execution.py` |
+| Knowledge domain | `ai_assistant/knowledge/` |
+| Knowledge store | `ai_assistant/infrastructure/storage/sqlite_knowledge.py` |
+| Knowledge CLI | `ai_assistant/interfaces/cli/knowledge.py` |
+| Embeddings locales | `ai_assistant/infrastructure/embeddings/` |
 | C toolserver | `c_toolserver/` |
 | Manual objective evidence | `ia_make-plan.log` |
-| Adversarial tests | `tests/test_adversarial_security.py`, `tests/test_platform_*` |
+| Adversarial tests | `tests/test_adversarial_security.py`, `tests/test_platform_*`, `tests/test_knowledge_adversarial.py` |
 
-## Decisiones faltantes para Phase 5
+## Decisiones faltantes
 
-- Definir ADRs del Context & Knowledge Engine antes de implementar.
-- Definir `KnowledgeStore` separado de ConversationStore, AuditStore y ExecutionStore.
-- Definir formato de documentos, chunks, metadata, versiones y snapshots lógicos.
-- Decidir si Phase 5 usará embeddings, índice lexical, SQLite FTS o una combinación.
-- Definir política de invalidación/reindexado ante cambios de archivos.
-- Definir presupuesto de recuperación y compilación de contexto.
-- Definir cómo se citará evidencia recuperada y cómo se evitará mezclar contenido sensible.
-- Definir si el motor de conocimiento puede usar capacidades existentes y bajo qué permisos.
+- Aprobar manualmente M5.21 y cierre de Phase 5.
+- Decidir la siguiente fase del producto.
+- Decidir si el chat conversacional normal debe usar contexto indexado; hoy solo `objective` lo consume.
+- Decidir si se agregan embeddings productivos reales; hoy el provider incluido para pruebas es dummy CPU-only.
+- Decidir umbrales de evaluación funcional si se quiere comparar reducción de llamadas/tokens entre versiones.
+- Mantener excluidos sin ADR nuevo: memoria semántica de usuario, automatic skills, MCP, network retrieval, watcher daemon y vector DB externo.
 
 ## Recomendaciones
 
-- Mantener Phase 5 ADR-first.
-- Empezar con índice lexical/metadata antes de embeddings si el objetivo es reducir carga en hardware limitado.
-- Reutilizar `WorkspacePathPolicy`, redacción, límites y auditoría existentes.
-- Mantener `KnowledgeStore` como puerto/adaptador independiente.
-- Compilar contexto con límites estrictos y evidencia trazable.
-- No permitir que el LLM principal decida paths, comandos o expansión de alcance sin pasar por validadores existentes.
+- Validar manualmente `docs/phase5-functional-evaluation.md` antes de aceptar Phase 5.
+- Mantener `KnowledgeStore` como estado derivado y reconstruible.
+- Indexar manualmente antes de pruebas con objetivos.
+- Usar `objective --metrics` para comparar duración, llamadas y tokens compilados.
+- No activar contexto indexado en chat normal sin una decisión explícita.

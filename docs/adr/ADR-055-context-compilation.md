@@ -1,6 +1,6 @@
 # ADR-055 — Context Compilation
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-08-17
 - Deciders: Project owner
 

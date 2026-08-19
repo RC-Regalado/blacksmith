@@ -1,8 +1,9 @@
 """Bounded autonomous execution engine."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 import logging
+import time
 from pathlib import PurePosixPath
 
 from ai_assistant.application.tool_coordinator import ToolExecutionCoordinator
@@ -31,6 +32,7 @@ from ai_assistant.platform.ports.capability_registry import CapabilityRegistry
 from ai_assistant.platform.ports.evaluator import Evaluator
 from ai_assistant.platform.ports.execution_store import ExecutionStore
 from ai_assistant.platform.ports.planner import Planner
+from ai_assistant.knowledge.metrics import ContextMetrics
 
 
 logger = logging.getLogger(__name__)
@@ -58,6 +60,7 @@ class ExecutionEngine:
         checkpoints: CheckpointService,
         evaluator: Evaluator,
         tools: ToolExecutionCoordinator,
+        synthesis_context_provider=None,
     ) -> None:
         self._planner = planner
         self._validator = validator
@@ -68,11 +71,22 @@ class ExecutionEngine:
         self._checkpoints = checkpoints
         self._evaluator = evaluator
         self._tools = tools
+        self._synthesis_context_provider = synthesis_context_provider
 
     @property
     def last_planner_response(self) -> str | None:
         value = getattr(self._planner, "last_response_content", None)
         return value if isinstance(value, str) else None
+
+    @property
+    def last_planning_context_metrics(self) -> ContextMetrics | None:
+        value = getattr(self._planner, "last_context_metrics", None)
+        return value if isinstance(value, ContextMetrics) else None
+
+    @property
+    def last_synthesis_context_metrics(self) -> ContextMetrics | None:
+        value = getattr(self._synthesis_context_provider, "last_metrics", None)
+        return value if isinstance(value, ContextMetrics) else None
 
     def run(
         self,
@@ -80,6 +94,7 @@ class ExecutionEngine:
         session_id: str,
         budget: ExecutionBudget | None = None,
     ) -> ExecutionOutcome:
+        started = time.monotonic()
         budget = budget or ExecutionBudget()
         usage = self._budget_manager.record_model_call(budget, BudgetUsage())
         _log_budget("model_call", usage)
@@ -104,8 +119,10 @@ class ExecutionEngine:
         execution = execution.transition(result.status)
         _log_execution(execution)
         self._store.save_execution(execution)
+        result = self._synthesize(objective, result)
         evaluation = self._evaluator.evaluate(objective, result, _task_states(self._store, plan))
         _log_final(objective, execution, result, evaluation)
+        usage = replace(usage, duration_seconds=time.monotonic() - started)
         return ExecutionOutcome(objective, plan, execution, result, evaluation, usage)
 
     def _run_tasks(
@@ -171,6 +188,14 @@ class ExecutionEngine:
             permission=_permission(task.capability),
         )
         return self._tools.execute(request)
+
+    def _synthesize(self, objective: Objective, result: ExecutionResult) -> ExecutionResult:
+        if self._synthesis_context_provider is None:
+            return result
+        observations = self._synthesis_context_provider.observations(objective, result)
+        if not observations:
+            return result
+        return replace(result, observations=(*result.observations, *observations))
 
 
 def _permission(capability: CapabilityName) -> ToolPermission:

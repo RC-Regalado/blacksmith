@@ -83,7 +83,27 @@ Generated changes are provisional until recorded here.
 | M4.16 | implemented-awaiting-human-review | approved | User | 2026-08-17 | User confirmed approval and recorded manual objective validation in `ia_make-plan.log`; objective completed with evaluation passed. |
 | M4.17 | implemented-awaiting-human-review | approved | User | 2026-08-17 | User confirmed: "Aprobado, finaliza con el M4.18". Adversarial and regression coverage accepted. |
 | M4.18 | implemented-awaiting-human-review | approved | User | 2026-08-17 | User confirmed: "Aprobado". Phase 4 documentation, context update and sanitized objective summary output accepted. |
-| M5.1 | implemented-awaiting-human-review | awaiting-review | User | 2026-08-17 | Phase 4 accepted baseline frozen; ADR-047 through ADR-061 remain Proposed and require approval before productive Phase 5 implementation. |
+| M5.1 | implemented-awaiting-human-review | approved | User | 2026-08-17 | User confirmed: "Worktree limpio, aprobados ADR del 047 al 061. Inicia e M5.2". Phase 4 baseline accepted. |
+| M5.2 | implemented-awaiting-human-review | approved | User | 2026-08-17 | User confirmed: "Aprobado. Inicia e M5.3". ADR-047 through ADR-061 accepted. |
+| M5.3 | implemented-awaiting-human-review | approved | User | 2026-08-17 | User confirmed: "Aprobado. Inicia e M5.4". Knowledge domain models accepted. |
+| M5.4 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "Aprobado. Inicia e M5.5". KnowledgeSource ports accepted. |
+| M5.5 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "Aprobado. Inicia e M5.6". SQLite KnowledgeStore accepted. |
+| M5.6 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "Aprobado. Inicia e M5.7". Hashing and invalidation accepted. |
+| M5.7 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "Aprobado. Inicia e M5.8". Normalization and chunking accepted. |
+| M5.8 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "Aprobado. Inicia e M5.9". Metadata and symbols accepted. |
+| M5.9 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "Aprobado. Inicia e M5.10". SQLite FTS5 accepted. |
+| M5.10 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "Aprobado. Inicia e M5.11". Manual knowledge CLI accepted. |
+| M5.11 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "Aprobado. Inicia e M5.12". EmbeddingProvider accepted. |
+| M5.12 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "Aprobado. Inicia e M5.13". Embedding storage and similarity accepted. |
+| M5.13 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "Aprobado. Inicia e M5.14". HybridRetriever accepted. |
+| M5.14 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "Aprobado. Inicia e M5.15". Deterministic KnowledgeRanker accepted. |
+| M5.15 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "Aprobado. Inicia e M5.16". ContextCompiler accepted. |
+| M5.16 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "Aprobado. Inicia e M5.17". Planner integration accepted. |
+| M5.17 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "Entendido, marca el M5.17 como aprobado y pasa al M5.18". Synthesis integration accepted. |
+| M5.18 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "Aprobado, pasa al M5.19". Efficiency observability accepted. |
+| M5.19 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "El M5.19 queda aprobado, pasa al M5.20". Security/freshness/regression suite accepted. |
+| M5.20 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "Aprobado, pasa al M5.21". Functional evaluation accepted. |
+| M5.21 | implemented-awaiting-human-review | awaiting-review | User | 2026-08-18 | Documentation and final review prepared; final Phase 5 acceptance pending. |
 
 ## Approval gates
 

@@ -16,12 +16,21 @@ from ai_assistant.bootstrap.logging import configure_logging
 from ai_assistant.infrastructure.models.adapter import ModelAdapter, ModelAdapterConfig
 from ai_assistant.infrastructure.storage.sqlite_audit import SQLiteAuditRecorder
 from ai_assistant.infrastructure.storage.sqlite_execution import SQLiteExecutionStore
+from ai_assistant.infrastructure.storage.sqlite_knowledge import SQLiteKnowledgeStore
 from ai_assistant.infrastructure.storage.sqlite_memory import SQLiteConversationStore
 from ai_assistant.infrastructure.tools import (
     LocalReadOnlyToolExecutor,
     UnixSocketToolExecutor,
 )
 from ai_assistant.interfaces.cli.app import CliApplication, CliConfirmationPrompter
+from ai_assistant.interfaces.cli.knowledge import KnowledgeCli
+from ai_assistant.knowledge import (
+    ContextCompiler,
+    HybridRetriever,
+    KnowledgeRanker,
+    PlanningContextProvider,
+    SynthesisContextProvider,
+)
 from ai_assistant.platform.application import (
     BudgetManager,
     CheckpointService,
@@ -52,10 +61,16 @@ def create_application(config: AppConfig | None = None) -> CliApplication:
         tool_timeout_seconds=app_config.tool_timeout,
         session_id=app_config.session,
     )
+    knowledge_store = SQLiteKnowledgeStore(app_config.knowledge_database)
     return CliApplication(
         runtime,
-        _execution_engine(app_config, catalog, coordinator),
+        _execution_engine(app_config, catalog, coordinator, knowledge_store),
         app_config.session,
+        KnowledgeCli(
+            knowledge_store,
+            app_config.workspace,
+            app_config.max_read_bytes,
+        ),
     )
 
 
@@ -123,13 +138,21 @@ def _execution_engine(
     config: AppConfig,
     catalog: StaticToolCatalog | None,
     coordinator: ToolExecutionCoordinator | None,
+    knowledge_store: SQLiteKnowledgeStore,
 ) -> ExecutionEngine | None:
     if catalog is None or coordinator is None:
         return None
     registry = StaticCapabilityRegistry(catalog)
     store = SQLiteExecutionStore(config.execution_database)
+    retriever = HybridRetriever(knowledge_store)
+    ranker = KnowledgeRanker()
+    compiler = ContextCompiler(knowledge_store)
     return ExecutionEngine(
-        planner=ModelBackedPlanner(ModelAdapter.from_config(_model_config(config)), registry),
+        planner=ModelBackedPlanner(
+            ModelAdapter.from_config(_model_config(config)),
+            registry,
+            PlanningContextProvider(retriever, ranker, compiler),
+        ),
         validator=PlanValidator(registry),
         registry=registry,
         scheduler=TaskScheduler(store),
@@ -138,4 +161,5 @@ def _execution_engine(
         checkpoints=CheckpointService(store),
         evaluator=ObjectiveEvaluator(),
         tools=coordinator,
+        synthesis_context_provider=SynthesisContextProvider(retriever, ranker, compiler),
     )

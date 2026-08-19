@@ -1,6 +1,6 @@
 # ADR-053 — SQLite FTS5 as Initial Lexical Index
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-08-17
 - Deciders: Project owner
 

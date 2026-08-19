@@ -1,6 +1,6 @@
 # ADR-058 — Stale Knowledge Handling
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-08-17
 - Deciders: Project owner
 

@@ -752,16 +752,194 @@ Debe permanecer separado de:
 
 ---
 
-## 8.16 Context & Knowledge Engine futuro
+## 8.16 Context & Knowledge Engine
 
-La siguiente fase transformará datos locales en conocimiento indexado, recuperable, versionado y compilable en contexto de alta relevancia.
+Phase 5 transforma datos locales en conocimiento derivado, indexado, recuperable, versionado y compilable en contexto de alta relevancia.
 
 Debe respetar los límites existentes:
 
 - No mezclar KnowledgeStore con ConversationStore, AuditStore o ExecutionStore.
 - No ejecutar herramientas desde el motor de conocimiento sin pasar por políticas existentes.
-- No introducir embeddings, índices o cachés sin ADR y límites claros.
+- Mantener `EmbeddingProvider` separado de `ModelProvider`.
 - Compilar contexto como entrada de alta señal para el LLM principal, no como sustituto de validación/evidencia.
+
+M5.3 introduce únicamente modelos de dominio en `ai_assistant/knowledge/`:
+
+- `KnowledgeDocument`
+- `KnowledgeChunk`
+- `KnowledgeSymbol`
+- `KnowledgeQuery`
+- `RetrievalCandidate`
+- `ContextEvidence`
+- `CompiledContext`
+- `ContextBudget`
+
+Estos modelos son inmutables, no dependen de infraestructura y validan frescura, provenance y presupuestos de contexto.
+
+M5.4 agrega puertos abstractos en `ai_assistant/knowledge/ports.py`:
+
+- `KnowledgeSource`
+- `FileKnowledgeSource`
+- `AdrKnowledgeSource`
+- `ExecutionKnowledgeSource`
+- `ConversationKnowledgeSource`
+
+Estos puertos definen el contrato para listar documentos, cargar documentos, obtener chunks y obtener símbolos. No implementan adaptadores concretos ni acceden a stores canónicos.
+
+M5.5 agrega `SQLiteKnowledgeStore` como base SQLite dedicada para estado derivado:
+
+- Tabla `knowledge_documents` para documentos versionados con hash, metadata y frescura.
+- Tabla `knowledge_chunks` para chunks ordenados por documento.
+- Tabla `knowledge_symbols` para símbolos derivados asociados a documentos y chunks.
+- Método `clear()` para permitir reconstrucción completa del store derivado.
+
+Este store permanece separado de `ConversationStore`, `AuditStore` y `ExecutionStore`. No implementa FTS5, embeddings, invalidación incremental, adapters de fuentes ni compilación de contexto.
+
+M5.6 agrega hashing e invalidación incremental mínima:
+
+- `hash_text()` y `hash_bytes()` generan SHA-256 estable para contenido derivado.
+- `document_is_current()` permite saltar fuentes sin cambios cuando versión y hash coinciden y el documento está fresco.
+- `mark_document_stale()` invalida documento y chunks derivados.
+- `mark_missing_documents_stale()` invalida documentos de una fuente que ya no aparecen en el conjunto activo.
+
+La invalidación solo cambia frescura en `KnowledgeStore`; no elimina fuentes canónicas, no ejecuta adapters y no hace retrieval.
+
+M5.7 agrega normalización y chunking determinista:
+
+- `normalize_text()` normaliza saltos de línea, tabs, espacios finales y blancos repetidos.
+- `chunk_document()` genera `KnowledgeChunk` con hash, ordinal, metadata de sección y presupuesto de tokens.
+- Markdown se divide por headings.
+- Python se divide por imports/prefijo de módulo y definiciones top-level `class`/`def` usando `ast`.
+- Otros contenidos usan párrafos y fallback por palabras.
+
+El chunking no lee archivos, no genera símbolos persistidos, no indexa FTS5 y no ejecuta retrieval.
+
+M5.8 agrega metadata y símbolos derivados:
+
+- `document_metadata()` conserva URI, tipo de fuente, versión, hash documental y lenguaje inferido.
+- `infer_language()` usa extensiones conocidas sin dependencias externas.
+- Los chunks incluyen metadata de provenance y, cuando aplica, `symbol_kind` / `symbol_name`.
+- `symbols_for_chunks()` deriva `KnowledgeSymbol` desde chunks de Python y headings Markdown.
+
+Los símbolos son derivados y reconstruibles. No se agregan parsers externos, FTS5, retrieval ni contexto compilado.
+
+M5.9 agrega índice léxico local con SQLite FTS5:
+
+- `knowledge_chunks_fts` indexa texto de chunks derivados.
+- `lexical_search()` devuelve `RetrievalCandidate` con provenance de documento, chunk, versión y hash.
+- La búsqueda excluye documentos/chunks stale.
+- La búsqueda permite filtrar por `KnowledgeQuery.source_types` y `metadata_filters`.
+- Las consultas se envían como frase escapada para evitar errores por sintaxis FTS inválida.
+
+FTS5 sigue siendo estado derivado y reconstruible. No agrega embeddings, ranking híbrido, CLI ni integración con planner/synthesis.
+
+M5.10 agrega CLI manual para conocimiento:
+
+```bash
+AI_ASSISTANT_WORKSPACE="$PWD" python main.py knowledge status
+AI_ASSISTANT_WORKSPACE="$PWD" python main.py knowledge index README.md
+AI_ASSISTANT_WORKSPACE="$PWD" python main.py knowledge rebuild docs
+AI_ASSISTANT_WORKSPACE="$PWD" python main.py knowledge query blacksmith
+```
+
+La base se configura con:
+
+```text
+AI_ASSISTANT_KNOWLEDGE_DATABASE=assistant_knowledge.sqlite3
+```
+
+`index` y `rebuild` leen rutas relativas al workspace, deniegan rutas ocultas/sensibles y respetan `AI_ASSISTANT_MAX_READ_BYTES`. La CLI no es automática, no observa cambios en background y no integra resultados al runtime del agente.
+
+M5.11 agrega el contrato de embeddings:
+
+- `EmbeddingVector` conserva hash de texto, valores, provider, modelo y versión.
+- `EmbeddingProvider` es un puerto separado de `ModelProvider`.
+- `DummyEmbeddingProvider` genera vectores locales deterministas con CPU y sin dependencias externas.
+
+No se persisten embeddings todavía, no se calcula similitud y no se integra retrieval semántico; eso queda para M5.12+.
+
+M5.12 agrega almacenamiento local de embeddings y similitud CPU:
+
+- `knowledge_embeddings` persiste vectores por chunk, provider, modelo, versión y dimensión.
+- `save_embedding()` y `embeddings_for_chunk()` administran vectores derivados.
+- `semantic_search()` calcula similitud coseno en CPU y devuelve `RetrievalCandidate` con provenance.
+- La búsqueda semántica solo compara embeddings con provider/model/version/dimension compatible.
+- Documentos/chunks stale quedan excluidos.
+
+La búsqueda sigue siendo O(n) sobre SQLite para mantener el diseño local y simple. No se agrega base vectorial externa, retrieval híbrido, ranking avanzado ni contexto compilado.
+
+M5.13 agrega `HybridRetriever`:
+
+- Combina resultados lexicales FTS5, símbolos y semantic search.
+- Deduplica por `chunk_id`.
+- Excluye candidatos stale.
+- Respeta `KnowledgeQuery.limit` y filtros de source type.
+- Fusiona el método de retrieval cuando varias rutas encuentran el mismo chunk.
+
+El orden actual es determinista por score y `chunk_id`; el ranking con componentes inspectables queda para M5.14.
+
+M5.14 agrega `KnowledgeRanker`:
+
+- Calcula `RankedCandidate` con `total_score` y componentes inspectables.
+- Usa componentes deterministas `base` y `method`.
+- Aplica pesos fijos por método (`symbol`, `fts5`, `semantic`).
+- Excluye candidatos stale.
+- Desempata de forma estable por `source_uri` y `chunk_id`.
+
+No usa LLM reranker, no compila contexto y no modifica el `HybridRetriever` todavía.
+
+M5.15 agrega `ContextCompiler`:
+
+- Convierte `RankedCandidate` en `CompiledContext`.
+- Carga texto desde `KnowledgeStore` y verifica provenance contra `content_hash` y `token_count`.
+- Rechaza conocimiento stale o no verificable.
+- Respeta `ContextBudget` de tokens, fuentes, chunks y tokens por chunk.
+- Omite candidatos que exceden presupuesto sin relajar límites.
+
+El compilador es puro sobre `KnowledgeStore`; no integra planner, synthesis ni runtime.
+
+M5.16 integra contexto en el planner:
+
+- `PlanningContextProvider` arma contexto de planificación desde `HybridRetriever`, `KnowledgeRanker` y `ContextCompiler`.
+- `ModelBackedPlanner` recibe contexto opcional y lo envía al modelo como `compiled_context` estructurado.
+- El planner sigue validando JSON no confiable con el contrato existente.
+- La integración se cablea en el objective engine, no en el loop conversacional general.
+
+No se integra synthesis ni se inyecta contexto automáticamente en `python main.py` sin subcomando `objective`.
+
+M5.17 integra contexto en síntesis de objetivos:
+
+- `SynthesisContextProvider` recupera contexto con la descripción del objetivo y compila `SYNTHESIS`.
+- `ExecutionEngine` agrega observaciones contextuales al `ExecutionResult`.
+- La evidencia no se modifica, por lo que `ObjectiveEvaluator` sigue usando solo evidencia y estados de tareas.
+- La integración se mantiene en objective execution, no en el runtime conversacional general.
+
+No se agregan métricas ni se relaja el criterio de evaluación.
+
+M5.18 agrega observabilidad mínima de eficiencia:
+
+- `ContextMetrics` registra candidatos recuperados, candidatos rankeados, chunks seleccionados, tokens estimados fuente, tokens compilados y `context_reduction_ratio`.
+- `PlanningContextProvider` y `SynthesisContextProvider` exponen `last_metrics` y registran una línea de log por compilación de contexto.
+- Las métricas son derivadas y efímeras; no crean un store nuevo ni modifican fuentes canónicas.
+- No se agregan métricas de cache ni `tool_calls_avoided` porque aún no existe cache productivo ni contador causal de herramientas evitadas.
+
+M5.19 agrega cobertura adversarial de seguridad, frescura y regresión:
+
+- La CLI de conocimiento rechaza rutas hidden, rutas sensibles, archivos sobredimensionados y documentos no UTF-8 con errores explícitos.
+- Las pruebas cubren limpieza/rebuild de `KnowledgeStore`, chunks duplicados, resultados stale léxicos y semánticos, mismatch de provenance y overflow de `ContextBudget`.
+- La validación incluye pruebas de regresión de runtime, políticas de tools y execution engine de fases anteriores.
+
+M5.20 agrega evaluación funcional manual:
+
+- `python main.py objective --metrics "..."` muestra duración, llamadas de modelo/herramientas y métricas de contexto de planning/synthesis.
+- `ExecutionEngine` mide duración total en `BudgetUsage.duration_seconds`.
+- La guía `docs/phase5-functional-evaluation.md` define los escenarios para explicar por qué `ExecutionEngine` no escribe y diagnosticar fallos de scheduler.
+
+M5.21 cierra la documentación de Phase 5:
+
+- README, arquitectura, contexto del proyecto y guías operativas reflejan el estado implementado.
+- Phase 5 queda lista para revisión humana final, no aceptada automáticamente.
+- Las exclusiones siguen vigentes: memoria semántica de usuario, automatic skills, MCP, watcher daemon, network retrieval y vector DB externo.
 
 ---
 

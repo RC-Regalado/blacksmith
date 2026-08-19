@@ -6,6 +6,8 @@ import json
 from ai_assistant.application.ports.models import ModelProvider
 from ai_assistant.domain.errors import InvalidToolCallError
 from ai_assistant.domain.message import Message
+from ai_assistant.knowledge.domain import CompiledContext
+from ai_assistant.knowledge.metrics import ContextMetrics
 from ai_assistant.platform.domain.objective import Objective
 from ai_assistant.platform.domain.plan import Plan
 from ai_assistant.platform.domain.task import CapabilityName, PlatformTask
@@ -27,13 +29,25 @@ class DeterministicPlanner(Planner):
 
 
 class ModelBackedPlanner(Planner):
-    def __init__(self, model: ModelProvider, registry: CapabilityRegistry) -> None:
+    def __init__(
+        self,
+        model: ModelProvider,
+        registry: CapabilityRegistry,
+        context_provider=None,
+    ) -> None:
         self._model = model
         self._registry = registry
+        self._context_provider = context_provider
         self.last_response_content: str | None = None
 
+    @property
+    def last_context_metrics(self) -> ContextMetrics | None:
+        value = getattr(self._context_provider, "last_metrics", None)
+        return value if isinstance(value, ContextMetrics) else None
+
     def create_plan(self, objective: Objective) -> Plan:
-        response = self._model.chat(_messages(objective, self._registry))
+        context = None if self._context_provider is None else self._context_provider.build(objective)
+        response = self._model.chat(_messages(objective, self._registry, context))
         self.last_response_content = response.content
         payload = _loads_object(response.content)
         plan_id = _text(payload, "plan_id")
@@ -44,7 +58,11 @@ class ModelBackedPlanner(Planner):
         return Plan(plan_id, objective.objective_id, tasks)
 
 
-def _messages(objective: Objective, registry: CapabilityRegistry) -> list[Message]:
+def _messages(
+    objective: Objective,
+    registry: CapabilityRegistry,
+    context: CompiledContext | None = None,
+) -> list[Message]:
     capabilities = [
         {"name": definition.name.value, "input_schema": _plain(definition.input_schema)}
         for definition in registry.definitions()
@@ -69,9 +87,26 @@ def _messages(objective: Objective, registry: CapabilityRegistry) -> list[Messag
                     "description": objective.description,
                     "success_criteria": objective.success_criteria,
                     "capabilities": capabilities,
+                    "compiled_context": _context_payload(context),
                 }
             ),
         ),
+    ]
+
+
+def _context_payload(context: CompiledContext | None) -> list[dict[str, object]]:
+    if context is None:
+        return []
+    return [
+        {
+            "chunk_id": item.candidate.chunk_id,
+            "source_uri": item.candidate.source_uri,
+            "source_version": item.candidate.source_version,
+            "content_hash": item.candidate.content_hash,
+            "retrieval_method": item.candidate.retrieval_method,
+            "text": item.text,
+        }
+        for item in context.evidence
     ]
 
 

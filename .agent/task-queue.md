@@ -12814,3 +12814,4032 @@ git diff --check
 - Summary: M5.1 ready for manual review.
 - Files changed: `.agent/*`
 - Test results: `tests/test_phase4_docs.py` passed; `git diff --check` passed.
+
+### Task M5.2-T1 — Accept Phase 5 ADRs
+
+## Parent milestone
+
+M5.2
+
+## Status
+
+implemented
+
+## Owner role
+
+Knowledge architect
+
+## Objective
+
+Record human approval by marking ADR-047 through ADR-061 as Accepted.
+
+## File scope
+
+### Writable
+
+- `docs/adr/ADR-047-*.md` through `docs/adr/ADR-061-*.md`
+
+### Read-only
+
+- `docs/roadmap-phase-5.md`
+- `AGENTS.md`
+
+### Forbidden
+
+- Production source edits
+- Marking ADRs Implemented
+- Superseding ADRs
+
+## Dependencies
+
+- M5.1 accepted
+- Human approval for ADR-047 through ADR-061
+
+## Applicable ADRs
+
+- ADR-001 through ADR-046
+- ADR-047 through ADR-061 after acceptance
+
+## Acceptance criteria
+
+- [x] ADR-047 through ADR-061 have `Status: Accepted`.
+- [x] No ADR is marked Implemented in M5.2.
+- [x] No productive Phase 5 behavior is implemented.
+
+## Validation commands
+
+```bash
+for f in docs/adr/ADR-0{47..61}-*.md; do rg -n "Status: Accepted" "$f"; done
+```
+
+## Result report
+
+- Summary: ADR-047 through ADR-061 accepted.
+- Files changed: `docs/adr/ADR-047-*.md` through `docs/adr/ADR-061-*.md`
+- Test results: ADR file status check passed.
+
+### Task M5.2-T2 — Sync ADR Indexes
+
+## Parent milestone
+
+M5.2
+
+## Status
+
+implemented
+
+## Owner role
+
+Documentation agent
+
+## Objective
+
+Synchronize Phase 5 ADR statuses in ADR indexes.
+
+## File scope
+
+### Writable
+
+- `docs/adr/README.md`
+- `docs/adr/README-phase-5.md`
+
+### Read-only
+
+- Phase 5 ADR files
+
+### Forbidden
+
+- Production source edits
+- Roadmap milestone acceptance
+
+## Dependencies
+
+- M5.2-T1
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Acceptance criteria
+
+- [x] Main ADR index includes ADR-047 through ADR-061.
+- [x] Phase 5 ADR index marks ADR-047 through ADR-061 Accepted.
+
+## Validation commands
+
+```bash
+rg -n "ADR-0(4[7-9]|5[0-9]|6[0-1]).*Accepted" docs/adr/README.md docs/adr/README-phase-5.md
+```
+
+## Result report
+
+- Summary: ADR indexes synchronized.
+- Files changed: `docs/adr/README.md`, `docs/adr/README-phase-5.md`
+- Test results: ADR index status check passed.
+
+### Task M5.2-T3 — Queue Manual Review
+
+## Parent milestone
+
+M5.2
+
+## Status
+
+implemented
+
+## Owner role
+
+Supervisor
+
+## Objective
+
+Update canonical state, write M5.2 report and queue manual review without accepting M5.2.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.2.md`
+
+### Read-only
+
+- repository source and tests
+
+### Forbidden
+
+- Production source edits
+- Starting M5.3
+
+## Dependencies
+
+- M5.2-T1
+- M5.2-T2
+
+## Applicable ADRs
+
+- ADR-001 through ADR-061
+
+## Acceptance criteria
+
+- [x] `.agent/reports/M5.2.md` exists.
+- [x] Roadmap state marks M5.2 `implemented-awaiting-human-review`.
+- [x] Human review queue contains M5.2 awaiting review.
+
+## Validation commands
+
+```bash
+git diff --check
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_phase4_docs.py -q
+```
+
+## Result report
+
+- Summary: M5.2 ready for manual review.
+- Files changed: `.agent/*`
+- Test results: `git diff --check`, `tests/test_phase4_docs.py` and full suite passed.
+
+### Task M5.3-T1 — Knowledge Domain Models
+
+## Parent milestone
+
+M5.3
+
+## Status
+
+implemented
+
+## Owner role
+
+Knowledge architect
+
+## Objective
+
+Add immutable Phase 5 knowledge domain models with freshness, provenance and context budget invariants.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/knowledge/__init__.py`
+- `ai_assistant/knowledge/domain.py`
+- `ai_assistant/domain/errors.py`
+- `ai_assistant/domain/__init__.py`
+
+### Read-only
+
+- `docs/roadmap-phase-5.md`
+- `docs/adr/ADR-047-*.md` through `docs/adr/ADR-061-*.md`
+- existing domain models
+
+### Forbidden
+
+- Stores
+- Ports
+- Indexing
+- Embeddings
+- Retrieval
+- Context integration
+- Production dependencies
+
+## Dependencies
+
+- M5.2 accepted
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- None; no KnowledgeStore exists yet.
+
+## Freshness impact
+
+- Adds `FreshnessStatus` and rejects non-fresh context evidence.
+
+## Context-budget impact
+
+- Adds `ContextBudget` and `CompiledContext` budget validation.
+
+## Security impact
+
+- Domain-only; no file, audit, conversation or network access.
+
+## Acceptance criteria
+
+- [x] Required M5.3 models exist.
+- [x] Models are immutable and explicit.
+- [x] Stale/unknown knowledge cannot become context evidence.
+- [x] Compiled context enforces budget limits.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_domain.py -q
+python -m compileall -q ai_assistant/knowledge ai_assistant/domain
+```
+
+## Result report
+
+- Summary: Knowledge domain models implemented.
+- Files changed: `ai_assistant/knowledge/`, `ai_assistant/domain/errors.py`, `ai_assistant/domain/__init__.py`
+- Test results: 4 passed; compileall passed.
+
+### Task M5.3-T2 — Knowledge Domain Tests
+
+## Parent milestone
+
+M5.3
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Cover M5.3 domain importability, failure modes, freshness, provenance, budget and infrastructure independence.
+
+## File scope
+
+### Writable
+
+- `tests/test_knowledge_domain.py`
+
+### Read-only
+
+- `ai_assistant/knowledge/`
+
+### Forbidden
+
+- Weakening Phase 1-4 tests
+- Adding integration behavior
+
+## Dependencies
+
+- M5.3-T1
+
+## Applicable ADRs
+
+- ADR-047
+- ADR-055
+- ADR-056
+- ADR-057
+- ADR-058
+
+## Derived-state impact
+
+- None.
+
+## Freshness impact
+
+- Tests stale evidence rejection.
+
+## Context-budget impact
+
+- Tests total and per-chunk budget rejection.
+
+## Security impact
+
+- Tests no infrastructure dependency leaks.
+
+## Acceptance criteria
+
+- [x] Unit tests cover happy path.
+- [x] Unit tests cover invalid domain state.
+- [x] Unit tests cover stale evidence and budget rejection.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_domain.py -q
+```
+
+## Result report
+
+- Summary: Focused knowledge domain tests added.
+- Files changed: `tests/test_knowledge_domain.py`
+- Test results: 4 passed.
+
+### Task M5.3-T3 — M5.3 Validation and Review
+
+## Parent milestone
+
+M5.3
+
+## Status
+
+implemented
+
+## Owner role
+
+Supervisor
+
+## Objective
+
+Validate M5.3, update docs and queue manual review without accepting the milestone.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.3.md`
+- `docs/architecture.md`
+
+### Read-only
+
+- repository source and tests
+
+### Forbidden
+
+- Marking M5.3 accepted
+- Starting M5.4
+- ADR status changes
+
+## Dependencies
+
+- M5.3-T1
+- M5.3-T2
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- None.
+
+## Freshness impact
+
+- Documents domain-level freshness enforcement.
+
+## Context-budget impact
+
+- Documents domain-level budget enforcement.
+
+## Security impact
+
+- Confirms no runtime or storage behavior was added.
+
+## Acceptance criteria
+
+- [x] M5.3 report exists.
+- [x] Roadmap state marks M5.3 `implemented-awaiting-human-review`.
+- [x] Human review queue contains M5.3 awaiting review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_domain.py tests/test_phase4_docs.py -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.3 ready for manual review.
+- Files changed: `.agent/*`, `docs/architecture.md`
+- Test results: M5.3 focused validation, full suite and diff check passed.
+
+### Task M5.4-T1 — KnowledgeSource Ports
+
+## Parent milestone
+
+M5.4
+
+## Status
+
+implemented
+
+## Owner role
+
+Source adapter engineer
+
+## Objective
+
+Define abstract KnowledgeSource contracts for Phase 5 source adapters.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/knowledge/ports.py`
+- `ai_assistant/knowledge/__init__.py`
+
+### Read-only
+
+- `ai_assistant/knowledge/domain.py`
+- `docs/roadmap-phase-5.md`
+- ADR-047 through ADR-061
+
+### Forbidden
+
+- Concrete adapters
+- Canonical store access
+- KnowledgeStore
+- Indexing
+- Retrieval
+- Context integration
+
+## Dependencies
+
+- M5.3 accepted
+
+## Applicable ADRs
+
+- ADR-047
+- ADR-048
+- ADR-049
+- ADR-058
+- ADR-059
+
+## Derived-state impact
+
+- None; contracts only.
+
+## Freshness impact
+
+- Ports exchange domain objects that carry freshness metadata.
+
+## Context-budget impact
+
+- None.
+
+## Security impact
+
+- No file, audit, conversation or execution access.
+
+## Acceptance criteria
+
+- [x] `KnowledgeSource` port exists.
+- [x] Source-specific ports exist for FILE, ADR, EXECUTION and CONVERSATION.
+- [x] Ports do not depend on infrastructure.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_ports.py -q
+```
+
+## Result report
+
+- Summary: KnowledgeSource ports implemented.
+- Files changed: `ai_assistant/knowledge/ports.py`, `ai_assistant/knowledge/__init__.py`
+- Test results: focused port tests passed.
+
+### Task M5.4-T2 — KnowledgeSource Port Tests
+
+## Parent milestone
+
+M5.4
+
+## Status
+
+implemented
+
+## Owner role
+
+Test agent
+
+## Objective
+
+Cover abstract port behavior, fake source implementation and infrastructure independence.
+
+## File scope
+
+### Writable
+
+- `tests/test_knowledge_ports.py`
+
+### Read-only
+
+- `ai_assistant/knowledge/ports.py`
+
+### Forbidden
+
+- Weakening tests
+- Concrete adapters
+
+## Dependencies
+
+- M5.4-T1
+
+## Applicable ADRs
+
+- ADR-049
+- ADR-058
+
+## Derived-state impact
+
+- None.
+
+## Freshness impact
+
+- Ensures port implementations return domain objects.
+
+## Context-budget impact
+
+- None.
+
+## Security impact
+
+- Tests no infrastructure dependency leaks.
+
+## Acceptance criteria
+
+- [x] Abstract ports cannot be instantiated.
+- [x] Fake file source implements the contract.
+- [x] Ports have no infrastructure dependency leaks.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_ports.py -q
+```
+
+## Result report
+
+- Summary: KnowledgeSource port tests added.
+- Files changed: `tests/test_knowledge_ports.py`
+- Test results: focused port tests passed.
+
+### Task M5.4-T3 — M5.4 Validation and Review
+
+## Parent milestone
+
+M5.4
+
+## Status
+
+implemented
+
+## Owner role
+
+Supervisor
+
+## Objective
+
+Validate M5.4, update docs and queue manual review without accepting the milestone.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.4.md`
+- `docs/architecture.md`
+
+### Read-only
+
+- repository source and tests
+
+### Forbidden
+
+- Marking M5.4 accepted
+- Starting M5.5
+- ADR status changes
+
+## Dependencies
+
+- M5.4-T1
+- M5.4-T2
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- None.
+
+## Freshness impact
+
+- Documents freshness stays domain-carried only.
+
+## Context-budget impact
+
+- None.
+
+## Security impact
+
+- Confirms no concrete source access was added.
+
+## Acceptance criteria
+
+- [x] M5.4 report exists.
+- [x] Roadmap state marks M5.4 `implemented-awaiting-human-review`.
+- [x] Human review queue contains M5.4 awaiting review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_domain.py tests/test_knowledge_ports.py tests/test_phase4_docs.py -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.4 ready for manual review.
+- Files changed: `.agent/*`, `docs/architecture.md`
+- Test results: M5.4 focused validation, full suite and diff check passed.
+
+---
+
+# Task M5.5-T1 — KnowledgeStore Port
+
+## Parent milestone
+
+M5.5
+
+## Status
+
+implemented
+
+## Owner role
+
+Knowledge architect
+
+## Objective
+
+Define the minimal KnowledgeStore persistence contract for derived documents, chunks, symbols and rebuild.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/knowledge/ports.py`
+- `ai_assistant/knowledge/__init__.py`
+- `tests/test_knowledge_ports.py`
+
+### Read-only
+
+- `ai_assistant/knowledge/domain.py`
+
+### Forbidden
+
+- Concrete source adapters
+- Retrieval, FTS, embeddings or context compiler code
+
+## Dependencies
+
+- M5.4 approval
+
+## Applicable ADRs
+
+- ADR-048
+- ADR-049
+- ADR-058
+
+## Derived-state impact
+
+- Defines clear/delete semantics for rebuildable derived knowledge.
+
+## Freshness impact
+
+- Freshness remains persisted domain data, not computed here.
+
+## Context-budget impact
+
+- None.
+
+## Security impact
+
+- No source reading or sensitive indexing is introduced.
+
+## Acceptance criteria
+
+- [x] KnowledgeStore is abstract.
+- [x] Store methods use Phase 5 domain objects.
+- [x] Port remains infrastructure-free.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_ports.py -q
+```
+
+## Result report
+
+- Summary: KnowledgeStore port added and exported.
+- Files changed: `ai_assistant/knowledge/ports.py`, `ai_assistant/knowledge/__init__.py`, `tests/test_knowledge_ports.py`
+- Test results: focused knowledge port tests passed.
+
+---
+
+# Task M5.5-T2 — SQLiteKnowledgeStore Adapter
+
+## Parent milestone
+
+M5.5
+
+## Status
+
+implemented
+
+## Owner role
+
+Ingestion engineer
+
+## Objective
+
+Persist derived knowledge records in a dedicated SQLite database with separate `knowledge_*` tables.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/infrastructure/storage/sqlite_knowledge.py`
+- `ai_assistant/infrastructure/storage/__init__.py`
+- `ai_assistant/domain/errors.py`
+- `ai_assistant/domain/__init__.py`
+
+### Read-only
+
+- Existing conversation, audit and execution stores
+
+### Forbidden
+
+- Mutating canonical stores
+- External vector database
+- FTS5 or embeddings
+
+## Dependencies
+
+- M5.5-T1
+
+## Applicable ADRs
+
+- ADR-048
+- ADR-049
+- ADR-056
+- ADR-058
+- ADR-059
+
+## Derived-state impact
+
+- Adds rebuildable persistence with `clear()` and document deletion cascades.
+
+## Freshness impact
+
+- Persists freshness status without making stale data eligible for context.
+
+## Context-budget impact
+
+- None.
+
+## Security impact
+
+- Stores only caller-provided derived records; no file scanning is introduced.
+
+## Acceptance criteria
+
+- [x] Documents, chunks and symbols survive process restart.
+- [x] Store tables are separate from conversation, audit and execution tables.
+- [x] Derived state can be deleted and fully cleared.
+- [x] SQLite failures raise `KnowledgeStoreError`.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_sqlite_knowledge_store.py -q
+```
+
+## Result report
+
+- Summary: SQLiteKnowledgeStore implemented.
+- Files changed: `ai_assistant/infrastructure/storage/sqlite_knowledge.py`, exports and errors
+- Test results: focused SQLite knowledge tests passed.
+
+---
+
+# Task M5.5-T3 — M5.5 Validation and Review
+
+## Parent milestone
+
+M5.5
+
+## Status
+
+implemented
+
+## Owner role
+
+Supervisor
+
+## Objective
+
+Validate M5.5, update docs and queue manual review without accepting the milestone.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.5.md`
+- `docs/architecture.md`
+
+### Read-only
+
+- repository source and tests
+
+### Forbidden
+
+- Marking M5.5 accepted
+- Starting M5.6
+- ADR status changes
+
+## Dependencies
+
+- M5.5-T1
+- M5.5-T2
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- Confirms KnowledgeStore is dedicated and rebuildable.
+
+## Freshness impact
+
+- Confirms stale/fresh status is preserved, not relaxed.
+
+## Context-budget impact
+
+- None.
+
+## Security impact
+
+- Confirms no source adapter, watcher or sensitive indexing behavior was added.
+
+## Acceptance criteria
+
+- [x] M5.5 report exists.
+- [x] Roadmap state marks M5.5 `implemented-awaiting-human-review`.
+- [x] Human review queue contains M5.5 awaiting review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_domain.py tests/test_knowledge_ports.py tests/test_sqlite_knowledge_store.py tests/test_phase4_docs.py -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.5 ready for manual review.
+- Files changed: `.agent/*`, `docs/architecture.md`
+- Test results: M5.5 focused validation, full suite and diff check passed.
+
+---
+
+# Task M5.6-T1 — Content Hashing Helpers
+
+## Parent milestone
+
+M5.6
+
+## Status
+
+implemented
+
+## Owner role
+
+Ingestion engineer
+
+## Objective
+
+Provide deterministic SHA-256 helpers for derived knowledge content.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/knowledge/hashing.py`
+- `ai_assistant/knowledge/__init__.py`
+- `tests/test_knowledge_hashing.py`
+
+### Read-only
+
+- `ai_assistant/knowledge/domain.py`
+
+### Forbidden
+
+- Source adapters
+- External hashing dependencies
+
+## Dependencies
+
+- M5.5 approval
+
+## Applicable ADRs
+
+- ADR-048
+- ADR-050
+
+## Derived-state impact
+
+- Provides hash values for derived records; does not mutate stores.
+
+## Freshness impact
+
+- Enables freshness comparisons by content hash.
+
+## Context-budget impact
+
+- None.
+
+## Security impact
+
+- No source reading or sensitive indexing behavior introduced.
+
+## Acceptance criteria
+
+- [x] Text hashing matches UTF-8 byte hashing.
+- [x] Hash changes when content changes.
+- [x] No production dependency added.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_hashing.py -q
+```
+
+## Result report
+
+- Summary: SHA-256 helpers added.
+- Files changed: `ai_assistant/knowledge/hashing.py`, `ai_assistant/knowledge/__init__.py`, `tests/test_knowledge_hashing.py`
+- Test results: focused hashing tests passed.
+
+---
+
+# Task M5.6-T2 — SQLite Freshness Invalidation
+
+## Parent milestone
+
+M5.6
+
+## Status
+
+implemented
+
+## Owner role
+
+Ingestion engineer
+
+## Objective
+
+Allow KnowledgeStore clients to skip unchanged fresh documents and mark changed/deleted derived records stale.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/knowledge/ports.py`
+- `ai_assistant/infrastructure/storage/sqlite_knowledge.py`
+- `tests/test_sqlite_knowledge_store.py`
+
+### Read-only
+
+- ConversationStore, AuditStore and ExecutionStore implementations
+
+### Forbidden
+
+- Mutating canonical stores
+- Deleting canonical sources
+- Context compilation or retrieval
+
+## Dependencies
+
+- M5.6-T1
+
+## Applicable ADRs
+
+- ADR-048
+- ADR-050
+- ADR-058
+- ADR-059
+
+## Derived-state impact
+
+- Marks derived documents/chunks stale; records remain rebuildable.
+
+## Freshness impact
+
+- Stale documents are no longer considered current.
+
+## Context-budget impact
+
+- None.
+
+## Security impact
+
+- Does not read source content or bypass sensitive-file policy.
+
+## Acceptance criteria
+
+- [x] Fresh matching version/hash is current.
+- [x] Missing/wrong version/hash/stale document is not current.
+- [x] Changed document invalidates document and chunks.
+- [x] Missing source URIs are marked stale without touching other source types.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_sqlite_knowledge_store.py -q
+```
+
+## Result report
+
+- Summary: SQLiteKnowledgeStore freshness checks and stale markers added.
+- Files changed: `ai_assistant/knowledge/ports.py`, `ai_assistant/infrastructure/storage/sqlite_knowledge.py`, `tests/test_sqlite_knowledge_store.py`
+- Test results: focused SQLite knowledge tests passed.
+
+---
+
+# Task M5.6-T3 — M5.6 Validation and Review
+
+## Parent milestone
+
+M5.6
+
+## Status
+
+implemented
+
+## Owner role
+
+Supervisor
+
+## Objective
+
+Validate M5.6, update docs and queue manual review without accepting the milestone.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.6.md`
+- `docs/architecture.md`
+
+### Read-only
+
+- repository source and tests
+
+### Forbidden
+
+- Marking M5.6 accepted
+- Starting M5.7
+- ADR status changes
+
+## Dependencies
+
+- M5.6-T1
+- M5.6-T2
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- Confirms invalidation only marks derived KnowledgeStore records stale.
+
+## Freshness impact
+
+- Confirms current checks reject stale records.
+
+## Context-budget impact
+
+- None.
+
+## Security impact
+
+- Confirms no source adapter, watcher or sensitive indexing behavior was added.
+
+## Acceptance criteria
+
+- [x] M5.6 report exists.
+- [x] Roadmap state marks M5.6 `implemented-awaiting-human-review`.
+- [x] Human review queue contains M5.6 awaiting review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_hashing.py tests/test_knowledge_domain.py tests/test_knowledge_ports.py tests/test_sqlite_knowledge_store.py tests/test_phase4_docs.py -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.6 ready for manual review.
+- Files changed: `.agent/*`, `docs/architecture.md`
+- Test results: pending final validation.
+
+---
+
+# Task M5.7-T1 — Text Normalization and Chunking
+
+## Parent milestone
+
+M5.7
+
+## Status
+
+implemented
+
+## Owner role
+
+Ingestion engineer
+
+## Objective
+
+Normalize local text and generate bounded derived KnowledgeChunk records.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/knowledge/chunking.py`
+- `ai_assistant/knowledge/__init__.py`
+- `tests/test_knowledge_chunking.py`
+
+### Read-only
+
+- `ai_assistant/knowledge/domain.py`
+- `ai_assistant/knowledge/hashing.py`
+
+### Forbidden
+
+- Source adapters
+- FTS5, embeddings, retrieval or context compiler code
+- Persisted KnowledgeSymbol generation
+
+## Dependencies
+
+- M5.6 approval
+
+## Applicable ADRs
+
+- ADR-048
+- ADR-050
+- ADR-056
+- ADR-057
+- ADR-058
+
+## Derived-state impact
+
+- Produces rebuildable chunks from caller-provided content.
+
+## Freshness impact
+
+- Chunks inherit default fresh domain status; no stale relaxation.
+
+## Context-budget impact
+
+- Enforces max token count per generated chunk.
+
+## Security impact
+
+- Does not read files, scan sensitive sources or execute tools.
+
+## Acceptance criteria
+
+- [x] Text normalization is deterministic.
+- [x] Markdown headings become section-aware chunks.
+- [x] Python top-level classes/functions become structure-aware units where parseable.
+- [x] Non-structured text uses bounded fallback chunks.
+- [x] Invalid chunking budgets fail explicitly.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_chunking.py -q
+```
+
+## Result report
+
+- Summary: Normalization and chunking implemented.
+- Files changed: `ai_assistant/knowledge/chunking.py`, `ai_assistant/knowledge/__init__.py`, `tests/test_knowledge_chunking.py`
+- Test results: focused chunking tests passed.
+
+---
+
+# Task M5.7-T2 — M5.7 Validation and Review
+
+## Parent milestone
+
+M5.7
+
+## Status
+
+implemented
+
+## Owner role
+
+Supervisor
+
+## Objective
+
+Validate M5.7, update docs and queue manual review without accepting the milestone.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.7.md`
+- `docs/architecture.md`
+
+### Read-only
+
+- repository source and tests
+
+### Forbidden
+
+- Marking M5.7 accepted
+- Starting M5.8
+- ADR status changes
+
+## Dependencies
+
+- M5.7-T1
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- Confirms chunks are derived from explicit input and rebuildable.
+
+## Freshness impact
+
+- Confirms no stale knowledge enters context.
+
+## Context-budget impact
+
+- Confirms generated chunks respect configured token bounds.
+
+## Security impact
+
+- Confirms no source adapter, watcher or sensitive indexing behavior was added.
+
+## Acceptance criteria
+
+- [x] M5.7 report exists.
+- [x] Roadmap state marks M5.7 `implemented-awaiting-human-review`.
+- [x] Human review queue contains M5.7 awaiting review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_chunking.py tests/test_knowledge_hashing.py tests/test_knowledge_domain.py tests/test_knowledge_ports.py tests/test_sqlite_knowledge_store.py tests/test_phase4_docs.py -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.7 ready for manual review.
+- Files changed: `.agent/*`, `docs/architecture.md`
+- Test results: pending final validation.
+
+---
+
+# Task M5.8-T1 — Provenance Metadata
+
+## Parent milestone
+
+M5.8
+
+## Status
+
+implemented
+
+## Owner role
+
+Ingestion engineer
+
+## Objective
+
+Attach source URI, source type, version, document hash and language metadata to derived chunks.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/knowledge/chunking.py`
+- `ai_assistant/knowledge/__init__.py`
+- `tests/test_knowledge_chunking.py`
+
+### Read-only
+
+- `ai_assistant/knowledge/domain.py`
+
+### Forbidden
+
+- Source adapters
+- External language detection dependencies
+- FTS5 or retrieval
+
+## Dependencies
+
+- M5.7 approval
+
+## Applicable ADRs
+
+- ADR-048
+- ADR-049
+- ADR-056
+- ADR-057
+
+## Derived-state impact
+
+- Adds rebuildable provenance metadata to chunks.
+
+## Freshness impact
+
+- None.
+
+## Context-budget impact
+
+- None.
+
+## Security impact
+
+- No file reads or sensitive indexing introduced.
+
+## Acceptance criteria
+
+- [x] Metadata includes path, type, version, document hash and language.
+- [x] Language inference is deterministic and dependency-free.
+- [x] Chunk metadata preserves provenance.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_chunking.py -q
+```
+
+## Result report
+
+- Summary: Provenance metadata added to chunking.
+- Files changed: `ai_assistant/knowledge/chunking.py`, `ai_assistant/knowledge/__init__.py`, `tests/test_knowledge_chunking.py`
+- Test results: focused chunking tests passed.
+
+---
+
+# Task M5.8-T2 — Derived Symbols
+
+## Parent milestone
+
+M5.8
+
+## Status
+
+implemented
+
+## Owner role
+
+Ingestion engineer
+
+## Objective
+
+Derive KnowledgeSymbol records from chunk metadata for Python top-level symbols and Markdown headings.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/knowledge/symbols.py`
+- `ai_assistant/knowledge/__init__.py`
+- `tests/test_knowledge_symbols.py`
+
+### Read-only
+
+- `ai_assistant/knowledge/chunking.py`
+- `ai_assistant/knowledge/domain.py`
+
+### Forbidden
+
+- Persisted symbol indexing changes
+- External parsers
+- FTS5 or retrieval
+
+## Dependencies
+
+- M5.8-T1
+
+## Applicable ADRs
+
+- ADR-048
+- ADR-056
+
+## Derived-state impact
+
+- Produces rebuildable symbols from chunks.
+
+## Freshness impact
+
+- None.
+
+## Context-budget impact
+
+- None.
+
+## Security impact
+
+- No source access or tool execution introduced.
+
+## Acceptance criteria
+
+- [x] Python class/function chunks produce symbols.
+- [x] Markdown heading chunks produce symbols.
+- [x] Plain chunks without symbol metadata produce no symbols.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_symbols.py -q
+```
+
+## Result report
+
+- Summary: Derived symbol extraction added.
+- Files changed: `ai_assistant/knowledge/symbols.py`, `ai_assistant/knowledge/__init__.py`, `tests/test_knowledge_symbols.py`
+- Test results: focused symbol tests passed.
+
+---
+
+# Task M5.8-T3 — M5.8 Validation and Review
+
+## Parent milestone
+
+M5.8
+
+## Status
+
+implemented
+
+## Owner role
+
+Supervisor
+
+## Objective
+
+Validate M5.8, update docs and queue manual review without accepting the milestone.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.8.md`
+- `docs/architecture.md`
+
+### Read-only
+
+- repository source and tests
+
+### Forbidden
+
+- Marking M5.8 accepted
+- Starting M5.9
+- ADR status changes
+
+## Dependencies
+
+- M5.8-T1
+- M5.8-T2
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- Confirms metadata and symbols are derived/rebuildable.
+
+## Freshness impact
+
+- No stale relaxation.
+
+## Context-budget impact
+
+- None.
+
+## Security impact
+
+- Confirms no source adapter, watcher or sensitive indexing behavior was added.
+
+## Acceptance criteria
+
+- [x] M5.8 report exists.
+- [x] Roadmap state marks M5.8 `implemented-awaiting-human-review`.
+- [x] Human review queue contains M5.8 awaiting review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_symbols.py tests/test_knowledge_chunking.py tests/test_knowledge_hashing.py tests/test_knowledge_domain.py tests/test_knowledge_ports.py tests/test_sqlite_knowledge_store.py tests/test_phase4_docs.py -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.8 ready for manual review.
+- Files changed: `.agent/*`, `docs/architecture.md`
+- Test results: pending final validation.
+
+---
+
+# Task M5.9-T1 — FTS5 Schema and Synchronization
+
+## Parent milestone
+
+M5.9
+
+## Status
+
+implemented
+
+## Owner role
+
+Search engineer
+
+## Objective
+
+Add a rebuildable SQLite FTS5 table synchronized with derived chunks.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/infrastructure/storage/sqlite_knowledge.py`
+- `tests/test_sqlite_knowledge_store.py`
+
+### Read-only
+
+- ConversationStore, AuditStore and ExecutionStore implementations
+
+### Forbidden
+
+- External vector DB
+- Embeddings
+- Hybrid retrieval
+- Canonical store mutation
+
+## Dependencies
+
+- M5.8 approval
+
+## Applicable ADRs
+
+- ADR-048
+- ADR-053
+- ADR-058
+
+## Derived-state impact
+
+- Adds rebuildable FTS rows for derived chunks.
+
+## Freshness impact
+
+- Search joins chunk/document freshness and excludes stale records.
+
+## Context-budget impact
+
+- Search respects query limit.
+
+## Security impact
+
+- No file reads or sensitive indexing introduced.
+
+## Acceptance criteria
+
+- [x] FTS5 table exists in KnowledgeStore database.
+- [x] Saving chunks synchronizes FTS rows.
+- [x] Deleting/clearing derived state removes FTS rows.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_sqlite_knowledge_store.py -q
+```
+
+## Result report
+
+- Summary: FTS5 schema and synchronization added.
+- Files changed: `ai_assistant/infrastructure/storage/sqlite_knowledge.py`, `tests/test_sqlite_knowledge_store.py`
+- Test results: focused SQLite knowledge tests passed.
+
+---
+
+# Task M5.9-T2 — Lexical Search Filters
+
+## Parent milestone
+
+M5.9
+
+## Status
+
+implemented
+
+## Owner role
+
+Search engineer
+
+## Objective
+
+Expose lexical search over fresh chunks with source type and metadata filtering.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/knowledge/domain.py`
+- `ai_assistant/knowledge/ports.py`
+- `ai_assistant/infrastructure/storage/sqlite_knowledge.py`
+- `tests/test_knowledge_domain.py`
+- `tests/test_sqlite_knowledge_store.py`
+
+### Read-only
+
+- Retrieval and context compiler future milestones
+
+### Forbidden
+
+- Hybrid ranking
+- Embedding search
+- Context compilation
+
+## Dependencies
+
+- M5.9-T1
+
+## Applicable ADRs
+
+- ADR-051
+- ADR-053
+- ADR-056
+- ADR-057
+- ADR-058
+
+## Derived-state impact
+
+- Returns retrieval candidates from derived chunks only.
+
+## Freshness impact
+
+- Stale documents/chunks are excluded.
+
+## Context-budget impact
+
+- Query limit is enforced.
+
+## Security impact
+
+- FTS query text is escaped as a phrase.
+
+## Acceptance criteria
+
+- [x] Search returns `RetrievalCandidate` provenance.
+- [x] Source type filter works.
+- [x] Metadata filter works.
+- [x] Stale chunks are excluded.
+- [x] FTS syntax-like input does not fail query parsing.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_sqlite_knowledge_store.py tests/test_knowledge_domain.py tests/test_knowledge_ports.py -q
+```
+
+## Result report
+
+- Summary: Lexical search added to KnowledgeStore.
+- Files changed: knowledge domain/ports, SQLite store and tests
+- Test results: focused lexical tests passed.
+
+---
+
+# Task M5.9-T3 — M5.9 Validation and Review
+
+## Parent milestone
+
+M5.9
+
+## Status
+
+implemented
+
+## Owner role
+
+Supervisor
+
+## Objective
+
+Validate M5.9, update docs and queue manual review without accepting the milestone.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.9.md`
+- `docs/architecture.md`
+
+### Read-only
+
+- repository source and tests
+
+### Forbidden
+
+- Marking M5.9 accepted
+- Starting M5.10
+- ADR status changes
+
+## Dependencies
+
+- M5.9-T1
+- M5.9-T2
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- Confirms FTS5 remains rebuildable derived state.
+
+## Freshness impact
+
+- Confirms stale data is excluded from lexical results.
+
+## Context-budget impact
+
+- Confirms query limit applies.
+
+## Security impact
+
+- Confirms no source adapter, watcher or sensitive indexing behavior was added.
+
+## Acceptance criteria
+
+- [x] M5.9 report exists.
+- [x] Roadmap state marks M5.9 `implemented-awaiting-human-review`.
+- [x] Human review queue contains M5.9 awaiting review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_symbols.py tests/test_knowledge_chunking.py tests/test_knowledge_hashing.py tests/test_knowledge_domain.py tests/test_knowledge_ports.py tests/test_sqlite_knowledge_store.py tests/test_phase4_docs.py -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.9 ready for manual review.
+- Files changed: `.agent/*`, `docs/architecture.md`
+- Test results: pending final validation.
+
+---
+
+# Task M5.10-T1 — Knowledge CLI Wiring
+
+## Parent milestone
+
+M5.10
+
+## Status
+
+implemented
+
+## Owner role
+
+Platform integration engineer
+
+## Objective
+
+Wire a manual `knowledge` CLI command without integrating knowledge into the agent runtime.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/bootstrap/config.py`
+- `ai_assistant/bootstrap/container.py`
+- `ai_assistant/interfaces/cli/app.py`
+- `tests/test_config.py`
+- `tests/test_cli_app.py`
+
+### Read-only
+
+- runtime and objective execution code
+
+### Forbidden
+
+- Automatic retrieval in runtime
+- Model-controlled context budgets
+- Background watchers
+
+## Dependencies
+
+- M5.9 approval
+
+## Applicable ADRs
+
+- ADR-048
+- ADR-053
+- ADR-059
+
+## Derived-state impact
+
+- Adds configurable KnowledgeStore database path.
+
+## Freshness impact
+
+- None.
+
+## Context-budget impact
+
+- None.
+
+## Security impact
+
+- CLI is explicit and manual.
+
+## Acceptance criteria
+
+- [x] `AI_ASSISTANT_KNOWLEDGE_DATABASE` is configurable.
+- [x] `python main.py knowledge ...` dispatches separately from objective/runtime.
+- [x] Existing CLI behavior remains compatible.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_config.py tests/test_cli_app.py -q
+```
+
+## Result report
+
+- Summary: Knowledge CLI command wired.
+- Files changed: bootstrap config/container and CLI app
+- Test results: focused CLI/config tests passed.
+
+---
+
+# Task M5.10-T2 — Manual Index/Status/Rebuild/Query
+
+## Parent milestone
+
+M5.10
+
+## Status
+
+implemented
+
+## Owner role
+
+Search engineer
+
+## Objective
+
+Implement explicit manual commands for indexing workspace files, rebuilding derived state, reporting status and querying FTS5.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/interfaces/cli/knowledge.py`
+- `tests/test_knowledge_cli.py`
+
+### Read-only
+
+- `ai_assistant/knowledge/*`
+- `ai_assistant/infrastructure/storage/sqlite_knowledge.py`
+
+### Forbidden
+
+- Watcher daemon
+- Sensitive-file indexing
+- Network retrieval
+- MCP
+
+## Dependencies
+
+- M5.10-T1
+
+## Applicable ADRs
+
+- ADR-048
+- ADR-053
+- ADR-056
+- ADR-058
+- ADR-059
+
+## Derived-state impact
+
+- Manual index/rebuild writes derived KnowledgeStore records only.
+
+## Freshness impact
+
+- Index skips unchanged fresh files by version/hash.
+
+## Context-budget impact
+
+- Index respects `AI_ASSISTANT_MAX_READ_BYTES`.
+
+## Security impact
+
+- Denies absolute, traversal, hidden and sensitive paths.
+
+## Acceptance criteria
+
+- [x] `status` reports document/chunk/symbol counts.
+- [x] `index PATH` indexes explicit files/directories.
+- [x] `rebuild PATH` clears and rebuilds derived knowledge.
+- [x] `query TEXT` returns FTS5 candidates.
+- [x] Hidden/sensitive/oversized files are denied.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_cli.py tests/test_sqlite_knowledge_store.py -q
+```
+
+## Result report
+
+- Summary: Manual knowledge CLI implemented.
+- Files changed: `ai_assistant/interfaces/cli/knowledge.py`, `tests/test_knowledge_cli.py`
+- Test results: focused knowledge CLI tests passed.
+
+---
+
+# Task M5.10-T3 — M5.10 Validation and Review
+
+## Parent milestone
+
+M5.10
+
+## Status
+
+implemented
+
+## Owner role
+
+Supervisor
+
+## Objective
+
+Validate M5.10, update docs and queue manual review without accepting the milestone.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.10.md`
+- `docs/architecture.md`
+
+### Read-only
+
+- repository source and tests
+
+### Forbidden
+
+- Marking M5.10 accepted
+- Starting M5.11
+- ADR status changes
+
+## Dependencies
+
+- M5.10-T1
+- M5.10-T2
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- Confirms manual CLI mutates only KnowledgeStore derived state.
+
+## Freshness impact
+
+- Confirms unchanged files are skipped.
+
+## Context-budget impact
+
+- None.
+
+## Security impact
+
+- Confirms no watcher, sensitive indexing or runtime retrieval was added.
+
+## Acceptance criteria
+
+- [x] M5.10 report exists.
+- [x] Roadmap state marks M5.10 `implemented-awaiting-human-review`.
+- [x] Human review queue contains M5.10 awaiting review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_cli.py tests/test_config.py tests/test_cli_app.py tests/test_sqlite_knowledge_store.py tests/test_phase4_docs.py -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.10 ready for manual review.
+- Files changed: `.agent/*`, `docs/architecture.md`
+- Test results: pending final validation.
+
+---
+
+# Task M5.11-T1 — Embedding Domain and Port
+
+## Parent milestone
+
+M5.11
+
+## Status
+
+implemented
+
+## Owner role
+
+Embedding engineer
+
+## Objective
+
+Define provider-independent embedding domain data and the EmbeddingProvider port.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/knowledge/domain.py`
+- `ai_assistant/knowledge/ports.py`
+- `ai_assistant/knowledge/__init__.py`
+- `tests/test_embedding_provider.py`
+
+### Read-only
+
+- `ai_assistant/application/ports/models.py`
+- `ai_assistant/infrastructure/models/*`
+
+### Forbidden
+
+- Coupling to ModelProvider
+- Embedding storage
+- Similarity search
+
+## Dependencies
+
+- M5.10 approval
+
+## Applicable ADRs
+
+- ADR-052
+- ADR-054
+
+## Derived-state impact
+
+- None; no persistence in this milestone.
+
+## Freshness impact
+
+- None.
+
+## Context-budget impact
+
+- None.
+
+## Security impact
+
+- No source access or network calls introduced.
+
+## Acceptance criteria
+
+- [x] EmbeddingVector validates metadata and dimension.
+- [x] EmbeddingProvider is abstract.
+- [x] EmbeddingProvider is separate from ModelProvider.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_embedding_provider.py -q
+```
+
+## Result report
+
+- Summary: Embedding domain and port added.
+- Files changed: `ai_assistant/knowledge/domain.py`, `ai_assistant/knowledge/ports.py`, exports and tests
+- Test results: focused embedding tests passed.
+
+---
+
+# Task M5.11-T2 — Dummy Embedding Provider
+
+## Parent milestone
+
+M5.11
+
+## Status
+
+implemented
+
+## Owner role
+
+Embedding engineer
+
+## Objective
+
+Provide a deterministic CPU-capable dummy embedding provider for tests.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/infrastructure/embeddings/__init__.py`
+- `ai_assistant/infrastructure/embeddings/dummy.py`
+- `tests/test_embedding_provider.py`
+
+### Read-only
+
+- `ai_assistant/infrastructure/models/*`
+
+### Forbidden
+
+- Production model adapters
+- External embedding dependencies
+- Network calls
+
+## Dependencies
+
+- M5.11-T1
+
+## Applicable ADRs
+
+- ADR-052
+
+## Derived-state impact
+
+- None.
+
+## Freshness impact
+
+- None.
+
+## Context-budget impact
+
+- None.
+
+## Security impact
+
+- Pure local deterministic CPU implementation.
+
+## Acceptance criteria
+
+- [x] Same text produces same vector.
+- [x] Different text produces different vectors.
+- [x] Invalid dimension/text fails explicitly.
+- [x] No ModelProvider dependency.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_embedding_provider.py -q
+```
+
+## Result report
+
+- Summary: DummyEmbeddingProvider added.
+- Files changed: `ai_assistant/infrastructure/embeddings/*`, tests
+- Test results: focused embedding tests passed.
+
+---
+
+# Task M5.11-T3 — M5.11 Validation and Review
+
+## Parent milestone
+
+M5.11
+
+## Status
+
+implemented
+
+## Owner role
+
+Supervisor
+
+## Objective
+
+Validate M5.11, update docs and queue manual review without accepting the milestone.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.11.md`
+- `docs/architecture.md`
+
+### Read-only
+
+- repository source and tests
+
+### Forbidden
+
+- Marking M5.11 accepted
+- Starting M5.12
+- ADR status changes
+
+## Dependencies
+
+- M5.11-T1
+- M5.11-T2
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- Confirms no embedding persistence was added.
+
+## Freshness impact
+
+- None.
+
+## Context-budget impact
+
+- None.
+
+## Security impact
+
+- Confirms no network, external vector DB or ModelProvider coupling was added.
+
+## Acceptance criteria
+
+- [x] M5.11 report exists.
+- [x] Roadmap state marks M5.11 `implemented-awaiting-human-review`.
+- [x] Human review queue contains M5.11 awaiting review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_embedding_provider.py tests/test_knowledge_domain.py tests/test_knowledge_ports.py tests/test_phase4_docs.py -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.11 ready for manual review.
+- Files changed: `.agent/*`, `docs/architecture.md`
+- Test results: pending final validation.
+
+---
+
+# Task M5.12-T1 — Embedding Storage
+
+## Parent milestone
+
+M5.12
+
+## Status
+
+implemented
+
+## Owner role
+
+Embedding engineer
+
+## Objective
+
+Persist versioned local embeddings in the derived SQLite KnowledgeStore.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/knowledge/ports.py`
+- `ai_assistant/infrastructure/storage/sqlite_knowledge.py`
+- `tests/test_sqlite_knowledge_store.py`
+
+### Read-only
+
+- canonical stores and model providers
+
+### Forbidden
+
+- External vector DB
+- ModelProvider coupling
+- Runtime retrieval
+
+## Dependencies
+
+- M5.11 approval
+
+## Applicable ADRs
+
+- ADR-048
+- ADR-052
+- ADR-054
+
+## Derived-state impact
+
+- Adds rebuildable `knowledge_embeddings` rows tied to chunks.
+
+## Freshness impact
+
+- Embeddings cascade with chunk deletion/rebuild.
+
+## Context-budget impact
+
+- None.
+
+## Security impact
+
+- No source access, network call or external dependency introduced.
+
+## Acceptance criteria
+
+- [x] Embeddings persist provider/model/version/dimension metadata.
+- [x] Embeddings reload unchanged.
+- [x] Embeddings are removed when chunks are rebuilt or store is cleared.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_sqlite_knowledge_store.py tests/test_embedding_provider.py -q
+```
+
+## Result report
+
+- Summary: Local embedding persistence added.
+- Files changed: knowledge ports, SQLiteKnowledgeStore and tests
+- Test results: focused storage tests passed.
+
+---
+
+# Task M5.12-T2 — CPU Similarity Search
+
+## Parent milestone
+
+M5.12
+
+## Status
+
+implemented
+
+## Owner role
+
+Retrieval engineer
+
+## Objective
+
+Add bounded CPU cosine similarity over compatible fresh embeddings.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/knowledge/ports.py`
+- `ai_assistant/infrastructure/storage/sqlite_knowledge.py`
+- `tests/test_sqlite_knowledge_store.py`
+
+### Read-only
+
+- `ai_assistant/knowledge/domain.py`
+
+### Forbidden
+
+- Hybrid retriever
+- Deterministic ranker
+- Context compiler
+
+## Dependencies
+
+- M5.12-T1
+
+## Applicable ADRs
+
+- ADR-051
+- ADR-052
+- ADR-054
+- ADR-058
+
+## Derived-state impact
+
+- Reads derived embeddings and returns candidates only.
+
+## Freshness impact
+
+- Excludes stale documents/chunks.
+
+## Context-budget impact
+
+- Enforces result limit.
+
+## Security impact
+
+- Local CPU computation only.
+
+## Acceptance criteria
+
+- [x] Semantic search returns `RetrievalCandidate` provenance.
+- [x] Provider/model/version/dimension mismatch returns no result.
+- [x] Stale chunks are excluded.
+- [x] Invalid limits fail explicitly.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_sqlite_knowledge_store.py -q
+```
+
+## Result report
+
+- Summary: CPU semantic search added.
+- Files changed: SQLiteKnowledgeStore and tests
+- Test results: focused semantic tests passed.
+
+---
+
+# Task M5.12-T3 — M5.12 Validation and Review
+
+## Parent milestone
+
+M5.12
+
+## Status
+
+implemented
+
+## Owner role
+
+Supervisor
+
+## Objective
+
+Validate M5.12, update docs and queue manual review without accepting the milestone.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.12.md`
+- `docs/architecture.md`
+
+### Read-only
+
+- repository source and tests
+
+### Forbidden
+
+- Marking M5.12 accepted
+- Starting M5.13
+- ADR status changes
+
+## Dependencies
+
+- M5.12-T1
+- M5.12-T2
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- Confirms embeddings remain derived and rebuildable.
+
+## Freshness impact
+
+- Confirms stale data is excluded.
+
+## Context-budget impact
+
+- Confirms semantic limit applies.
+
+## Security impact
+
+- Confirms no external vector DB, network call or ModelProvider coupling was added.
+
+## Acceptance criteria
+
+- [x] M5.12 report exists.
+- [x] Roadmap state marks M5.12 `implemented-awaiting-human-review`.
+- [x] Human review queue contains M5.12 awaiting review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_sqlite_knowledge_store.py tests/test_embedding_provider.py tests/test_knowledge_ports.py tests/test_phase4_docs.py -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.12 ready for manual review.
+- Files changed: `.agent/*`, `docs/architecture.md`
+- Test results: pending final validation.
+
+---
+
+# Task M5.13-T1 — Hybrid Retriever
+
+## Parent milestone
+
+M5.13
+
+## Status
+
+implemented
+
+## Owner role
+
+Retrieval engineer
+
+## Objective
+
+Merge lexical, symbol and semantic derived candidates with deduplication and stale exclusion.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/knowledge/retrieval.py`
+- `ai_assistant/knowledge/__init__.py`
+- `tests/test_hybrid_retriever.py`
+
+### Read-only
+
+- `ai_assistant/knowledge/domain.py`
+- `ai_assistant/knowledge/ports.py`
+- `ai_assistant/infrastructure/storage/sqlite_knowledge.py`
+
+### Forbidden
+
+- Deterministic KnowledgeRanker
+- ContextCompiler
+- Runtime integration
+
+## Dependencies
+
+- M5.12 approval
+
+## Applicable ADRs
+
+- ADR-051
+- ADR-052
+- ADR-056
+- ADR-058
+
+## Derived-state impact
+
+- Reads derived store records only.
+
+## Freshness impact
+
+- Excludes stale candidates.
+
+## Context-budget impact
+
+- Enforces query limit.
+
+## Security impact
+
+- No source access, network call or model call introduced.
+
+## Acceptance criteria
+
+- [x] Lexical, symbol and semantic candidates merge.
+- [x] Duplicate chunks are deduplicated.
+- [x] Stale records are excluded.
+- [x] Source filters and limits are respected.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_hybrid_retriever.py tests/test_sqlite_knowledge_store.py tests/test_embedding_provider.py -q
+```
+
+## Result report
+
+- Summary: HybridRetriever implemented.
+- Files changed: `ai_assistant/knowledge/retrieval.py`, exports and tests
+- Test results: focused hybrid retrieval tests passed.
+
+---
+
+# Task M5.13-T2 — M5.13 Validation and Review
+
+## Parent milestone
+
+M5.13
+
+## Status
+
+implemented
+
+## Owner role
+
+Supervisor
+
+## Objective
+
+Validate M5.13, update docs and queue manual review without accepting the milestone.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.13.md`
+- `docs/architecture.md`
+
+### Read-only
+
+- repository source and tests
+
+### Forbidden
+
+- Marking M5.13 accepted
+- Starting M5.14
+- ADR status changes
+
+## Dependencies
+
+- M5.13-T1
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- Confirms retrieval reads derived state only.
+
+## Freshness impact
+
+- Confirms stale records are excluded.
+
+## Context-budget impact
+
+- Confirms query limit applies.
+
+## Security impact
+
+- Confirms no runtime integration, network call or source indexing change was added.
+
+## Acceptance criteria
+
+- [x] M5.13 report exists.
+- [x] Roadmap state marks M5.13 `implemented-awaiting-human-review`.
+- [x] Human review queue contains M5.13 awaiting review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_hybrid_retriever.py tests/test_sqlite_knowledge_store.py tests/test_embedding_provider.py tests/test_phase4_docs.py -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.13 ready for manual review.
+- Files changed: `.agent/*`, `docs/architecture.md`
+- Test results: pending final validation.
+
+---
+
+# Task M5.14-T1 — Deterministic KnowledgeRanker
+
+## Parent milestone
+
+M5.14
+
+## Status
+
+implemented
+
+## Owner role
+
+Ranking engineer
+
+## Objective
+
+Rank retrieval candidates deterministically with inspectable component scores and no LLM reranker.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/knowledge/ranking.py`
+- `ai_assistant/knowledge/__init__.py`
+- `tests/test_knowledge_ranker.py`
+
+### Read-only
+
+- `ai_assistant/knowledge/retrieval.py`
+- `ai_assistant/knowledge/domain.py`
+
+### Forbidden
+
+- LLM reranker
+- ContextCompiler
+- Runtime integration
+
+## Dependencies
+
+- M5.13 approval
+
+## Applicable ADRs
+
+- ADR-051
+- ADR-056
+- ADR-058
+
+## Derived-state impact
+
+- None; ranks candidates in memory.
+
+## Freshness impact
+
+- Excludes stale candidates.
+
+## Context-budget impact
+
+- Enforces rank limit.
+
+## Security impact
+
+- Pure deterministic local computation.
+
+## Acceptance criteria
+
+- [x] Ranked candidates expose component scores.
+- [x] Ranking is deterministic on ties.
+- [x] Stale candidates are excluded.
+- [x] Invalid limits fail explicitly.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_ranker.py tests/test_hybrid_retriever.py tests/test_knowledge_domain.py -q
+```
+
+## Result report
+
+- Summary: KnowledgeRanker implemented.
+- Files changed: `ai_assistant/knowledge/ranking.py`, exports and tests
+- Test results: focused ranker tests passed.
+
+---
+
+# Task M5.14-T2 — M5.14 Validation and Review
+
+## Parent milestone
+
+M5.14
+
+## Status
+
+implemented
+
+## Owner role
+
+Supervisor
+
+## Objective
+
+Validate M5.14, update docs and queue manual review without accepting the milestone.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.14.md`
+- `docs/architecture.md`
+
+### Read-only
+
+- repository source and tests
+
+### Forbidden
+
+- Marking M5.14 accepted
+- Starting M5.15
+- ADR status changes
+
+## Dependencies
+
+- M5.14-T1
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- None.
+
+## Freshness impact
+
+- Confirms stale records are excluded from ranking.
+
+## Context-budget impact
+
+- Confirms ranking limit applies.
+
+## Security impact
+
+- Confirms no model reranking, network call or runtime integration was added.
+
+## Acceptance criteria
+
+- [x] M5.14 report exists.
+- [x] Roadmap state marks M5.14 `implemented-awaiting-human-review`.
+- [x] Human review queue contains M5.14 awaiting review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_ranker.py tests/test_hybrid_retriever.py tests/test_sqlite_knowledge_store.py tests/test_phase4_docs.py -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.14 ready for manual review.
+- Files changed: `.agent/*`, `docs/architecture.md`
+- Test results: pending final validation.
+
+---
+
+# Task M5.15-T1 — ContextCompiler
+
+## Parent milestone
+
+M5.15
+
+## Status
+
+implemented
+
+## Owner role
+
+Context compiler engineer
+
+## Objective
+
+Compile ranked retrieval candidates into bounded CompiledContext with provenance verification.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/knowledge/compiler.py`
+- `ai_assistant/knowledge/__init__.py`
+- `tests/test_context_compiler.py`
+
+### Read-only
+
+- `ai_assistant/knowledge/domain.py`
+- `ai_assistant/knowledge/ranking.py`
+- `ai_assistant/knowledge/ports.py`
+
+### Forbidden
+
+- Planner integration
+- Synthesis integration
+- Runtime context injection
+
+## Dependencies
+
+- M5.14 approval
+
+## Applicable ADRs
+
+- ADR-055
+- ADR-056
+- ADR-057
+- ADR-058
+
+## Derived-state impact
+
+- Reads derived KnowledgeStore chunks only.
+
+## Freshness impact
+
+- Rejects stale or unverifiable knowledge.
+
+## Context-budget impact
+
+- Enforces ContextBudget.
+
+## Security impact
+
+- No source access, network call or model call introduced.
+
+## Acceptance criteria
+
+- [x] Ranked candidates compile to ContextEvidence.
+- [x] Provenance mismatch fails explicitly.
+- [x] Over-budget candidates are omitted.
+- [x] CompiledContext respects token/source/chunk budgets.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_context_compiler.py tests/test_knowledge_ranker.py tests/test_knowledge_domain.py -q
+```
+
+## Result report
+
+- Summary: ContextCompiler implemented.
+- Files changed: `ai_assistant/knowledge/compiler.py`, exports and tests
+- Test results: focused compiler tests passed.
+
+---
+
+# Task M5.15-T2 — M5.15 Validation and Review
+
+## Parent milestone
+
+M5.15
+
+## Status
+
+implemented
+
+## Owner role
+
+Supervisor
+
+## Objective
+
+Validate M5.15, update docs and queue manual review without accepting the milestone.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.15.md`
+- `docs/architecture.md`
+
+### Read-only
+
+- repository source and tests
+
+### Forbidden
+
+- Marking M5.15 accepted
+- Starting M5.16
+- ADR status changes
+
+## Dependencies
+
+- M5.15-T1
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- Confirms compiler reads derived state only.
+
+## Freshness impact
+
+- Confirms stale/unverifiable knowledge cannot enter CompiledContext.
+
+## Context-budget impact
+
+- Confirms platform budgets are enforced.
+
+## Security impact
+
+- Confirms no runtime integration, source read path or model call was added.
+
+## Acceptance criteria
+
+- [x] M5.15 report exists.
+- [x] Roadmap state marks M5.15 `implemented-awaiting-human-review`.
+- [x] Human review queue contains M5.15 awaiting review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_context_compiler.py tests/test_knowledge_ranker.py tests/test_hybrid_retriever.py tests/test_sqlite_knowledge_store.py tests/test_phase4_docs.py -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.15 ready for manual review.
+- Files changed: `.agent/*`, `docs/architecture.md`
+- Test results: pending final validation.
+
+---
+
+# Task M5.16-T1 — Planning Context Provider
+
+## Parent milestone
+
+M5.16
+
+## Status
+
+implemented
+
+## Owner role
+
+Platform integration engineer
+
+## Objective
+
+Assemble bounded planning context from retriever, ranker and compiler for objective planning.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/knowledge/planning.py`
+- `ai_assistant/knowledge/__init__.py`
+- `tests/test_planning_context.py`
+
+### Read-only
+
+- knowledge retrieval/ranking/compiler modules
+
+### Forbidden
+
+- Synthesis integration
+- Runtime conversation integration
+- Model-controlled budgets
+
+## Dependencies
+
+- M5.15 approval
+
+## Applicable ADRs
+
+- ADR-055
+- ADR-056
+- ADR-057
+- ADR-058
+
+## Derived-state impact
+
+- Reads KnowledgeStore only.
+
+## Freshness impact
+
+- Relies on ContextCompiler freshness checks.
+
+## Context-budget impact
+
+- Uses platform-owned ContextBudget.
+
+## Security impact
+
+- No tool execution or source reads introduced.
+
+## Acceptance criteria
+
+- [x] PlanningContextProvider builds CompiledContext for objective descriptions.
+- [x] Context remains bounded and provenance-verified.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_planning_context.py tests/test_context_compiler.py -q
+```
+
+## Result report
+
+- Summary: Planning context provider added.
+- Files changed: `ai_assistant/knowledge/planning.py`, exports and tests
+- Test results: focused planning context tests passed.
+
+---
+
+# Task M5.16-T2 — ModelBackedPlanner Context Payload
+
+## Parent milestone
+
+M5.16
+
+## Status
+
+implemented
+
+## Owner role
+
+Platform integration engineer
+
+## Objective
+
+Pass compiled planning context to ModelBackedPlanner as structured payload while keeping planner output validation unchanged.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/platform/application/planner.py`
+- `ai_assistant/bootstrap/container.py`
+- `tests/test_platform_structured_planner.py`
+- `tests/test_cli_app.py`
+- `tests/test_planning_context.py`
+
+### Read-only
+
+- execution engine and validator
+
+### Forbidden
+
+- Trusting planner output
+- Synthesis integration
+- Conversation runtime injection
+
+## Dependencies
+
+- M5.16-T1
+
+## Applicable ADRs
+
+- ADR-043
+- ADR-055
+- ADR-056
+- ADR-057
+
+## Derived-state impact
+
+- Reads KnowledgeStore only through provider.
+
+## Freshness impact
+
+- Context provider excludes stale/unverifiable evidence.
+
+## Context-budget impact
+
+- Context is precompiled before planner call.
+
+## Security impact
+
+- Planner output remains untrusted and schema-validated.
+
+## Acceptance criteria
+
+- [x] ModelBackedPlanner includes `compiled_context` in user payload.
+- [x] Existing planner JSON validation remains unchanged.
+- [x] Objective engine wiring uses KnowledgeStore-backed provider.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_planning_context.py tests/test_platform_structured_planner.py tests/test_cli_app.py -q
+```
+
+## Result report
+
+- Summary: Planner context payload integration added.
+- Files changed: planner/container and tests
+- Test results: focused planner integration tests passed.
+
+---
+
+# Task M5.16-T3 — M5.16 Validation and Review
+
+## Parent milestone
+
+M5.16
+
+## Status
+
+implemented
+
+## Owner role
+
+Supervisor
+
+## Objective
+
+Validate M5.16, update docs and queue manual review without accepting the milestone.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.16.md`
+- `docs/architecture.md`
+
+### Read-only
+
+- repository source and tests
+
+### Forbidden
+
+- Marking M5.16 accepted
+- Starting M5.17
+- ADR status changes
+
+## Dependencies
+
+- M5.16-T1
+- M5.16-T2
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- Confirms planner integration reads derived KnowledgeStore only.
+
+## Freshness impact
+
+- Confirms compiler freshness guarantees remain in path.
+
+## Context-budget impact
+
+- Confirms context budget remains platform-owned.
+
+## Security impact
+
+- Confirms planner output remains untrusted and no runtime injection was added.
+
+## Acceptance criteria
+
+- [x] M5.16 report exists.
+- [x] Roadmap state marks M5.16 `implemented-awaiting-human-review`.
+- [x] Human review queue contains M5.16 awaiting review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_planning_context.py tests/test_platform_structured_planner.py tests/test_cli_app.py tests/test_context_compiler.py tests/test_phase4_docs.py -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.16 ready for manual review.
+- Files changed: `.agent/*`, `docs/architecture.md`
+- Test results: pending final validation.
+
+---
+
+# Task M5.17-T1 — Synthesis Context Provider
+
+## Parent milestone
+
+M5.17
+
+## Status
+
+implemented
+
+## Owner role
+
+Context compiler engineer
+
+## Objective
+
+Build synthesis context from objective descriptions and compile it with synthesis purpose.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/knowledge/planning.py`
+- `ai_assistant/knowledge/__init__.py`
+- `tests/test_synthesis_context.py`
+
+### Read-only
+
+- knowledge retrieval/ranking/compiler modules
+
+### Forbidden
+
+- Metrics
+- Runtime conversation integration
+- Evaluation relaxation
+
+## Dependencies
+
+- M5.16 approval
+
+## Applicable ADRs
+
+- ADR-055
+- ADR-056
+- ADR-057
+- ADR-058
+
+## Derived-state impact
+
+- Reads KnowledgeStore only.
+
+## Freshness impact
+
+- Relies on ContextCompiler freshness checks.
+
+## Context-budget impact
+
+- Uses platform-owned ContextBudget.
+
+## Security impact
+
+- No tool execution or source reads introduced.
+
+## Acceptance criteria
+
+- [x] SynthesisContextProvider returns context observations from compiled evidence.
+- [x] Context remains bounded and provenance-verified.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_synthesis_context.py tests/test_context_compiler.py -q
+```
+
+## Result report
+
+- Summary: Synthesis context provider added.
+- Files changed: `ai_assistant/knowledge/planning.py`, exports and tests
+- Test results: focused synthesis context tests passed.
+
+---
+
+# Task M5.17-T2 — ExecutionEngine Synthesis Observations
+
+## Parent milestone
+
+M5.17
+
+## Status
+
+implemented
+
+## Owner role
+
+Platform integration engineer
+
+## Objective
+
+Append synthesis context observations to objective execution results without changing evidence or evaluation rules.
+
+## File scope
+
+### Writable
+
+- `ai_assistant/platform/application/engine.py`
+- `ai_assistant/bootstrap/container.py`
+- `tests/test_synthesis_context.py`
+- `tests/test_platform_execution_engine.py`
+
+### Read-only
+
+- `ai_assistant/platform/application/evaluator.py`
+
+### Forbidden
+
+- Modifying evidence from context
+- Changing ObjectiveEvaluator criteria
+- Conversational runtime injection
+
+## Dependencies
+
+- M5.17-T1
+
+## Applicable ADRs
+
+- ADR-044
+- ADR-055
+- ADR-056
+- ADR-058
+
+## Derived-state impact
+
+- Reads derived context only.
+
+## Freshness impact
+
+- Compiler excludes stale/unverifiable knowledge.
+
+## Context-budget impact
+
+- Compiler budget applies.
+
+## Security impact
+
+- Evaluation remains evidence-driven.
+
+## Acceptance criteria
+
+- [x] ExecutionResult observations include context when available.
+- [x] ExecutionResult evidence remains unchanged.
+- [x] ObjectiveEvaluator remains evidence-driven.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_synthesis_context.py tests/test_platform_execution_engine.py -q
+```
+
+## Result report
+
+- Summary: ExecutionEngine synthesis observations added.
+- Files changed: engine/container and tests
+- Test results: focused synthesis integration tests passed.
+
+---
+
+# Task M5.17-T3 — M5.17 Validation and Review
+
+## Parent milestone
+
+M5.17
+
+## Status
+
+implemented
+
+## Owner role
+
+Supervisor
+
+## Objective
+
+Validate M5.17, update docs and queue manual review without accepting the milestone.
+
+## File scope
+
+### Writable
+
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.17.md`
+- `docs/architecture.md`
+
+### Read-only
+
+- repository source and tests
+
+### Forbidden
+
+- Marking M5.17 accepted
+- Starting M5.18
+- ADR status changes
+
+## Dependencies
+
+- M5.17-T1
+- M5.17-T2
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- Confirms synthesis reads derived state only.
+
+## Freshness impact
+
+- Confirms compiler freshness guarantees remain in path.
+
+## Context-budget impact
+
+- Confirms context budget remains platform-owned.
+
+## Security impact
+
+- Confirms evidence and ObjectiveEvaluator behavior are unchanged.
+
+## Acceptance criteria
+
+- [x] M5.17 report exists.
+- [x] Roadmap state marks M5.17 `implemented-awaiting-human-review`.
+- [x] Human review queue contains M5.17 awaiting review.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_synthesis_context.py tests/test_platform_execution_engine.py tests/test_planning_context.py tests/test_context_compiler.py tests/test_phase4_docs.py -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.17 ready for manual review.
+- Files changed: `.agent/*`, `docs/architecture.md`
+- Test results: pending final validation.
+
+---
+
+# M5.18 — Efficiency observability
+
+## Status
+
+implemented-awaiting-human-review
+
+## Supervisor notes
+
+- Marking M5.17 accepted after user approval.
+- Starting M5.18.
+
+## Tasks
+
+### Task M5.18-T1 — Context Metrics
+
+## Milestone
+
+M5.18
+
+## Objective
+
+Record retrieval/context efficiency metrics and reduction ratio without adding persistent metric storage.
+
+## Role
+
+Metrics engineer
+
+## Writable
+
+- `ai_assistant/knowledge/metrics.py`
+- `ai_assistant/knowledge/planning.py`
+- `ai_assistant/knowledge/__init__.py`
+- `tests/test_context_metrics.py`
+- `tests/test_planning_context.py`
+- `tests/test_synthesis_context.py`
+- `docs/architecture.md`
+
+## Read-only
+
+- `ai_assistant/knowledge/domain.py`
+- `ai_assistant/knowledge/retrieval.py`
+- `ai_assistant/knowledge/ranking.py`
+- `ai_assistant/knowledge/compiler.py`
+
+## Forbidden
+
+- Metric persistence
+- Canonical store mutation
+- New production dependency
+- Cache behavior
+- Runtime conversation injection
+
+## Dependencies
+
+- M5.17 accepted
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- Metrics are derived and ephemeral.
+
+## Freshness impact
+
+- Metrics observe compiler output only; freshness guarantees remain unchanged.
+
+## Context-budget impact
+
+- Metrics report compiled token count but do not control budget.
+
+## Security impact
+
+- Metrics contain counts and ratios only, not indexed content.
+
+## Acceptance criteria
+
+- [x] Metrics include candidates, ranked candidates, selected chunks, raw tokens, compiled tokens and reduction ratio.
+- [x] Planning and synthesis providers expose the last metric snapshot.
+- [x] Metrics are logged and not persisted.
+- [x] Focused tests pass.
+- [x] Report exists and manual review is queued.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_context_metrics.py tests/test_planning_context.py tests/test_synthesis_context.py tests/test_context_compiler.py -q
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.18 ready for manual review.
+- Files changed: `ai_assistant/knowledge/*`, tests, docs and `.agent/*`.
+- Test results: focused validation passed; full suite passed; diff check passed.
+
+---
+
+# M5.19 — Security/freshness/regression suite
+
+## Status
+
+implemented-awaiting-human-review
+
+## Supervisor notes
+
+- Marking M5.18 accepted after user approval.
+- Starting M5.19.
+
+## Tasks
+
+### Task M5.19-T1 — Phase 5 Adversarial Coverage
+
+## Milestone
+
+M5.19
+
+## Objective
+
+Add focused adversarial tests for Phase 5 stale, sensitive, malformed, duplicate, budget, provenance and rebuild behavior.
+
+## Role
+
+Security reviewer / Test agent
+
+## Writable
+
+- `tests/test_knowledge_adversarial.py`
+- `ai_assistant/interfaces/cli/knowledge.py`
+- `docs/architecture.md`
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.19.md`
+
+## Read-only
+
+- `ai_assistant/knowledge/*`
+- `ai_assistant/infrastructure/storage/sqlite_knowledge.py`
+- existing tests
+
+## Forbidden
+
+- New production dependency
+- Store coupling
+- Network retrieval
+- Sensitive-file indexing
+- Stale-context relaxation
+- Runtime behavior changes unrelated to explicit malformed document handling
+
+## Dependencies
+
+- M5.18 accepted
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- Confirms KnowledgeStore can be cleared/rebuilt and duplicate chunks fail explicitly.
+
+## Freshness impact
+
+- Confirms stale lexical/semantic results are excluded.
+
+## Context-budget impact
+
+- Confirms budget overflow omits evidence.
+
+## Security impact
+
+- Confirms hidden, sensitive, oversized and malformed documents are denied.
+
+## Acceptance criteria
+
+- [x] Hidden/sensitive/oversized/malformed document indexing is covered.
+- [x] Deleted/rebuild derived-state behavior is covered.
+- [x] Duplicate chunk path is covered.
+- [x] Stale lexical and semantic results are covered.
+- [x] Context budget overflow and provenance mismatch are covered.
+- [x] Phase 1-4 regression tests remain green in focused validation.
+- [x] Full suite passes.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_adversarial.py tests/test_knowledge_cli.py tests/test_sqlite_knowledge_store.py tests/test_context_compiler.py tests/test_hybrid_retriever.py tests/test_knowledge_ranker.py tests/test_planning_context.py tests/test_synthesis_context.py tests/test_context_metrics.py tests/test_agent_runtime.py tests/test_tool_policy.py tests/test_platform_execution_engine.py -q
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.19 ready for manual review.
+- Files changed: knowledge CLI, adversarial tests, docs and `.agent/*`.
+- Test results: focused validation passed; full suite passed; diff check passed.
+
+---
+
+# M5.20 — Functional evaluation
+
+## Status
+
+implemented-awaiting-human-review
+
+## Supervisor notes
+
+- Marking M5.19 accepted after user approval.
+- Starting M5.20.
+
+## Tasks
+
+### Task M5.20-T1 — Objective Metrics Output
+
+## Milestone
+
+M5.20
+
+## Objective
+
+Expose model calls, tool calls, compiled context tokens and latency for manual objective evaluation.
+
+## Role
+
+Integration validator / Metrics engineer
+
+## Writable
+
+- `ai_assistant/platform/application/engine.py`
+- `ai_assistant/platform/application/planner.py`
+- `ai_assistant/interfaces/cli/app.py`
+- `tests/test_cli_app.py`
+- `docs/phase5-functional-evaluation.md`
+- `docs/architecture.md`
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.20.md`
+
+## Read-only
+
+- Knowledge retrieval/compiler/store internals
+- Existing Phase 1-4 tests
+
+## Forbidden
+
+- Automated benchmark gates
+- New production dependency
+- Network retrieval
+- Planner/evaluator relaxation
+- Write exposure to ExecutionEngine
+
+## Dependencies
+
+- M5.19 accepted
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- None; metrics read derived context observations.
+
+## Freshness impact
+
+- None; metrics are emitted after compiler freshness checks.
+
+## Context-budget impact
+
+- Reports compiled token counts without changing budget policy.
+
+## Security impact
+
+- Metrics expose counts and ratios only.
+
+## Acceptance criteria
+
+- [x] Objective CLI can print metrics with `--metrics`.
+- [x] Metrics include duration and context token counts.
+- [x] Existing objective output remains unchanged without `--metrics`.
+- [x] Manual scenarios A and B are documented.
+- [x] Focused validation passes.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_cli_app.py tests/test_platform_execution_engine.py tests/test_planning_context.py tests/test_synthesis_context.py tests/test_context_metrics.py -q
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.20 ready for manual review.
+- Files changed: objective metrics plumbing, CLI, docs and `.agent/*`.
+- Test results: focused validation passed; full suite passed; diff check passed.
+
+---
+
+# M5.21 — Documentation and final review
+
+## Status
+
+implemented-awaiting-human-review
+
+## Supervisor notes
+
+- Marking M5.20 accepted after user approval.
+- Starting M5.21.
+
+## Tasks
+
+### Task M5.21-T1 — Phase 5 Final Documentation
+
+## Milestone
+
+M5.21
+
+## Objective
+
+Update architecture, README, project context and operator docs for Phase 5 final review.
+
+## Role
+
+Documentation agent / Integration validator
+
+## Writable
+
+- `README.md`
+- `context-ai.md`
+- `docs/architecture.md`
+- `docs/knowledge-engine.md`
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.md`
+- `.agent/task-queue.md`
+- `.agent/human-review.md`
+- `.agent/reports/M5.21.md`
+
+## Read-only
+
+- Production source
+- Existing tests
+
+## Forbidden
+
+- Product behavior changes
+- ADR status changes
+- Marking Phase 5 accepted
+- New dependencies
+
+## Dependencies
+
+- M5.20 accepted
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+
+## Derived-state impact
+
+- Documentation only.
+
+## Freshness impact
+
+- Documents final freshness policy.
+
+## Context-budget impact
+
+- Documents final budget policy.
+
+## Security impact
+
+- Documents final exclusions and manual review gate.
+
+## Acceptance criteria
+
+- [x] README describes Phase 5 commands and scope.
+- [x] Architecture describes Phase 5 as implemented.
+- [x] Project context reflects current status and remaining decisions.
+- [x] Operator guide exists for Knowledge Engine.
+- [x] Manual review queue contains M5.21.
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_cli_app.py tests/test_knowledge_cli.py tests/test_context_compiler.py tests/test_planning_context.py tests/test_synthesis_context.py tests/test_context_metrics.py -q
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Result report
+
+- Summary: M5.21 ready for manual review.
+- Files changed: documentation and `.agent/*`.
+- Test results: focused validation passed; full suite passed; diff check passed.
