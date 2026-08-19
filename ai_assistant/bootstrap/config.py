@@ -16,6 +16,8 @@ class AppConfig:
     model: str = ""
     base_url: str = "https://api.openai.com/v1"
     database: str = "assistant.sqlite3"
+    execution_database: str = "assistant_execution.sqlite3"
+    knowledge_database: str = "assistant_knowledge.sqlite3"
     session: str = "default"
     system_prompt: str = "You are a local AI assistant."
     log_level: str = "INFO"
@@ -42,6 +44,14 @@ def load_app_config(env: Mapping[str, str] | None = None) -> AppConfig:
         model=source.get("AI_ASSISTANT_MODEL", ""),
         base_url=source.get("AI_ASSISTANT_BASE_URL", _default_base_url(provider)),
         database=source.get("AI_ASSISTANT_DATABASE", "assistant.sqlite3"),
+        execution_database=source.get(
+            "AI_ASSISTANT_EXECUTION_DATABASE",
+            "assistant_execution.sqlite3",
+        ),
+        knowledge_database=source.get(
+            "AI_ASSISTANT_KNOWLEDGE_DATABASE",
+            "assistant_knowledge.sqlite3",
+        ),
         session=source.get("AI_ASSISTANT_SESSION", "default"),
         system_prompt=source.get(
             "AI_ASSISTANT_SYSTEM_PROMPT", "You are a local AI assistant."

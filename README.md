@@ -8,6 +8,10 @@ Phase 2 adds bounded read-only workspace tools behind policy, path validation, a
 
 Phase 3 adds controlled development tools through the C toolserver: metadata, literal search, Git inspection, approved test/build profiles and bounded atomic writes.
 
+Phase 4 adds the Agent Execution Engine: objective planning, validated read-only DAG execution, budgets, checkpoints, evidence-driven evaluation, observability and adversarial regression coverage.
+
+Phase 5 adds the Context & Knowledge Engine: derived local knowledge, manual indexing, FTS5 lexical retrieval, local embeddings, hybrid retrieval, context compilation, objective integration, metrics and functional evaluation support.
+
 ## Requirements
 
 - Python 3.12+
@@ -41,6 +45,8 @@ Configuration is loaded once at bootstrap from environment variables.
 | `AI_ASSISTANT_MODEL` | empty | Provider model name |
 | `AI_ASSISTANT_BASE_URL` | provider-specific | Ollama or OpenAI-compatible base URL |
 | `AI_ASSISTANT_DATABASE` | `assistant.sqlite3` | SQLite database path |
+| `AI_ASSISTANT_EXECUTION_DATABASE` | `assistant_execution.sqlite3` | Separate SQLite execution database path |
+| `AI_ASSISTANT_KNOWLEDGE_DATABASE` | `assistant_knowledge.sqlite3` | Separate derived SQLite knowledge database path |
 | `AI_ASSISTANT_SESSION` | `default` | Conversation session ID |
 | `AI_ASSISTANT_SYSTEM_PROMPT` | `You are a local AI assistant.` | System prompt |
 | `AI_ASSISTANT_LOG_LEVEL` | `INFO` | Python logging level |
@@ -96,6 +102,38 @@ AI_ASSISTANT_CONTEXT_LIMIT=2048 \
 python main.py
 ```
 
+Run an objective through the Phase 4 execution path:
+
+```bash
+AI_ASSISTANT_PROVIDER=ollama \
+AI_ASSISTANT_MODEL=blacksmith-tools \
+AI_ASSISTANT_WORKSPACE="$PWD" \
+AI_ASSISTANT_TOOL_EXECUTION=true \
+python main.py objective "Inspect repository status"
+```
+
+To inspect the raw planner response when a local model fails to produce a valid plan:
+
+```bash
+python main.py objective --verbose "Inspect repository status"
+```
+
+To include Phase 5 objective metrics:
+
+```bash
+python main.py objective --metrics "Explain why ExecutionEngine cannot write files"
+```
+
+Manual knowledge indexing:
+
+```bash
+AI_ASSISTANT_WORKSPACE="$PWD" python main.py knowledge status
+AI_ASSISTANT_WORKSPACE="$PWD" python main.py knowledge rebuild .
+AI_ASSISTANT_WORKSPACE="$PWD" python main.py knowledge query "ExecutionEngine"
+```
+
+The KnowledgeStore is derived and rebuildable. It stays separate from conversation, audit and execution stores.
+
 When tools are enabled, bootstrap appends the local tool-call contract to the system prompt. For deterministic manual testing, paste a tool call directly:
 
 ```json
@@ -149,6 +187,8 @@ Package responsibilities:
 - `ai_assistant/application/`: runtime, context building, tool-call interpretation and ports.
 - `ai_assistant/infrastructure/`: model providers and memory stores.
 - `ai_assistant/infrastructure/tools/`: local and Unix socket tool executors.
+- `ai_assistant/platform/`: objective, plan, execution, budget, checkpoint and evaluation services.
+- `ai_assistant/knowledge/`: derived knowledge domain, ports, chunking, retrieval, ranking, context compilation and metrics.
 - `ai_assistant/interfaces/`: CLI adapter.
 - `ai_assistant/bootstrap/`: composition root and environment configuration.
 - `ai_assistant/agent/`, `ai_assistant/cli/`, `ai_assistant/storage/`: compatibility exports.
@@ -266,6 +306,61 @@ Still out of scope:
 - Arbitrary shell/process execution, package installation and network tools
 - Persistent global approvals
 - Multiple autonomous tool rounds
+
+## Phase 4 Scope
+
+Implemented:
+
+- Explicit objective CLI: `python main.py objective "..."`
+- Provider-neutral `Objective`, `Plan`, `PlatformTask`, `ExecutionRecord`, `ExecutionBudget`, `Checkpoint`, `ExecutionResult` and `EvaluationResult`
+- `ModelBackedPlanner` with strict JSON plan contract and tolerant local-model parsing for common JSON wrappers
+- `CapabilityRegistry` mapping abstract read-only capabilities to approved tools
+- `PlanValidator` for IDs, dependencies, cycles, capabilities, arguments and task budgets
+- Immutable execution graph and deterministic sequential scheduler
+- Platform-owned budget accounting with `max_writes=0` and `max_replans=0`
+- Dedicated `SQLiteExecutionStore`, separate from conversation and audit
+- Logical checkpoints that store metadata only
+- Evidence-driven objective evaluator
+- Metadata-only execution observability
+- Phase 4 adversarial and Phase 1-3 regression coverage
+
+Still out of scope:
+
+- Autonomous write
+- Retry, replanning, parallel execution and subagents
+- Filesystem rollback snapshots
+- Dynamic capabilities, remote executors, shell and network tools
+- Semantic user memory, automatic skills, MCP, watcher daemon and network retrieval
+
+## Phase 5 Scope
+
+Phase 5 is the Context & Knowledge Engine.
+
+Objective: reduce the work required from the main LLM by transforming local data into indexed, retrievable, versioned knowledge that can be compiled into high-relevance context.
+
+Implemented:
+
+- Derived `SQLiteKnowledgeStore`, separate from canonical stores.
+- Manual `knowledge status|index|rebuild|query` CLI.
+- Hashing, freshness tracking and rebuild lifecycle.
+- Normalization, chunking, metadata and symbol extraction.
+- SQLite FTS5 lexical retrieval.
+- CPU-capable dummy `EmbeddingProvider` and local embedding storage.
+- Bounded semantic similarity and `HybridRetriever`.
+- Deterministic `KnowledgeRanker`.
+- `ContextCompiler` with provenance and `ContextBudget`.
+- Planning and synthesis integration for objective execution.
+- Context metrics and `objective --metrics`.
+- Security, freshness and Phase 1-4 regression coverage.
+
+Still out of scope:
+
+- Semantic long-term user memory.
+- Automatic skill generation.
+- MCP.
+- Network retrieval.
+- External vector database.
+- Filesystem watcher daemon.
 
 ## ADRs
 

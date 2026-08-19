@@ -58,3 +58,29 @@ Historical ADRs are never deleted or silently rewritten.
 | ADR-033 | Search Text Limits and Redaction | Implemented |
 | ADR-034 | Audit Retention and Manual Purge | Implemented |
 | ADR-035 | Process Output, Timeout and Environment Limits | Implemented |
+| ADR-036 | Agent Execution Platform Direction | Implemented |
+| ADR-037 | Objective, Plan, Task and Execution Models | Implemented |
+| ADR-038 | Capability Registry | Implemented |
+| ADR-039 | Execution Graph Validation | Implemented |
+| ADR-040 | Deterministic Sequential Scheduler | Implemented |
+| ADR-041 | Execution Budgets | Implemented |
+| ADR-042 | Execution State Persistence | Implemented |
+| ADR-043 | Structured Planner Contract | Implemented |
+| ADR-044 | Objective Evaluation | Implemented |
+| ADR-045 | Logical Checkpoint Semantics | Implemented |
+| ADR-046 | Read-Only Multi-Step Phase 4 | Implemented |
+| ADR-047 | Context & Knowledge Engine | Accepted |
+| ADR-048 | KnowledgeStore Is Derived State | Accepted |
+| ADR-049 | Knowledge Source Model | Accepted |
+| ADR-050 | Incremental Content-Hash Indexing | Accepted |
+| ADR-051 | Hybrid Retrieval | Accepted |
+| ADR-052 | EmbeddingProvider Separation | Accepted |
+| ADR-053 | SQLite FTS5 as Initial Lexical Index | Accepted |
+| ADR-054 | Local Embedding Storage | Accepted |
+| ADR-055 | Context Compilation | Accepted |
+| ADR-056 | Context Provenance | Accepted |
+| ADR-057 | Context Budgets | Accepted |
+| ADR-058 | Stale Knowledge Handling | Accepted |
+| ADR-059 | Manual Index Lifecycle | Accepted |
+| ADR-060 | No Semantic Long-Term Memory in Phase 5 | Accepted |
+| ADR-061 | No Automatic Skill Generation in Phase 5 | Accepted |

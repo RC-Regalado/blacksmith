@@ -33,6 +33,14 @@ class ToolAuditStoreError(AssistantError):
     """Tool audit persistence failed."""
 
 
+class ExecutionStoreError(AssistantError):
+    """Execution persistence failed."""
+
+
+class KnowledgeStoreError(AssistantError):
+    """Knowledge persistence failed."""
+
+
 class InvalidMessageError(AssistantError):
     """A message failed validation."""
 
@@ -43,3 +51,7 @@ class InvalidSessionError(AssistantError):
 
 class InvalidToolCallError(AssistantError):
     """A declarative tool call failed validation."""
+
+
+class InvalidKnowledgeError(AssistantError):
+    """A knowledge domain object failed validation."""

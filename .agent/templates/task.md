@@ -1,73 +1,29 @@
 # Task <TASK-ID> — <TITLE>
-
-## Parent milestone
-
+## Milestone
 <MILESTONE-ID>
-
-## Status
-
-queued
-
-## Owner role
-
+## Role
 <ROLE>
-
 ## Objective
-
-<ONE VERIFIABLE OUTCOME>
-
-## Scope
-
-- 
-
-## Explicit exclusions
-
-- 
-
-## File scope
-
-### Writable
-
-- 
-
-### Read-only
-
-- 
-
-### Forbidden
-
-- `.agent/roadmap-state.md`
-- `.agent/task-queue.md`
-- `.agent/decisions.md`
-
+<VERIFIABLE OUTCOME>
+## Writable files
+-
+## Read-only files
+-
 ## Dependencies
-
-- 
-
-## Applicable ADRs
-
-- 
-
+-
+## ADRs
+-
+## Derived-state impact
+-
+## Freshness impact
+-
+## Context-budget impact
+-
+## Security impact
+-
 ## Acceptance criteria
-
-- [ ] 
-
-## Validation commands
-
+- [ ]
+## Validation
 ```bash
 # exact commands
 ```
-
-## Risks
-
-- 
-
-## Result report
-
-- Summary:
-- Files changed:
-- Tests run:
-- Test results:
-- Assumptions:
-- Remaining issues:
-- Recommended follow-up:
