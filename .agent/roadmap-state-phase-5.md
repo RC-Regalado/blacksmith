@@ -9,7 +9,7 @@ Phase 5: Context & Knowledge Engine
 ## Current milestone
 - ID: M5.21
 - Name: Documentation and final review
-- Status: implemented-awaiting-human-review
+- Status: accepted
 
 ## Baseline
 - Date: 2026-08-17
@@ -23,9 +23,9 @@ Phase 5: Context & Knowledge Engine
 - Corrected synthesis/evaluation verification: objective CLI has deterministic sanitized `Summary` observations for Makefile and CMake evidence; evaluation remains evidence-driven.
 - ADR verification: ADR-001 through ADR-046 are Implemented; ADR-047 through ADR-061 are Accepted after human approval.
 - Existing failures: none observed in baseline validation.
-- Notes: M5.21 updates documentation and final review state only. Phase 5 still requires manual final acceptance.
+- Notes: Phase 5 accepted by human review. No next phase is active yet.
 
 ## Last update
 - Date: 2026-08-18
-- Summary: M5.21 updated README, architecture, context and Knowledge Engine operator documentation.
-- Next action: human review of M5.21 and final Phase 5 acceptance decision.
+- Summary: Phase 5 accepted after M5.21 manual approval.
+- Next action: prepare the next phase only after a new approved roadmap/gate.

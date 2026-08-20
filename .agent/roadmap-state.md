@@ -138,7 +138,7 @@ Phase 5: Context & Knowledge Engine
 | M5.18 | Efficiency observability | accepted | — | `.agent/reports/M5.18.md` | approved |
 | M5.19 | Security/freshness/regression suite | accepted | — | `.agent/reports/M5.19.md` | approved |
 | M5.20 | Functional evaluation | accepted | — | `.agent/reports/M5.20.md` | approved |
-| M5.21 | Documentation and final review | implemented-awaiting-human-review | — | `.agent/reports/M5.21.md` | awaiting-review |
+| M5.21 | Documentation and final review | accepted | — | `.agent/reports/M5.21.md` | approved |
 
 ## Current baseline
 
@@ -174,5 +174,5 @@ Record before Phase 3 implementation:
 ## Last supervisor update
 
 - Date: 2026-08-18
-- Summary: M5.21 updated final Phase 5 documentation, operator guidance and project context.
-- Next action: human review of M5.21 and final Phase 5 acceptance decision.
+- Summary: Phase 5 accepted after human approval of M5.21.
+- Next action: prepare the next phase only after a new approved roadmap/gate.

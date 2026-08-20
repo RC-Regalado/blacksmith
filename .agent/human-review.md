@@ -103,7 +103,7 @@ Generated changes are provisional until recorded here.
 | M5.18 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "Aprobado, pasa al M5.19". Efficiency observability accepted. |
 | M5.19 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "El M5.19 queda aprobado, pasa al M5.20". Security/freshness/regression suite accepted. |
 | M5.20 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "Aprobado, pasa al M5.21". Functional evaluation accepted. |
-| M5.21 | implemented-awaiting-human-review | awaiting-review | User | 2026-08-18 | Documentation and final review prepared; final Phase 5 acceptance pending. |
+| M5.21 | implemented-awaiting-human-review | approved | User | 2026-08-18 | User confirmed: "Fase 5 aceptada". Documentation and final Phase 5 review accepted. |
 
 ## Approval gates
 

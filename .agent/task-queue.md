@@ -16446,7 +16446,7 @@ git diff --check
 
 ## Status
 
-implemented-awaiting-human-review
+accepted
 
 ## Supervisor notes
 
@@ -16843,3 +16843,4 @@ git diff --check
 - Summary: M5.21 ready for manual review.
 - Files changed: documentation and `.agent/*`.
 - Test results: focused validation passed; full suite passed; diff check passed.
+- Human review: approved; Phase 5 accepted.

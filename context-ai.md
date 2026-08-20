@@ -12,7 +12,7 @@ Phase 1, Phase 2, Phase 3 y Phase 4 están implementadas y aceptadas.
 
 Phase 4 quedó aceptada tras revisión humana final de M4.18.
 
-Phase 5 está implementada hasta M5.21 y queda pendiente de aprobación humana final.
+Phase 5 está implementada y aceptada tras revisión humana final.
 
 ## Phase 1 — Python Core
 
@@ -204,9 +204,9 @@ Objetivo:
 
 Estado:
 
-- M5.1 a M5.20 aceptados por revisión humana.
-- M5.21 implementado y pendiente de revisión humana final.
-- Phase 5 no debe marcarse aceptada sin aprobación manual.
+- M5.1 a M5.21 aceptados por revisión humana.
+- Phase 5 cerrada y aceptada.
+- No hay siguiente fase activa todavía.
 
 ## Datos disponibles tras Phase 5
 
@@ -231,7 +231,6 @@ Estado:
 
 ## Decisiones faltantes
 
-- Aprobar manualmente M5.21 y cierre de Phase 5.
 - Decidir la siguiente fase del producto.
 - Decidir si el chat conversacional normal debe usar contexto indexado; hoy solo `objective` lo consume.
 - Decidir si se agregan embeddings productivos reales; hoy el provider incluido para pruebas es dummy CPU-only.
