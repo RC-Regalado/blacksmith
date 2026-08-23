@@ -1,7 +1,0 @@
-[Unit]
-Description=Revisión diaria de Gmail para facturas y gastos
-
-[Service]
-Type=oneshot
-WorkingDirectory=/home/TU_USUARIO/gmail-invoice-checker
-ExecStart=/home/TU_USUARIO/gmail-invoice-checker/venv/bin/python3 /home/TU_USUARIO/gmail-invoice-checker/gmail_invoice_checker.py

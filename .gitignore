@@ -21,3 +21,6 @@ __pycache__/
 c_toolserver/build/
 
 /logs/
+
+# Repositorio de pruebas
+/email/

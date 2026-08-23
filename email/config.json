@@ -1,5 +1,0 @@
-{
-  "rest_endpoint": "https://tu-servidor.com/api/facturas",
-  "gmail_query": "newer_than:1d (factura OR invoice OR consumo OR recibo OR \"estado de cuenta\" OR pago)",
-  "max_results": 50
-}
