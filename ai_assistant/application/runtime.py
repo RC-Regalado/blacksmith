@@ -6,9 +6,11 @@ import logging
 from time import perf_counter
 
 from ai_assistant.application.context import ContextBuilder
+from ai_assistant.application.conversation_context import ConversationContextService
 from ai_assistant.application.ports.memory import ConversationMemory
 from ai_assistant.application.ports.models import ModelProvider
-from ai_assistant.application.ports.tools import ToolCatalog
+from ai_assistant.application.ports.tools import ToolCatalog, ToolDiagnosticLogger
+from ai_assistant.application.tool_diagnostics import ToolLoopDiagnostics
 from ai_assistant.application.tool_coordinator import ToolExecutionCoordinator
 from ai_assistant.application.tool_calls import ToolCallDetector
 from ai_assistant.domain.message import Message
@@ -19,6 +21,7 @@ from ai_assistant.domain.tools import (
     ToolExecutionResult,
     ToolPermission,
 )
+from ai_assistant.knowledge.metrics import ContextMetrics
 
 
 logger = logging.getLogger(__name__)
@@ -30,14 +33,21 @@ class AgentRuntime:
     memory: ConversationMemory
     model: ModelProvider
     tool_detector: ToolCallDetector
+    conversation_context: ConversationContextService | None = None
     tool_catalog: ToolCatalog | None = None
     tool_coordinator: ToolExecutionCoordinator | None = None
+    tool_diagnostics: ToolDiagnosticLogger | None = None
+    model_provider_name: str = "unknown"
+    model_name: str = "unknown"
     tool_timeout_seconds: float = 5.0
+    include_knowledge_context: bool = False
     session_id: SessionId = DEFAULT_SESSION_ID
     last_tool_plan: ToolCallPlan = field(
         default_factory=lambda: ToolCallPlan(has_tool_call=False),
         init=False,
     )
+    last_context_diagnostic: str | None = field(default=None, init=False)
+    last_context_metrics: ContextMetrics | None = field(default=None, init=False)
 
     def __post_init__(self) -> None:
         self.session_id = validate_session_id(self.session_id)
@@ -45,21 +55,35 @@ class AgentRuntime:
     def respond(self, user_input: str) -> Message:
         started = perf_counter()
         logger.info("agent turn started session_id=%s", self.session_id)
-        context = self.context_builder.build(
+        context_service = self.conversation_context or ConversationContextService(self.context_builder)
+        context = context_service.build_with_retrieval(
             self.memory.history(self.session_id),
             user_input,
+            include_knowledge=self.include_knowledge_context,
         )
+        self.last_context_diagnostic = context_service.last_diagnostic
+        self.last_context_metrics = context_service.last_metrics
         try:
             direct_plan = self.tool_detector.detect(
                 Message(role="assistant", content=user_input)
             )
             if direct_plan.has_tool_call and self.tool_coordinator:
                 self.last_tool_plan = direct_plan
+                request = self._tool_request()
+                diagnostics = self._diagnostics()
+                diagnostics.requested(request, round_index=1, tool_call_count=1)
+                tool_started = perf_counter()
+                result = self.tool_coordinator.execute(request)
+                diagnostics.completed(
+                    request,
+                    result,
+                    round_index=1,
+                    tool_call_count=1,
+                    duration_ms=(perf_counter() - tool_started) * 1000,
+                )
                 response = Message(
                     role="assistant",
-                    content=_tool_result_content(
-                        self.tool_coordinator.execute(self._tool_request())
-                    ),
+                    content=_tool_result_content(result),
                 )
                 self._persist_turn(user_input, response)
                 return response
@@ -91,7 +115,18 @@ class AgentRuntime:
         context: list[Message],
         tool_request_message: Message,
     ) -> Message:
-        tool_result = self.tool_coordinator.execute(self._tool_request())
+        request = self._tool_request()
+        diagnostics = self._diagnostics()
+        diagnostics.requested(request, round_index=1, tool_call_count=1)
+        tool_started = perf_counter()
+        tool_result = self.tool_coordinator.execute(request)
+        diagnostics.completed(
+            request,
+            tool_result,
+            round_index=1,
+            tool_call_count=1,
+            duration_ms=(perf_counter() - tool_started) * 1000,
+        )
         tool_message = Message(
             role="tool",
             content=_tool_result_content(tool_result),
@@ -101,6 +136,20 @@ class AgentRuntime:
         response = self.model.chat([*context, tool_request_message, tool_message])
         final_plan = self.tool_detector.detect(response)
         if final_plan.has_tool_call:
+            self.last_tool_plan = final_plan
+            rejected_request = self._tool_request()
+            diagnostics.requested(
+                rejected_request,
+                round_index=2,
+                tool_call_count=2,
+            )
+            diagnostics.rejected(
+                rejected_request,
+                round_index=2,
+                tool_call_count=2,
+                code="tool_round_limit_reached",
+                message="Tool round limit reached.",
+            )
             response = Message(
                 role="assistant",
                 content="Tool round limit reached; no additional tool was executed.",
@@ -141,6 +190,13 @@ class AgentRuntime:
                 Message(role="user", content=user_input),
                 response,
             ],
+        )
+
+    def _diagnostics(self) -> ToolLoopDiagnostics:
+        return ToolLoopDiagnostics(
+            self.tool_diagnostics,
+            self.model_provider_name,
+            self.model_name,
         )
 
 

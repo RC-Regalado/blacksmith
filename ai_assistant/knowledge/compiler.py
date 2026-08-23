@@ -35,6 +35,13 @@ class ContextCompiler:
             tokens += item.candidate.token_count
         return CompiledContext(purpose, tuple(evidence), budget)
 
+    def compile_conversation_context(
+        self,
+        ranked: tuple[RankedCandidate, ...],
+        budget: ContextBudget,
+    ) -> CompiledContext:
+        return self.compile(ContextPurpose.CONVERSATION, ranked, budget)
+
     def _chunk_for(self, item: RankedCandidate) -> KnowledgeChunk:
         for chunk in self._store.chunks_for(item.candidate.document_id):
             if chunk.chunk_id == item.candidate.chunk_id:

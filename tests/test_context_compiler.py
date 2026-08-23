@@ -68,6 +68,17 @@ def test_context_compiler_fails_on_stale_candidate(tmp_path) -> None:
     assert context.evidence == ()
 
 
+def test_context_compiler_builds_distinct_conversation_context(tmp_path) -> None:
+    store = _store(tmp_path)
+    ranked = KnowledgeRanker().rank((_candidate("chunk-1", 2),), 1)
+
+    context = ContextCompiler(store).compile_conversation_context(ranked, ContextBudget())
+
+    assert context.purpose == ContextPurpose.CONVERSATION
+    assert context.evidence[0].candidate.chunk_id == "chunk-1"
+    assert context.evidence[0].text == "blacksmith setup"
+
+
 def _store(tmp_path) -> SQLiteKnowledgeStore:
     store = SQLiteKnowledgeStore(tmp_path / "knowledge.sqlite3")
     store.save_document(KnowledgeDocument("doc-1", KnowledgeSourceType.FILE, "README.md", "v1", "doc-hash"))

@@ -1,6 +1,6 @@
 # ADR-060 — No Semantic Long-Term Memory in Phase 5
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-08-17
 - Deciders: Project owner
 

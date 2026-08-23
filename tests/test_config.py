@@ -48,6 +48,9 @@ def test_load_app_config_reads_supported_environment_values() -> None:
             "AI_ASSISTANT_AUDIT_AUTO_PURGE": "true",
             "AI_ASSISTANT_TOOL_EXECUTOR": "local",
             "AI_ASSISTANT_TOOL_SOCKET": "/tmp/tool.sock",
+            "AI_ASSISTANT_TOOL_LOG_DIR": "/tmp/tool-logs",
+            "AI_ASSISTANT_CONTEXT_ENGINE": "true",
+            "AI_ASSISTANT_SHOW_METRICS": "true",
             "OPENAI_API_KEY": "secret",
         }
     )
@@ -73,6 +76,9 @@ def test_load_app_config_reads_supported_environment_values() -> None:
     assert config.audit_auto_purge is True
     assert config.tool_executor == "local"
     assert config.tool_socket == "/tmp/tool.sock"
+    assert config.tool_log_dir == "/tmp/tool-logs"
+    assert config.context_engine is True
+    assert config.show_metrics is True
     assert config.api_key == "secret"
 
 

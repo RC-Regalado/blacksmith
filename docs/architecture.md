@@ -26,6 +26,12 @@ El documento distingue explícitamente entre:
 
 ### 2.1 Fase actual
 
+**Phase 5.1: Conversational Platform Integration**
+
+Phase 5.1 connects the existing chat, objective, tool-policy and derived knowledge capabilities through a unified CLI. Chat context remains opt-in through `--context` or `AI_ASSISTANT_CONTEXT_ENGINE=true`; ordinary chat preserves the Phase 1-5 behavior. `ConversationContextService` and the conversation compiler are separate from planning and synthesis context, and a deterministic retrieval policy bypasses indexed knowledge for volatile live-state questions. Knowledge remains manually managed, rebuildable derived state, and live capabilities remain authoritative.
+
+The integration exposes bounded, sanitized metrics and explicit empty/stale knowledge diagnostics. It does not add MCP, network retrieval, semantic long-term memory, automatic skills, background rebuilds or an external vector database.
+
 **Phase 4: Agent Execution Engine**
 
 Phase 1, Phase 2, Phase 3 y Phase 4 están implementadas. El producto ya funciona como asistente local-first y como plataforma de ejecución de objetivos read-only.
@@ -68,7 +74,10 @@ No forman parte de Phase 4:
 - Escritura autónoma.
 - Reintentos, replanning, paralelismo y subagentes en ejecución autónoma.
 
-La siguiente fase prevista es **Context & Knowledge Engine**. Su objetivo será reducir el trabajo del LLM principal transformando datos locales en conocimiento indexado, recuperable, versionado y compilable en contexto de alta relevancia.
+The current architecture includes the Phase 5 Context & Knowledge Engine and
+the Phase 5.1 conversational integration described above. Future work must
+extend those explicit ports without making derived knowledge authoritative for
+volatile live state.
 
 ---
 

@@ -3,6 +3,7 @@
 import pytest
 
 from ai_assistant.agent.context import ContextBuilder
+from ai_assistant.application.conversation_context import ConversationContextService
 from ai_assistant.application.ports.memory import (
     ConversationMemory,
     SessionId,
@@ -18,6 +19,8 @@ from ai_assistant.domain.tools import (
     ToolExecutionStatus,
     ToolPermission,
 )
+from ai_assistant.knowledge import CompiledContext, ContextBudget, ContextPurpose
+from ai_assistant.knowledge import ConversationRetrievalPolicy
 
 
 pytestmark = pytest.mark.unit
@@ -258,6 +261,80 @@ def test_runtime_derives_tool_permission_from_catalog() -> None:
     assert coordinator.requests[0].permission == ToolPermission.EXECUTE_PROJECT
 
 
+def test_runtime_context_enabled_preserves_tool_round() -> None:
+    provider = EmptyContextProvider()
+    coordinator = FakeToolCoordinator(
+        ToolExecutionResult(
+            request_id="alpha:git_status",
+            tool_name="git_status",
+            status=ToolExecutionStatus.SUCCESS,
+            content={"entries": []},
+        )
+    )
+    runtime = AgentRuntime(
+        context_builder=ContextBuilder(system_prompt="System prompt"),
+        conversation_context=ConversationContextService(
+            ContextBuilder(system_prompt="System prompt"),
+            context_provider=provider,
+            retrieval_policy=AllowPolicy(),
+        ),
+        memory=FakeConversationStore(),
+        model=SequenceModel(
+            [
+                '{"tool_call":{"name":"git_status","arguments":{"path":"."}}}',
+                "Final answer",
+            ]
+        ),
+        tool_detector=ToolCallDetector(),
+        tool_catalog=StaticToolCatalog(),
+        tool_coordinator=coordinator,
+        include_knowledge_context=True,
+        session_id="alpha",
+    )
+
+    response = runtime.respond("Explain project architecture")
+
+    assert response.content == "Final answer"
+    assert provider.calls == 1
+    assert coordinator.requests[0].tool_name == "git_status"
+    assert len(coordinator.requests) == 1
+
+
+def test_runtime_context_enabled_live_state_bypasses_retrieval_before_tool_call() -> None:
+    provider = EmptyContextProvider()
+    runtime = AgentRuntime(
+        context_builder=ContextBuilder(system_prompt="System prompt"),
+        conversation_context=ConversationContextService(
+            ContextBuilder(system_prompt="System prompt"),
+            context_provider=provider,
+            retrieval_policy=ConversationRetrievalPolicy(),
+        ),
+        memory=FakeConversationStore(),
+        model=SequenceModel(
+            [
+                '{"tool_call":{"name":"git_status","arguments":{"path":"."}}}',
+                "Final answer",
+            ]
+        ),
+        tool_detector=ToolCallDetector(),
+        tool_catalog=StaticToolCatalog(),
+        tool_coordinator=FakeToolCoordinator(
+            ToolExecutionResult(
+                request_id="alpha:git_status",
+                tool_name="git_status",
+                status=ToolExecutionStatus.SUCCESS,
+                content={"entries": []},
+            )
+        ),
+        include_knowledge_context=True,
+        session_id="alpha",
+    )
+
+    runtime.respond("What is the current git status?")
+
+    assert provider.calls == 0
+
+
 def test_runtime_stops_after_second_tool_request() -> None:
     runtime = AgentRuntime(
         context_builder=ContextBuilder(system_prompt="System prompt"),
@@ -379,3 +456,17 @@ class FakeToolCoordinator:
     def execute(self, request: ToolExecutionRequest) -> ToolExecutionResult:
         self.requests.append(request)
         return self.result
+
+
+class EmptyContextProvider:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def build(self, _text: str) -> CompiledContext:
+        self.calls += 1
+        return CompiledContext(ContextPurpose.CONVERSATION, (), ContextBudget())
+
+
+class AllowPolicy:
+    def allow(self, _text: str, *, context_enabled: bool) -> bool:
+        return context_enabled

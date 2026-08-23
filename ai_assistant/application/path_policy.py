@@ -5,6 +5,13 @@ from pathlib import Path
 
 from ai_assistant.application.errors import ConfigurationError, InvalidToolCallError
 from ai_assistant.application.ports.tools import PathPolicy
+from ai_assistant.domain.errors import (
+    PathNotFoundError,
+    PathOutsideWorkspaceError,
+    PathPermissionDeniedError,
+    SensitivePathError,
+    UnsupportedFileTypeError,
+)
 from ai_assistant.application.tool_catalog import (
     BUILD_PROJECT,
     FILE_METADATA,
@@ -53,8 +60,10 @@ class WorkspacePathPolicy(PathPolicy):
             return _validate_write(request, relative, self._workspace)
         try:
             resolved = (self._workspace / relative).resolve(strict=True)
+        except PermissionError as exc:
+            raise PathPermissionDeniedError("path is not accessible") from exc
         except OSError as exc:
-            raise InvalidToolCallError("path does not exist") from exc
+            raise PathNotFoundError("path does not exist") from exc
         _require_inside_workspace(resolved, self._workspace)
         _require_allowed_components(relative)
         _require_allowed_components(resolved.relative_to(self._workspace))
@@ -78,9 +87,9 @@ def _relative_path(
         raise InvalidToolCallError("path exceeds maximum length")
     path = Path(value)
     if path.is_absolute():
-        raise InvalidToolCallError("absolute paths are denied")
+        raise PathOutsideWorkspaceError("absolute paths are denied")
     if ".." in path.parts:
-        raise InvalidToolCallError("path traversal is denied")
+        raise PathOutsideWorkspaceError("path traversal is denied")
     return path
 
 
@@ -88,7 +97,7 @@ def _require_inside_workspace(path: Path, workspace: Path) -> None:
     try:
         path.relative_to(workspace)
     except ValueError as exc:
-        raise InvalidToolCallError("path escapes workspace") from exc
+        raise PathOutsideWorkspaceError("path escapes workspace") from exc
 
 
 def _require_allowed_components(path: Path) -> None:
@@ -96,28 +105,28 @@ def _require_allowed_components(path: Path) -> None:
         if part in {"", "."}:
             continue
         if part.startswith("."):
-            raise InvalidToolCallError("hidden paths are denied")
+            raise SensitivePathError("hidden paths are denied")
         if any(fnmatchcase(part, pattern) for pattern in _SENSITIVE_PATTERNS):
-            raise InvalidToolCallError("sensitive paths are denied")
+            raise SensitivePathError("sensitive paths are denied")
 
 
 def _require_expected_type(path: Path, definition: ToolDefinition) -> None:
     if definition.name == READ_FILE and not path.is_file():
-        raise InvalidToolCallError("path must be a regular file")
+        raise UnsupportedFileTypeError("path must be a regular file")
     if definition.name == LIST_DIRECTORY and not path.is_dir():
-        raise InvalidToolCallError("path must be a directory")
+        raise UnsupportedFileTypeError("path must be a directory")
     if definition.name == FILE_METADATA and not (path.is_file() or path.is_dir()):
-        raise InvalidToolCallError("path must be a regular file or directory")
+        raise UnsupportedFileTypeError("path must be a regular file or directory")
     if definition.name == SEARCH_TEXT and not (path.is_file() or path.is_dir()):
-        raise InvalidToolCallError("path must be a regular file or directory")
+        raise UnsupportedFileTypeError("path must be a regular file or directory")
     if definition.name == GIT_STATUS and not path.is_dir():
-        raise InvalidToolCallError("path must be a directory")
+        raise UnsupportedFileTypeError("path must be a directory")
     if definition.name == GIT_DIFF and not path.is_dir():
-        raise InvalidToolCallError("path must be a directory")
+        raise UnsupportedFileTypeError("path must be a directory")
     if definition.name == RUN_TESTS and not path.is_dir():
-        raise InvalidToolCallError("path must be a directory")
+        raise UnsupportedFileTypeError("path must be a directory")
     if definition.name == BUILD_PROJECT and not path.is_dir():
-        raise InvalidToolCallError("path must be a directory")
+        raise UnsupportedFileTypeError("path must be a directory")
 
 
 def _validate_write(

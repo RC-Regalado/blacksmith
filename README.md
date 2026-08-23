@@ -62,6 +62,7 @@ Configuration is loaded once at bootstrap from environment variables.
 | `AI_ASSISTANT_AUDIT_AUTO_PURGE` | `false` | Reserved; automatic audit purge stays disabled by default |
 | `AI_ASSISTANT_TOOL_EXECUTOR` | `unix_socket` | Tool executor, `unix_socket` by default or explicit `local` |
 | `AI_ASSISTANT_TOOL_SOCKET` | `c_toolserver/build/toolserver.sock` | Unix socket path for the C toolserver |
+| `AI_ASSISTANT_TOOL_LOG_DIR` | `logs/tools` | JSONL diagnostic logs for tool-loop attempts |
 | `OPENAI_API_KEY` | unset | API key for OpenAI-compatible providers |
 
 Example with Ollama:
@@ -159,6 +160,14 @@ Phase 3 tool calls use the same envelope:
 ```
 
 `run_tests`, `build_project` and `write` require first-use confirmation per session, workspace and permission. Only literal `yes` approves in the CLI.
+
+Tool-loop diagnostics are written as JSON Lines when tools are attempted. Files use:
+
+```text
+log-{model}-{session}-{date}.log
+```
+
+Model and session values are filename-sanitized. Event payloads redact sensitive keys, sensitive paths and secret-like string values.
 
 Approved process profiles:
 

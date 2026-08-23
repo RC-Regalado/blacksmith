@@ -6,14 +6,14 @@ AI Assistant
 
 ## Active phase
 
-Phase 5: Context & Knowledge Engine
+Phase 5.1: Conversational Platform Integration
 
 ## Current milestone
 
-- ID: M5.17
-- Name: Synthesis integration
-- Status: implemented-awaiting-human-review
-- Source: `docs/roadmap-phase-5.md`
+- ID: M5.1.13
+- Name: Final mini-phase closure
+- Status: automatically-accepted
+- Source: `docs/roadmap-phase-5.1.md`
 
 ## Milestone status vocabulary
 
@@ -23,6 +23,7 @@ Phase 5: Context & Knowledge Engine
 - `implemented-awaiting-human-review`
 - `accepted`
 - `rework-required`
+- `automatically-accepted`
 
 ## Milestones
 
@@ -140,6 +141,24 @@ Phase 5: Context & Knowledge Engine
 | M5.20 | Functional evaluation | accepted | — | `.agent/reports/M5.20.md` | approved |
 | M5.21 | Documentation and final review | accepted | — | `.agent/reports/M5.21.md` | approved |
 
+## Phase 5.1 Milestones
+
+| ID | Milestone | Status | Blocking reason | Automated report | Human review |
+|---|---|---|---|---|---|
+| M5.1.1 | Freeze Phase 5 baseline | automatically-accepted | — | `.agent/reports/M5.1.1.md` | final-review-only |
+| M5.1.2 | Unified command router | automatically-accepted | — | `.agent/reports/M5.1.2.md` | final-review-only |
+| M5.1.3 | ConversationContextService | automatically-accepted | — | `.agent/reports/M5.1.3.md` | final-review-only |
+| M5.1.4 | ConversationContext compiler | automatically-accepted | — | `.agent/reports/M5.1.4.md` | final-review-only |
+| M5.1.5 | Opt-in chat context policy | automatically-accepted | — | `.agent/reports/M5.1.5.md` | final-review-only |
+| M5.1.6 | Deterministic retrieval policy | automatically-accepted | — | `.agent/reports/M5.1.6.md` | final-review-only |
+| M5.1.7 | Preserve conversational tool loop | automatically-accepted | — | `.agent/reports/M5.1.7.md` | final-review-only |
+| M5.1.8 | Metrics exposure | automatically-accepted | — | `.agent/reports/M5.1.8.md` | final-review-only |
+| M5.1.9 | Knowledge status UX | automatically-accepted | — | `.agent/reports/M5.1.9.md` | final-review-only |
+| M5.1.10 | Presets and operator docs | automatically-accepted | — | `.agent/reports/M5.1.10.md` | final-review-only |
+| M5.1.11 | Adversarial/regression suite | automatically-accepted | — | `.agent/reports/M5.1.11.md` | final-review-only |
+| M5.1.12 | End-to-end validation | automatically-accepted | — | `.agent/reports/M5.1.12.md` | final-review-only |
+| M5.1.13 | Final mini-phase closure | automatically-accepted | — | `.agent/reports/M5.1.13.md` | final-review-only |
+
 ## Current baseline
 
 Record before Phase 3 implementation:
@@ -175,4 +194,29 @@ Record before Phase 3 implementation:
 
 - Date: 2026-08-18
 - Summary: Phase 5 accepted after human approval of M5.21.
-- Next action: prepare the next phase only after a new approved roadmap/gate.
+- Date: 2026-08-19
+- Summary: Phase 5.1 M5.1.1 and M5.1.2 automatically accepted under looped validation. ADR-047 through ADR-061 corrected to Implemented after Phase 5 acceptance evidence.
+- Date: 2026-08-19
+- Summary: M5.1.3 automatically accepted after corrective conversation-purpose separation.
+- Date: 2026-08-19
+- Summary: M5.1.4 automatically accepted after conversation compiler entry point validation.
+- Date: 2026-08-19
+- Summary: M5.1.5 automatically accepted after opt-in context policy and retrieval-provider boundary correction.
+- Date: 2026-08-19
+- Summary: M5.1.6 automatically accepted after live-state bypass correction.
+- Date: 2026-08-19
+- Summary: M5.1.7 automatically accepted after direct live-state bypass correction and tool-loop validation.
+- Date: 2026-08-19
+- Summary: M5.1.8 automatically accepted after env metrics correction and validation.
+- Date: 2026-08-19
+- Summary: M5.1.9 automatically accepted after lifecycle status and query diagnostics validation.
+- Date: 2026-08-19
+- Summary: M5.1.10 automatically accepted after operator profile and workflow docs validation.
+- Date: 2026-08-19
+- Summary: M5.1.11 automatically accepted after stale-index corrective coverage and adversarial regression validation.
+- Date: 2026-08-19
+- Summary: M5.1.12 automatically accepted after end-to-end mini-phase scenario validation.
+- Date: 2026-08-19
+- Summary: M5.1.13 automatically accepted after final regression, ADR-062 through ADR-067 approval alignment, symlink-confinement corrective loop, reusable CLI context reset, independent integration validation, architecture review, and security revalidation.
+- Phase 5.1 status: implemented-awaiting-final-human-review.
+- Next action: final human review of the complete Phase 5.1 package.

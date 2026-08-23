@@ -1,6 +1,6 @@
 # ADR-049 — Knowledge Source Model
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-08-17
 - Deciders: Project owner
 

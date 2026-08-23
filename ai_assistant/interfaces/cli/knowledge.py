@@ -3,7 +3,7 @@
 from fnmatch import fnmatchcase
 from pathlib import Path
 
-from ai_assistant.application.errors import ConfigurationError, InvalidToolCallError
+from ai_assistant.application.errors import AssistantError, ConfigurationError, InvalidToolCallError
 from ai_assistant.knowledge import (
     FreshnessStatus,
     KnowledgeDocument,
@@ -45,6 +45,8 @@ class KnowledgeCli:
         if not args:
             _print_usage()
             return
+        metrics = "--metrics" in args
+        args = tuple(arg for arg in args if arg != "--metrics")
         command = args[0]
         if command == "status" and len(args) == 1:
             self._status()
@@ -53,16 +55,25 @@ class KnowledgeCli:
         elif command == "rebuild" and len(args) == 2:
             self._index(args[1], clear=True)
         elif command == "query" and len(args) >= 2:
-            self._query(" ".join(args[1:]))
+            self._query(" ".join(args[1:]), metrics=metrics)
         else:
             _print_usage()
 
     def _status(self) -> None:
-        documents = self._store.list_documents()
+        try:
+            documents = self._store.list_documents()
+        except AssistantError as error:
+            print("status=error documents=0 fresh=0 stale=0 chunks=0 symbols=0")
+            print(f"diagnostic={error}")
+            return
         chunks = sum(len(self._store.chunks_for(document.document_id)) for document in documents)
         symbols = sum(len(self._store.symbols_for(document.document_id)) for document in documents)
         fresh = sum(document.freshness == FreshnessStatus.FRESH for document in documents)
-        print(f"documents={len(documents)} fresh={fresh} chunks={chunks} symbols={symbols}")
+        stale = len(documents) - fresh
+        print(
+            f"status={_lifecycle_status(len(documents), fresh)} "
+            f"documents={len(documents)} fresh={fresh} stale={stale} chunks={chunks} symbols={symbols}"
+        )
 
     def _index(self, path: str, *, clear: bool) -> None:
         workspace = self._require_workspace()
@@ -77,9 +88,15 @@ class KnowledgeCli:
                 skipped += 1
         print(f"indexed={indexed} skipped={skipped}")
 
-    def _query(self, text: str) -> None:
-        for candidate in self._store.lexical_search(KnowledgeQuery(text)):
+    def _query(self, text: str, *, metrics: bool = False) -> None:
+        candidates = self._store.lexical_search(KnowledgeQuery(text))
+        for candidate in candidates:
             print(f"{candidate.chunk_id} {candidate.source_uri} score={candidate.score:.4f}")
+        if not candidates:
+            _print_query_diagnostic(self._store.list_documents())
+        if metrics:
+            print("Metrics:")
+            print(f"- knowledge_candidates={len(candidates)}")
 
     def _index_file(self, workspace: Path, path: Path) -> bool:
         relative = path.relative_to(workspace).as_posix()
@@ -129,7 +146,13 @@ def _files_for(path: Path) -> tuple[Path, ...]:
         return (path,)
     if not path.is_dir():
         raise InvalidToolCallError("knowledge path must be a file or directory.")
-    return tuple(sorted(item for item in path.rglob("*") if item.is_file() and _allowed_file(item, path)))
+    return tuple(
+        sorted(
+            item
+            for item in path.rglob("*")
+            if not item.is_symlink() and item.is_file() and _allowed_file(item, path)
+        )
+    )
 
 
 def _allowed_file(path: Path, root: Path) -> bool:
@@ -157,6 +180,26 @@ def _read_text(path: Path, max_file_bytes: int) -> str:
         return path.read_text(encoding="utf-8")
     except UnicodeDecodeError as exc:
         raise InvalidToolCallError("knowledge file is not valid utf-8.") from exc
+
+
+def _lifecycle_status(total: int, fresh: int) -> str:
+    if total == 0:
+        return "empty"
+    if fresh == total:
+        return "fresh"
+    if fresh == 0:
+        return "stale"
+    return "partially-stale"
+
+
+def _print_query_diagnostic(documents) -> None:
+    if not documents:
+        print("No indexed knowledge is available. Run `python main.py knowledge index PATH`; no rebuild was run.")
+        return
+    if not any(document.freshness == FreshnessStatus.FRESH for document in documents):
+        print("Indexed knowledge is stale. Run `python main.py knowledge rebuild PATH`; no rebuild was run.")
+        return
+    print("No fresh indexed knowledge matched the query.")
 
 
 def _print_usage() -> None:

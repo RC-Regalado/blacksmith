@@ -20,6 +20,4 @@ __pycache__/
 # C toolserver build output
 c_toolserver/build/
 
-# Local Codex/session files
-.codex
-codex
+/logs/

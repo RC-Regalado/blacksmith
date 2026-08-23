@@ -6,6 +6,20 @@ The Knowledge Engine reduces primary model work by compiling local derived knowl
 
 The store is derived and rebuildable. It is not a canonical source of truth.
 
+## Recommended Local Chat Profile
+
+```bash
+AI_ASSISTANT_PROVIDER=ollama \
+AI_ASSISTANT_MODEL=blacksmith-tools \
+AI_ASSISTANT_WORKSPACE="$PWD" \
+AI_ASSISTANT_TOOL_EXECUTION=true \
+AI_ASSISTANT_TOOL_SOCKET=/tmp/blacksmith-toolserver.sock \
+AI_ASSISTANT_KNOWLEDGE_DATABASE=assistant_knowledge.sqlite3 \
+python main.py chat --context
+```
+
+Use `python main.py chat` for normal chat without indexed knowledge. Use `python main.py chat --context --metrics` when you want opt-in knowledge context plus per-turn context metrics.
+
 ## Stores
 
 Keep these databases separate:
@@ -29,10 +43,14 @@ Check status:
 AI_ASSISTANT_WORKSPACE="$PWD" python main.py knowledge status
 ```
 
+Status reports one lifecycle value: `empty`, `fresh`, `partially-stale`, `stale`, or `error`.
+Empty and stale indexes are never rebuilt automatically; run `knowledge index PATH` or `knowledge rebuild PATH` explicitly.
+
 Query lexical knowledge:
 
 ```bash
 AI_ASSISTANT_WORKSPACE="$PWD" python main.py knowledge query "ExecutionEngine"
+AI_ASSISTANT_WORKSPACE="$PWD" python main.py knowledge query "ExecutionEngine" --metrics
 ```
 
 Indexing is manual. There is no watcher daemon.
@@ -53,6 +71,14 @@ python main.py objective --metrics "Explain why ExecutionEngine cannot write fil
 
 Planner and synthesis context are compiled from fresh, verifiable knowledge only.
 
+## Failure Cases
+
+- `status=empty`: index a path with `python main.py knowledge index PATH` or rebuild a known-good root.
+- `status=stale`: run `python main.py knowledge rebuild PATH`; query will not use stale-only knowledge.
+- `status=partially-stale`: fresh records can still match, but stale records are excluded.
+- `status=error`: fix the store/configuration error before relying on knowledge context.
+- Empty and stale-only query diagnostics never trigger indexing or rebuilds.
+
 ## Safety Rules
 
 - Hidden and sensitive files are denied.
@@ -63,4 +89,4 @@ Planner and synthesis context are compiled from fresh, verifiable knowledge only
 
 ## Exclusions
 
-Phase 5 does not implement semantic user memory, automatic skills, MCP, network retrieval, external vector databases or background watchers.
+Phase 5.1 does not implement semantic user memory, automatic skills, MCP, network retrieval, external vector databases or background watchers.

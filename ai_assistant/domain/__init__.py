@@ -1,6 +1,7 @@
 """Domain objects for the assistant core."""
 
 from ai_assistant.domain.errors import (
+    AmbiguousPathError,
     AssistantError,
     ConfigurationError,
     ConversationStoreError,
@@ -14,7 +15,13 @@ from ai_assistant.domain.errors import (
     ModelNotFoundError,
     ModelProtocolError,
     ModelTimeoutError,
+    PathNotFoundError,
+    PathOutsideWorkspaceError,
+    PathPermissionDeniedError,
+    SensitivePathError,
     ToolAuditStoreError,
+    ToolPathError,
+    UnsupportedFileTypeError,
 )
 from ai_assistant.domain.message import Message, Role
 from ai_assistant.domain.session import DEFAULT_SESSION_ID, SessionId, validate_session_id
@@ -42,6 +49,7 @@ from ai_assistant.domain.tools import (
 )
 
 __all__ = [
+    "AmbiguousPathError",
     "AssistantError",
     "ConfigurationError",
     "ConversationStoreError",
@@ -57,6 +65,9 @@ __all__ = [
     "ModelNotFoundError",
     "ModelProtocolError",
     "ModelTimeoutError",
+    "PathNotFoundError",
+    "PathOutsideWorkspaceError",
+    "PathPermissionDeniedError",
     "Role",
     "AuditRetentionClass",
     "AuditRetentionRule",
@@ -64,6 +75,7 @@ __all__ = [
     "HashMetadata",
     "PolicyDecisionKind",
     "SanitizedToolError",
+    "SensitivePathError",
     "SessionId",
     "ToolProfileId",
     "ToolAuditEvent",
@@ -75,8 +87,10 @@ __all__ = [
     "ToolExecutionRequest",
     "ToolExecutionResult",
     "ToolExecutionStatus",
+    "ToolPathError",
     "ToolPermission",
     "ToolPolicyDecision",
+    "UnsupportedFileTypeError",
     "WriteMode",
     "WriteRequest",
     "WriteResult",

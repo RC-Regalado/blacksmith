@@ -1,6 +1,6 @@
 # ADR-061 — No Automatic Skill Generation in Phase 5
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-08-17
 - Deciders: Project owner
 

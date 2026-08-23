@@ -33,6 +33,9 @@ class AppConfig:
     audit_auto_purge: bool = False
     tool_executor: str = "unix_socket"
     tool_socket: str = "c_toolserver/build/toolserver.sock"
+    tool_log_dir: str = "logs/tools"
+    context_engine: bool = False
+    show_metrics: bool = False
     api_key: str | None = field(default=None, repr=False)
 
 
@@ -100,6 +103,15 @@ def load_app_config(env: Mapping[str, str] | None = None) -> AppConfig:
         tool_socket=source.get(
             "AI_ASSISTANT_TOOL_SOCKET",
             "c_toolserver/build/toolserver.sock",
+        ),
+        tool_log_dir=source.get("AI_ASSISTANT_TOOL_LOG_DIR", "logs/tools"),
+        context_engine=_bool(
+            source.get("AI_ASSISTANT_CONTEXT_ENGINE", "false"),
+            "AI_ASSISTANT_CONTEXT_ENGINE",
+        ),
+        show_metrics=_bool(
+            source.get("AI_ASSISTANT_SHOW_METRICS", "false"),
+            "AI_ASSISTANT_SHOW_METRICS",
         ),
         api_key=source.get("OPENAI_API_KEY"),
     )

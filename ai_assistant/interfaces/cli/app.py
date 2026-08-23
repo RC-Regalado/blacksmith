@@ -22,18 +22,37 @@ class CliApplication:
         session_id: str = "default",
         knowledge_cli=None,
         objective_id_factory: Callable[[], str] | None = None,
+        show_metrics: bool = False,
     ) -> None:
         self._runtime = runtime
         self._objective_engine = objective_engine
         self._session_id = session_id
         self._knowledge_cli = knowledge_cli
         self._objective_id_factory = objective_id_factory or (lambda: uuid4().hex)
+        self._show_metrics = show_metrics
+        self._default_include_knowledge_context = getattr(runtime, "include_knowledge_context", False)
 
     def run(self, argv: Sequence[str] | None = None) -> None:
         args = tuple(() if argv is None else argv)
-        if args:
+        if args and args[0] != "chat":
             self._run_command(args)
             return
+        if args == ("chat", "--help"):
+            _print_chat_usage()
+            return
+        if args and args[0] == "chat":
+            chat_flags = set(args[1:])
+            if not chat_flags <= {"--context", "--metrics"}:
+                _print_chat_usage()
+                return
+            self._runtime.include_knowledge_context = (
+                True
+                if "--context" in chat_flags
+                else self._default_include_knowledge_context
+            )
+            show_metrics = self._show_metrics or "--metrics" in chat_flags
+        else:
+            show_metrics = self._show_metrics
         while True:
             try:
                 user_input = input("> ").strip()
@@ -47,26 +66,46 @@ class CliApplication:
 
             try:
                 response = self._runtime.respond(user_input)
+                if self._runtime.last_context_diagnostic:
+                    print(self._runtime.last_context_diagnostic)
                 print(response.content)
+                if show_metrics:
+                    _print_context_metrics("conversation", self._runtime.last_context_metrics)
             except AssistantError as error:
                 logger.error("expected assistant error type=%s", type(error).__name__)
                 print(f"Error: {error}", file=sys.stderr)
 
     def _run_command(self, args: tuple[str, ...]) -> None:
+        if args in {("--help",), ("-h",)}:
+            _print_usage()
+            return
         verbose = "--verbose" in args
-        metrics = "--metrics" in args
+        metrics = self._show_metrics or "--metrics" in args
         filtered = tuple(arg for arg in args if arg not in {"--verbose", "--metrics"})
+        if not filtered:
+            _print_usage(file=sys.stderr)
+            return
+        if filtered == ("objective", "--help") or filtered == ("objective", "-h"):
+            _print_objective_usage()
+            return
+        if filtered == ("knowledge", "--help") or filtered == ("knowledge", "-h"):
+            _print_knowledge_usage()
+            return
         if filtered[0] == "knowledge":
             if self._knowledge_cli is None:
                 print("Error: knowledge CLI is unavailable.", file=sys.stderr)
                 return
-            self._knowledge_cli.run(filtered[1:])
+            try:
+                knowledge_args = args[1:]
+                if self._show_metrics and "--metrics" not in knowledge_args:
+                    knowledge_args = (*knowledge_args, "--metrics")
+                self._knowledge_cli.run(knowledge_args)
+            except AssistantError as error:
+                logger.error("expected assistant error type=%s", type(error).__name__)
+                print(f"Error: {error}", file=sys.stderr)
             return
         if filtered[0] != "objective" or len(filtered) != 2:
-            print(
-                'Usage: python main.py objective [--verbose] [--metrics] "Describe the objective"',
-                file=sys.stderr,
-            )
+            _print_usage(file=sys.stderr)
             return
         if self._objective_engine is None:
             print("Error: objective execution requires tools and workspace.", file=sys.stderr)
@@ -144,3 +183,23 @@ def _print_planner_response(engine: ExecutionEngine, verbose: bool) -> None:
         return
     print("Planner model response:", file=sys.stderr)
     print(engine.last_planner_response, file=sys.stderr)
+
+
+def _print_usage(*, file=None) -> None:
+    file = sys.stdout if file is None else file
+    print("Usage: python main.py chat|objective|knowledge [options]", file=file)
+    print('  chat                 Start chat (default when no command is given)', file=file)
+    print('  objective "..."      Execute an objective', file=file)
+    print("  knowledge ...        Manage/query derived knowledge", file=file)
+
+
+def _print_chat_usage() -> None:
+    print("Usage: python main.py chat [--context] [--metrics]")
+
+
+def _print_objective_usage() -> None:
+    print('Usage: python main.py objective [--verbose] [--metrics] "Describe the objective"')
+
+
+def _print_knowledge_usage() -> None:
+    print("Usage: python main.py knowledge status|index PATH|rebuild PATH|query TEXT")

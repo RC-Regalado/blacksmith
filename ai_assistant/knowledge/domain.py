@@ -24,6 +24,7 @@ class FreshnessStatus(StrEnum):
 class ContextPurpose(StrEnum):
     PLANNING = "planning"
     SYNTHESIS = "synthesis"
+    CONVERSATION = "conversation"
 
 
 @dataclass(frozen=True, slots=True)

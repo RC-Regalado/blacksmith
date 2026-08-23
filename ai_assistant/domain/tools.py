@@ -85,6 +85,19 @@ class ToolExecutionStatus(StrEnum):
     ERROR = "error"
 
 
+class ToolDiagnosticStatus(StrEnum):
+    REQUESTED = "requested"
+    EXECUTED = "executed"
+    REJECTED = "rejected"
+    FAILED = "failed"
+    TIMEOUT = "timeout"
+    RECOVERY_STARTED = "recovery_started"
+    RECOVERY_CANDIDATE = "recovery_candidate"
+    RECOVERY_RETRY = "recovery_retry"
+    RECOVERY_SUCCESS = "recovery_success"
+    RECOVERY_FAILED = "recovery_failed"
+
+
 @dataclass(frozen=True, slots=True)
 class ToolExecutionRequest:
     request_id: str
@@ -244,6 +257,37 @@ class ToolExecutionResult:
         if self.status in {ToolExecutionStatus.ERROR, ToolExecutionStatus.TIMEOUT}:
             if self.error is None:
                 raise InvalidToolCallError("error is required for failed results.")
+
+
+@dataclass(frozen=True, slots=True)
+class ToolCallLogEvent:
+    timestamp: datetime
+    session_id: str
+    provider: str
+    model: str
+    tool_name: str
+    tool_call_id: str
+    round_index: int
+    tool_call_count: int
+    status: ToolDiagnosticStatus
+    arguments: Mapping[str, object]
+    duration_ms: float = 0.0
+    result: Mapping[str, object] | None = None
+    error: Mapping[str, object] | None = None
+    capability_name: str | None = None
+
+    def __post_init__(self) -> None:
+        _require_text(self.session_id, "session_id")
+        _require_text(self.provider, "provider")
+        _require_text(self.model, "model")
+        _require_text(self.tool_name, "tool_name")
+        _require_text(self.tool_call_id, "tool_call_id")
+        if self.round_index <= 0:
+            raise InvalidToolCallError("round_index must be positive.")
+        if self.tool_call_count <= 0:
+            raise InvalidToolCallError("tool_call_count must be positive.")
+        if self.duration_ms < 0:
+            raise InvalidToolCallError("duration_ms cannot be negative.")
 
 
 @dataclass(frozen=True, slots=True)

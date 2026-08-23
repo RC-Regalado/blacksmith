@@ -3,6 +3,7 @@
 from ai_assistant.application.tool_coordinator import ToolExecutionCoordinator
 from ai_assistant.domain.tools import (
     SanitizedToolError,
+    ToolCallLogEvent,
     ToolExecutionRequest,
     ToolExecutionResult,
     ToolExecutionStatus,
@@ -49,6 +50,26 @@ def test_execution_engine_runs_read_only_plan_through_tool_coordinator() -> None
     assert tools.requests[0].tool_name == "list_directory"
     assert tools.requests[0].permission == ToolPermission.READ_ONLY
     assert store.checkpoints == [("exec-obj-1", "task-1")]
+
+
+def test_execution_engine_logs_capability_tool_diagnostics() -> None:
+    objective = Objective("obj-1", "Inspect")
+    plan = Plan(
+        "plan-1",
+        "obj-1",
+        (_task("task-1", CapabilityName.INSPECT_DIRECTORY, {"path": "."}),),
+    )
+    diagnostics = _Diagnostics()
+
+    _engine(plan, _Store(), _Coordinator(ToolExecutionStatus.SUCCESS), diagnostics).run(
+        objective,
+        "session-1",
+        ExecutionBudget(),
+    )
+
+    assert [event.status.value for event in diagnostics.events] == ["requested", "executed"]
+    assert diagnostics.events[0].capability_name == "InspectDirectory"
+    assert diagnostics.events[1].tool_name == "list_directory"
 
 
 def test_execution_engine_summarizes_makefile_usage() -> None:
@@ -208,7 +229,7 @@ def test_execution_engine_has_no_concrete_adapter_imports() -> None:
     assert not any(term in text for term in ("ollama", "sqlite", "protobuf", "toolserver"))
 
 
-def _engine(plan: Plan, store, tools) -> ExecutionEngine:
+def _engine(plan: Plan, store, tools, diagnostics=None) -> ExecutionEngine:
     registry = _Registry()
     return ExecutionEngine(
         DeterministicPlanner({"obj-1": plan}),
@@ -220,6 +241,9 @@ def _engine(plan: Plan, store, tools) -> ExecutionEngine:
         CheckpointService(store, id_factory=lambda: "chk-1"),
         ObjectiveEvaluator(),
         tools,
+        tool_diagnostics=diagnostics,
+        model_provider_name="dummy",
+        model_name="dummy-model",
     )
 
 
@@ -265,6 +289,14 @@ class _Coordinator(ToolExecutionCoordinator):
             self._content,
             error,
         )
+
+
+class _Diagnostics:
+    def __init__(self) -> None:
+        self.events: list[ToolCallLogEvent] = []
+
+    def record(self, event: ToolCallLogEvent) -> None:
+        self.events.append(event)
 
 
 class _Store:

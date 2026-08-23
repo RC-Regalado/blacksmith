@@ -3,9 +3,11 @@
 from pathlib import Path
 
 from ai_assistant.application.context import ContextBuilder
+from ai_assistant.application.conversation_context import ConversationContextService
 from ai_assistant.application.confirmation import ConfirmationService
 from ai_assistant.application.ports.tools import ToolExecutor
 from ai_assistant.application.path_policy import WorkspacePathPolicy
+from ai_assistant.application.path_recovery import PathRecoveryPolicy
 from ai_assistant.application.runtime import AgentRuntime
 from ai_assistant.application.tool_catalog import StaticToolCatalog
 from ai_assistant.application.tool_calls import ToolCallDetector
@@ -18,6 +20,7 @@ from ai_assistant.infrastructure.storage.sqlite_audit import SQLiteAuditRecorder
 from ai_assistant.infrastructure.storage.sqlite_execution import SQLiteExecutionStore
 from ai_assistant.infrastructure.storage.sqlite_knowledge import SQLiteKnowledgeStore
 from ai_assistant.infrastructure.storage.sqlite_memory import SQLiteConversationStore
+from ai_assistant.infrastructure.tool_diagnostics import JsonlToolDiagnosticLogger
 from ai_assistant.infrastructure.tools import (
     LocalReadOnlyToolExecutor,
     UnixSocketToolExecutor,
@@ -26,9 +29,11 @@ from ai_assistant.interfaces.cli.app import CliApplication, CliConfirmationPromp
 from ai_assistant.interfaces.cli.knowledge import KnowledgeCli
 from ai_assistant.knowledge import (
     ContextCompiler,
+    ConversationKnowledgeContextProvider,
     HybridRetriever,
     KnowledgeRanker,
     PlanningContextProvider,
+    ConversationRetrievalPolicy,
     SynthesisContextProvider,
 )
 from ai_assistant.platform.application import (
@@ -46,22 +51,37 @@ from ai_assistant.platform.application import (
 def create_application(config: AppConfig | None = None) -> CliApplication:
     app_config = config or load_app_config()
     configure_logging(app_config.log_level)
+    tool_diagnostics = JsonlToolDiagnosticLogger(app_config.tool_log_dir)
     catalog = _tool_catalog(app_config) if app_config.tool_execution else None
-    coordinator = _tool_coordinator(app_config, catalog)
+    coordinator = _tool_coordinator(app_config, catalog, tool_diagnostics)
+    context_builder = ContextBuilder(
+        system_prompt=_system_prompt(app_config),
+        context_limit=app_config.context_limit,
+    )
+    knowledge_store = SQLiteKnowledgeStore(app_config.knowledge_database)
+    retriever = HybridRetriever(knowledge_store)
+    ranker = KnowledgeRanker()
+    compiler = ContextCompiler(knowledge_store)
     runtime = AgentRuntime(
-        context_builder=ContextBuilder(
-            system_prompt=_system_prompt(app_config),
-            context_limit=app_config.context_limit,
+        context_builder=context_builder,
+        conversation_context=ConversationContextService(
+            context_builder,
+            app_config.context_limit,
+            ConversationKnowledgeContextProvider(retriever, ranker, compiler),
+            ConversationRetrievalPolicy(),
         ),
         memory=SQLiteConversationStore(app_config.database),
         model=ModelAdapter.from_config(_model_config(app_config)),
         tool_detector=ToolCallDetector(),
         tool_catalog=catalog,
         tool_coordinator=coordinator,
+        tool_diagnostics=tool_diagnostics,
+        model_provider_name=app_config.provider,
+        model_name=app_config.model,
         tool_timeout_seconds=app_config.tool_timeout,
+        include_knowledge_context=app_config.context_engine,
         session_id=app_config.session,
     )
-    knowledge_store = SQLiteKnowledgeStore(app_config.knowledge_database)
     return CliApplication(
         runtime,
         _execution_engine(app_config, catalog, coordinator, knowledge_store),
@@ -71,6 +91,7 @@ def create_application(config: AppConfig | None = None) -> CliApplication:
             app_config.workspace,
             app_config.max_read_bytes,
         ),
+        show_metrics=app_config.show_metrics,
     )
 
 
@@ -114,6 +135,7 @@ def _tool_catalog(config: AppConfig) -> StaticToolCatalog:
 def _tool_coordinator(
     config: AppConfig,
     catalog: StaticToolCatalog | None,
+    diagnostics: JsonlToolDiagnosticLogger,
 ) -> ToolExecutionCoordinator | None:
     if not config.tool_execution or not config.workspace or catalog is None:
         return None
@@ -125,6 +147,10 @@ def _tool_coordinator(
         audit=audit,
         executor=_tool_executor(config),
         confirmation=ConfirmationService(CliConfirmationPrompter(), audit),
+        path_recovery=PathRecoveryPolicy(config.workspace),
+        diagnostics=diagnostics,
+        model_provider_name=config.provider,
+        model_name=config.model,
     )
 
 
@@ -162,4 +188,7 @@ def _execution_engine(
         evaluator=ObjectiveEvaluator(),
         tools=coordinator,
         synthesis_context_provider=SynthesisContextProvider(retriever, ranker, compiler),
+        tool_diagnostics=JsonlToolDiagnosticLogger(config.tool_log_dir),
+        model_provider_name=config.provider,
+        model_name=config.model,
     )

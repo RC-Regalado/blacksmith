@@ -1,6 +1,7 @@
 """Compatibility exports for typed internal errors."""
 
 from ai_assistant.domain.errors import (
+    AmbiguousPathError,
     AssistantError,
     ConfigurationError,
     ConversationStoreError,
@@ -12,10 +13,17 @@ from ai_assistant.domain.errors import (
     ModelNotFoundError,
     ModelProtocolError,
     ModelTimeoutError,
+    PathNotFoundError,
+    PathOutsideWorkspaceError,
+    PathPermissionDeniedError,
+    SensitivePathError,
     ToolAuditStoreError,
+    ToolPathError,
+    UnsupportedFileTypeError,
 )
 
 __all__ = [
+    "AmbiguousPathError",
     "AssistantError",
     "ConfigurationError",
     "ConversationStoreError",
@@ -27,5 +35,11 @@ __all__ = [
     "ModelNotFoundError",
     "ModelProtocolError",
     "ModelTimeoutError",
+    "PathNotFoundError",
+    "PathOutsideWorkspaceError",
+    "PathPermissionDeniedError",
+    "SensitivePathError",
     "ToolAuditStoreError",
+    "ToolPathError",
+    "UnsupportedFileTypeError",
 ]

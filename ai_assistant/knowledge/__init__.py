@@ -23,6 +23,7 @@ from ai_assistant.knowledge.chunking import (
     normalize_text,
 )
 from ai_assistant.knowledge.compiler import ContextCompiler
+from ai_assistant.knowledge.conversation import ConversationKnowledgeContextProvider
 from ai_assistant.knowledge.hashing import hash_bytes, hash_text
 from ai_assistant.knowledge.ports import (
     AdrKnowledgeSource,
@@ -36,6 +37,7 @@ from ai_assistant.knowledge.ports import (
 from ai_assistant.knowledge.planning import PlanningContextProvider, SynthesisContextProvider
 from ai_assistant.knowledge.ranking import KnowledgeRanker, RankedCandidate
 from ai_assistant.knowledge.retrieval import HybridRetriever
+from ai_assistant.knowledge.retrieval_policy import ConversationRetrievalPolicy
 from ai_assistant.knowledge.symbols import symbols_for_chunks
 
 __all__ = [
@@ -48,6 +50,8 @@ __all__ = [
     "ContextMetrics",
     "ContextPurpose",
     "ConversationKnowledgeSource",
+    "ConversationKnowledgeContextProvider",
+    "ConversationRetrievalPolicy",
     "EmbeddingProvider",
     "EmbeddingVector",
     "ExecutionKnowledgeSource",

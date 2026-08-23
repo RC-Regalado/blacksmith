@@ -16844,3 +16844,1123 @@ git diff --check
 - Files changed: documentation and `.agent/*`.
 - Test results: focused validation passed; full suite passed; diff check passed.
 - Human review: approved; Phase 5 accepted.
+
+---
+
+# M5.1.1 — Freeze Phase 5 baseline
+
+## Status
+
+automatically-accepted
+
+## Supervisor notes
+
+- Phase 5.1 looped validation is active; no per-milestone human review requested.
+- Dirty worktree contains user-provided Phase 5.1 supervisor kit files and is preserved.
+- ADR-047 through ADR-061 were corrected from `Accepted` to `Implemented` after Phase 5 implementation and human acceptance evidence was verified.
+
+## Tasks
+
+### Task M5.1.1-T1 — Baseline and State Verification
+
+## Milestone
+
+M5.1.1
+
+## Objective
+
+Verify Phase 5 acceptance, ADR baseline, working tree, test baseline, knowledge CLI and objective context evidence before Phase 5.1 implementation.
+
+## Role
+
+Supervisor / Test agent / Architecture reviewer / Security reviewer
+
+## Writable
+
+- `.agent/roadmap-state-phase-5.1.md`
+- `.agent/task-queue.md`
+- `.agent/reports/M5.1.1.md`
+
+## Read-only
+
+- `AGENTS.md`
+- `docs/architecture.md`
+- `docs/roadmap-phase-5.1.md`
+- `docs/adr/**`
+- production source
+- tests
+
+## Forbidden
+
+- Product behavior changes
+- ADR acceptance or supersession
+- Dependency changes
+- Per-milestone human review entry
+
+## Dependencies
+
+- Phase 5 accepted
+- Phase 5.1 roadmap present
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+- Proposed ADR-062 through ADR-067 are read-only baseline inputs.
+
+## CLI/context/tool impact
+
+- No behavior change.
+- Captures existing Phase 5 CLI/router limitations for M5.1.2.
+- Confirms objective context regressions pass through tests.
+- Confirms knowledge CLI status works without rebuilding.
+
+## Acceptance criteria
+
+- [x] Phase 5 accepted evidence recorded.
+- [x] ADR-047 through ADR-061 Implemented status verified.
+- [x] Current suite passes.
+- [x] Knowledge CLI status smoke passes.
+- [x] Objective context focused regression passes.
+- [x] Working tree understood and preserved.
+- [x] Independent test, architecture and security reviews completed.
+
+## Validation commands
+
+```bash
+git rev-parse HEAD
+venv/bin/python --version
+git status --short
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+AI_ASSISTANT_KNOWLEDGE_DATABASE=/tmp/blacksmith-m511-knowledge.sqlite3 venv/bin/python main.py knowledge status
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_planning_context.py tests/test_synthesis_context.py tests/test_context_compiler.py tests/test_context_metrics.py tests/test_cli_app.py tests/test_platform_execution_engine.py -q
+git diff --check
+```
+
+## Expected report
+
+- `.agent/reports/M5.1.1.md`
+- Milestone status: `automatically-accepted`
+- Next eligible milestone: M5.1.2
+
+---
+
+# M5.1.2 — Unified command router
+
+## Status
+
+automatically-accepted
+
+## Supervisor notes
+
+- Implemented explicit `chat`, `objective` and `knowledge` router behavior.
+- Preserved legacy no-argument chat compatibility.
+- Corrective loop fixed sanitized error handling for knowledge CLI failures.
+- No per-milestone human review requested.
+
+## Tasks
+
+### Task M5.1.2-T1 — CLI Router
+
+## Milestone
+
+M5.1.2
+
+## Objective
+
+Add explicit command routing and help behavior for `chat`, `objective` and `knowledge`.
+
+## Role
+
+CLI engineer
+
+## Writable
+
+- `ai_assistant/interfaces/cli/app.py`
+- `tests/test_cli_app.py`
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.1.md`
+- `.agent/task-queue.md`
+- `.agent/reports/M5.1.2.md`
+
+## Read-only
+
+- `docs/roadmap-phase-5.1.md`
+- `AGENTS.md`
+- `docs/architecture.md`
+- ADRs
+
+## Forbidden
+
+- Context default-on
+- Automatic knowledge rebuild
+- ToolPolicy bypass
+- New dependencies
+- ADR status changes for ADR-062 through ADR-067
+
+## Dependencies
+
+- M5.1.1 automatically accepted
+
+## Applicable ADRs
+
+- ADR-001, ADR-007, ADR-012, ADR-016 through ADR-025, ADR-047 through ADR-061
+- ADR-066 is Proposed and treated as roadmap intent only.
+
+## CLI/context/tool impact
+
+- Adds explicit `chat` command and command help.
+- Keeps `python main.py` as legacy chat alias.
+- Keeps objective and knowledge behavior delegated to existing services.
+- Does not add context/retrieval behavior.
+
+## Acceptance criteria
+
+- [x] `python main.py --help`
+- [x] `python main.py chat --help`
+- [x] `python main.py objective --help`
+- [x] `python main.py knowledge --help`
+- [x] legacy `python main.py` compatibility documented in roadmap/ADR kit
+- [x] consistent argument/error behavior
+- [x] expected knowledge CLI errors are sanitized
+- [x] independent test, architecture and security reviews completed
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_cli_app.py tests/test_knowledge_cli.py -q
+venv/bin/python main.py --help
+venv/bin/python main.py chat --help
+venv/bin/python main.py objective --help
+venv/bin/python main.py knowledge --help
+venv/bin/python main.py knowledge index ../
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Expected report
+
+- `.agent/reports/M5.1.2.md`
+- Milestone status: `automatically-accepted`
+- Next eligible milestone: M5.1.3
+
+---
+
+# M5.1.3 — ConversationContextService
+
+## Status
+
+automatically-accepted
+
+## Supervisor notes
+
+- Added a dedicated conversation context assembly service.
+- Corrective loop added `ContextPurpose.CONVERSATION` and rejected planning/synthesis contexts in chat.
+- No retrieval, context flag, or knowledge store access was added in this milestone.
+
+## Tasks
+
+### Task M5.1.3-T1 — Conversation Context Service
+
+## Milestone
+
+M5.1.3
+
+## Objective
+
+Assemble conversation history, optional already-compiled conversation knowledge and current user message through a dedicated service.
+
+## Role
+
+Conversation integration engineer
+
+## Writable
+
+- `ai_assistant/application/conversation_context.py`
+- `ai_assistant/application/runtime.py`
+- `ai_assistant/bootstrap/container.py`
+- `ai_assistant/knowledge/domain.py`
+- `tests/test_conversation_context.py`
+- `tests/test_cli_app.py`
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.1.md`
+- `.agent/task-queue.md`
+- `.agent/reports/M5.1.3.md`
+
+## Read-only
+
+- Existing retrieval/store/provider implementations
+- ADRs and roadmap
+
+## Forbidden
+
+- Chat context default-on
+- Retrieval policy
+- Automatic knowledge rebuild
+- KnowledgeStore reads from the service
+- ToolPolicy bypass
+
+## Dependencies
+
+- M5.1.2 automatically accepted
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+- ADR-062 and ADR-064 are Proposed and treated as roadmap intent only.
+
+## CLI/context/tool impact
+
+- Runtime now routes normal context assembly through `ConversationContextService`.
+- Knowledge remains excluded unless explicitly supplied and enabled.
+- Tool loop remains unchanged.
+
+## Acceptance criteria
+
+- [x] conversation history and optional knowledge assembled through dedicated service
+- [x] no provider/store concrete dependency leaks inward
+- [x] context budget enforced
+- [x] unit tests cover enabled/disabled modes
+- [x] conversation context is distinct from planning/synthesis context
+- [x] independent test, architecture and security reviews completed
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_conversation_context.py tests/test_agent_runtime.py tests/test_cli_app.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_layering.py tests/test_knowledge_ports.py tests/test_knowledge_domain.py tests/test_context_compiler.py tests/test_planning_context.py tests/test_synthesis_context.py tests/test_knowledge_adversarial.py -q
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Expected report
+
+- `.agent/reports/M5.1.3.md`
+- Milestone status: `automatically-accepted`
+- Next eligible milestone: M5.1.4
+
+---
+
+# M5.1.4 — ConversationContext compiler
+
+## Status
+
+automatically-accepted
+
+## Supervisor notes
+
+- Added `compile_conversation_context()` to the existing `ContextCompiler`.
+- Reused existing provenance, freshness and budget checks.
+- No retrieval or chat opt-in behavior was added in this milestone.
+
+## Tasks
+
+### Task M5.1.4-T1 — Conversation Compiler Entry Point
+
+## Milestone
+
+M5.1.4
+
+## Objective
+
+Add a conversation-specific compiler entry point while preserving provenance, stale exclusion and context type separation.
+
+## Role
+
+Context compiler engineer
+
+## Writable
+
+- `ai_assistant/knowledge/compiler.py`
+- `tests/test_context_compiler.py`
+- `.agent/roadmap-state.md`
+- `.agent/roadmap-state-phase-5.1.md`
+- `.agent/task-queue.md`
+- `.agent/reports/M5.1.4.md`
+
+## Read-only
+
+- Context domain models
+- Conversation context service
+- Planning/synthesis providers
+- ADRs and roadmap
+
+## Forbidden
+
+- Retrieval policy
+- Context default-on
+- Automatic rebuild
+- Store/provider coupling changes
+- ToolPolicy changes
+
+## Dependencies
+
+- M5.1.3 automatically accepted
+
+## Applicable ADRs
+
+- ADR-055, ADR-056, ADR-057, ADR-058
+- ADR-062 and ADR-064 are Proposed and treated as roadmap intent only.
+
+## CLI/context/tool impact
+
+- Adds conversation-purpose compilation only.
+- Leaves runtime retrieval/injection unchanged.
+- No tool impact.
+
+## Acceptance criteria
+
+- [x] `compile_conversation_context()` exists
+- [x] provenance preserved
+- [x] conversation history remains semantically separate from knowledge
+- [x] stale knowledge excluded
+- [x] independent test, architecture and security reviews completed
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_context_compiler.py tests/test_conversation_context.py tests/test_knowledge_domain.py tests/test_knowledge_adversarial.py -q
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -p no:cacheprovider tests/test_context_compiler.py tests/test_conversation_context.py tests/test_cli_app.py tests/test_tool_policy.py -q
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Expected report
+
+- `.agent/reports/M5.1.4.md`
+- Milestone status: `automatically-accepted`
+- Next eligible milestone: M5.1.5
+
+---
+
+# M5.1.5 — Opt-in chat context policy
+
+## Status
+
+automatically-accepted
+
+## Supervisor notes
+
+- Added `chat --context` and `AI_ASSISTANT_CONTEXT_ENGINE=true`.
+- Chat context remains off by default.
+- Empty/no-match knowledge context produces a visible diagnostic and never rebuilds.
+- Corrective loop moved retrieval/rank/compile orchestration out of the application service into a knowledge provider.
+
+## Tasks
+
+### Task M5.1.5-T1 — Opt-in Chat Context
+
+## Milestone
+
+M5.1.5
+
+## Objective
+
+Enable knowledge-aware chat only via explicit CLI flag or environment variable, with safe visible fallback when no fresh index results exist.
+
+## Role
+
+Conversation integration engineer / CLI engineer
+
+## Writable
+
+- `ai_assistant/bootstrap/config.py`
+- `ai_assistant/bootstrap/container.py`
+- `ai_assistant/interfaces/cli/app.py`
+- `ai_assistant/application/runtime.py`
+- `ai_assistant/application/conversation_context.py`
+- `ai_assistant/knowledge/conversation.py`
+- `ai_assistant/knowledge/__init__.py`
+- tests
+- `.agent/*`
+
+## Read-only
+
+- Knowledge CLI rebuild/index implementation
+- Tool policy/coordinator
+- ADRs and roadmap
+
+## Forbidden
+
+- Default-on context
+- Automatic rebuild
+- Live-state override
+- ToolPolicy bypass
+- MCP/network retrieval/semantic memory/automatic skills
+
+## Dependencies
+
+- M5.1.4 automatically accepted
+
+## Applicable ADRs
+
+- ADR-047 through ADR-061
+- ADR-063 is Proposed and treated as roadmap intent only.
+
+## CLI/context/tool impact
+
+- `python main.py chat --context` enables chat retrieval.
+- `AI_ASSISTANT_CONTEXT_ENGINE=true python main.py chat` enables chat retrieval.
+- `python main.py chat` remains context-off.
+- No objective behavior change.
+
+## Acceptance criteria
+
+- [x] chat default remains context-off
+- [x] opt-in enables retrieval
+- [x] no automatic knowledge rebuild
+- [x] no-index fallback is safe and visible
+- [x] independent test, architecture and security reviews completed
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_conversation_context.py tests/test_conversation_knowledge.py tests/test_cli_app.py tests/test_config.py tests/test_agent_runtime.py tests/test_layering.py -q
+printf 'hello\nquit\n' | AI_ASSISTANT_DATABASE=/tmp/blacksmith-m515-chat-context3.sqlite3 AI_ASSISTANT_KNOWLEDGE_DATABASE=/tmp/blacksmith-m515-empty3.sqlite3 venv/bin/python main.py chat --context
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Expected report
+
+- `.agent/reports/M5.1.5.md`
+- Milestone status: `automatically-accepted`
+- Next eligible milestone: M5.1.6
+
+---
+
+# M5.1.6 — Deterministic retrieval policy
+
+## Status
+
+automatically-accepted
+
+## Supervisor notes
+
+- Added `ConversationRetrievalPolicy`.
+- Context-disabled and short acknowledgement turns bypass retrieval.
+- Project/code/document questions can retrieve.
+- Corrective loop added volatile live-state bypass for current Git/test/build/status prompts.
+
+## Tasks
+
+### Task M5.1.6-T1 — Deterministic Conversation Retrieval Policy
+
+## Milestone
+
+M5.1.6
+
+## Objective
+
+Make context-enabled chat retrieval deterministic and bypass simple or volatile live-state turns without using an LLM classifier.
+
+## Role
+
+Retrieval policy engineer
+
+## Writable
+
+- `ai_assistant/knowledge/retrieval_policy.py`
+- `ai_assistant/application/conversation_context.py`
+- `ai_assistant/bootstrap/container.py`
+- `ai_assistant/knowledge/__init__.py`
+- tests
+- `.agent/*`
+
+## Read-only
+
+- Tool policy/coordinator
+- Knowledge store/retriever
+- ADRs and roadmap
+
+## Forbidden
+
+- LLM classifier
+- Default-on context
+- Live-state substitution from indexed knowledge
+- Automatic rebuild
+- ToolPolicy bypass
+
+## Dependencies
+
+- M5.1.5 automatically accepted
+
+## Applicable ADRs
+
+- ADR-058, ADR-059
+- ADR-065 and ADR-067 are Proposed and treated as roadmap intent only.
+
+## CLI/context/tool impact
+
+- Retrieval is still opt-in.
+- Short acknowledgements bypass retrieval.
+- Volatile live-state prompts bypass retrieval so tool loop can handle them.
+- No tool execution change.
+
+## Acceptance criteria
+
+- [x] retrieval bypasses simple conversational turns
+- [x] project/code/document questions can retrieve
+- [x] no LLM classifier is introduced
+- [x] behavior is testable/deterministic
+- [x] volatile live-state questions bypass indexed retrieval
+- [x] independent test, architecture and security reviews completed
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_conversation_retrieval_policy.py tests/test_conversation_context.py tests/test_conversation_knowledge.py tests/test_cli_app.py -q
+printf 'What is the current git status?\nquit\n' | AI_ASSISTANT_DATABASE=/tmp/blacksmith-m516-chat-git.sqlite3 AI_ASSISTANT_KNOWLEDGE_DATABASE=/tmp/blacksmith-m516-empty2.sqlite3 venv/bin/python main.py chat --context
+printf 'Explain project architecture\nquit\n' | AI_ASSISTANT_DATABASE=/tmp/blacksmith-m516-chat-project2.sqlite3 AI_ASSISTANT_KNOWLEDGE_DATABASE=/tmp/blacksmith-m516-empty2.sqlite3 venv/bin/python main.py chat --context
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Expected report
+
+- `.agent/reports/M5.1.6.md`
+- Milestone status: `automatically-accepted`
+- Next eligible milestone: M5.1.7
+
+---
+
+# M5.1.7 — Preserve conversational tool loop
+
+## Status
+
+automatically-accepted
+
+## Supervisor notes
+
+- No production tool-loop changes were needed beyond previous context integration.
+- Added runtime evidence that context-enabled chat still executes one tool round through `ToolExecutionCoordinator`.
+- Corrective loop broadened live-state retrieval bypass for direct Git/test/build prompts.
+
+## Tasks
+
+### Task M5.1.7-T1 — Tool Loop Validation
+
+## Milestone
+
+M5.1.7
+
+## Objective
+
+Verify knowledge context does not bypass or duplicate conversational tool execution and volatile live-state prompts prefer live capability paths.
+
+## Role
+
+Tool integration reviewer / Test agent
+
+## Writable
+
+- `tests/test_agent_runtime.py`
+- `ai_assistant/knowledge/retrieval_policy.py`
+- `tests/test_conversation_retrieval_policy.py`
+- `.agent/*`
+
+## Read-only
+
+- Tool coordinator/policy/audit implementation
+- Runtime tool execution implementation
+- Bootstrap composition
+
+## Forbidden
+
+- ToolPolicy bypass
+- Additional tool rounds
+- New privileged capabilities
+- Indexed knowledge as live-state authority
+
+## Dependencies
+
+- M5.1.6 automatically accepted
+
+## Applicable ADRs
+
+- ADR-016 through ADR-025
+- ADR-065 is Proposed and treated as roadmap intent only.
+
+## CLI/context/tool impact
+
+- Tool loop remains one bounded round.
+- Live-state prompts bypass indexed retrieval before model/tool path.
+- No new tool behavior added.
+
+## Acceptance criteria
+
+- [x] existing tool round continues working
+- [x] knowledge context does not bypass ToolPolicy
+- [x] live-state questions still use live capability path
+- [x] no duplicate unnecessary tool calls introduced
+- [x] independent test, architecture and security reviews completed
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_agent_runtime.py tests/test_tool_coordinator.py tests/test_tool_policy.py tests/test_conversation_retrieval_policy.py tests/test_conversation_context.py -q
+printf 'git status\nquit\n' | AI_ASSISTANT_DATABASE=/tmp/blacksmith-m517-chat-gitstatus.sqlite3 AI_ASSISTANT_KNOWLEDGE_DATABASE=/tmp/blacksmith-m517-empty.sqlite3 venv/bin/python main.py chat --context
+printf 'are tests passing?\nquit\n' | AI_ASSISTANT_DATABASE=/tmp/blacksmith-m517-chat-tests.sqlite3 AI_ASSISTANT_KNOWLEDGE_DATABASE=/tmp/blacksmith-m517-empty.sqlite3 venv/bin/python main.py chat --context
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Expected report
+
+- `.agent/reports/M5.1.7.md`
+- Milestone status: `automatically-accepted`
+- Next eligible milestone: M5.1.8
+
+---
+
+# M5.1.8 — Metrics exposure
+
+## Status
+
+automatically-accepted
+
+## Supervisor notes
+
+- Added optional sanitized metrics for chat, knowledge query and objective command paths.
+- Corrective loop fixed env-triggered metrics so `AI_ASSISTANT_SHOW_METRICS=true` applies consistently to objective and knowledge commands.
+
+## Tasks
+
+### Task M5.1.8-T1 — CLI Metrics Exposure
+
+## Milestone
+
+M5.1.8
+
+## Objective
+
+Expose optional sanitized metrics for conversation context, knowledge query and objective execution without enabling retrieval or leaking content.
+
+## Role
+
+Metrics engineer
+
+## Writable
+
+- `ai_assistant/bootstrap/config.py`
+- `ai_assistant/bootstrap/container.py`
+- `ai_assistant/application/runtime.py`
+- `ai_assistant/application/conversation_context.py`
+- `ai_assistant/interfaces/cli/app.py`
+- `ai_assistant/interfaces/cli/knowledge.py`
+- tests
+- `.agent/*`
+
+## Read-only
+
+- Tool policy/coordinator/audit implementation
+- Knowledge store/retriever semantics
+
+## Forbidden
+
+- Default-on chat context
+- Retrieved content in metrics
+- ToolPolicy bypass
+- Automatic rebuild
+- New dependency
+
+## Dependencies
+
+- M5.1.7 automatically accepted
+
+## Applicable ADRs
+
+- ADR-055 through ADR-059
+- ADR-065 and ADR-067 are Proposed and treated as roadmap intent only.
+
+## CLI/context/tool impact
+
+- `chat --metrics` prints conversation context metrics when available.
+- `knowledge query TEXT --metrics` prints query candidate count.
+- `AI_ASSISTANT_SHOW_METRICS=true` enables the same metrics output.
+- Objective metrics compatibility is preserved.
+
+## Acceptance criteria
+
+- [x] `--metrics` for chat
+- [x] `--metrics` for knowledge query
+- [x] existing objective metrics preserved
+- [x] metrics optional and sanitized
+- [x] env `AI_ASSISTANT_SHOW_METRICS=true` optional
+- [x] independent test, architecture and security reviews completed
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_cli_app.py tests/test_knowledge_cli.py tests/test_config.py tests/test_conversation_context.py tests/test_conversation_knowledge.py tests/test_context_metrics.py -q
+AI_ASSISTANT_SHOW_METRICS=true venv/bin/python main.py knowledge query blacksmith
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Expected report
+
+- `.agent/reports/M5.1.8.md`
+- Milestone status: `automatically-accepted`
+- Next eligible milestone: M5.1.9
+
+---
+
+# M5.1.9 — Knowledge status UX
+
+## Status
+
+automatically-accepted
+
+## Supervisor notes
+
+- Added lifecycle labels to `knowledge status`: `empty`, `fresh`, `partially-stale`, `stale`, `error`.
+- Added explicit empty/stale/no-match diagnostics for `knowledge query`.
+- No store API, dependency or rebuild behavior was added.
+
+## Tasks
+
+### Task M5.1.9-T1 — Knowledge Lifecycle Diagnostics
+
+## Milestone
+
+M5.1.9
+
+## Objective
+
+Make knowledge lifecycle status and empty/stale query results explicit for operators without automatic rebuilds.
+
+## Role
+
+Knowledge UX engineer
+
+## Writable
+
+- `ai_assistant/interfaces/cli/knowledge.py`
+- `tests/test_knowledge_cli.py`
+- `docs/knowledge-engine.md`
+- `.agent/*`
+
+## Read-only
+
+- KnowledgeStore port and SQLite adapter
+- Retrieval/ranking/compiler behavior
+- Tool policy/coordinator/audit implementation
+
+## Forbidden
+
+- Automatic rebuild/index/watch behavior
+- Stale knowledge returned as fresh evidence
+- New dependency
+- MCP/network retrieval/semantic memory/automatic skills
+- ToolPolicy bypass
+
+## Dependencies
+
+- M5.1.8 automatically accepted
+
+## Applicable ADRs
+
+- ADR-048, ADR-058, ADR-059
+- ADR-065 is Proposed and treated as roadmap intent only.
+
+## CLI/context/tool impact
+
+- `knowledge status` reports lifecycle state and counts.
+- `knowledge query` explains empty, stale-only and fresh no-match states.
+- Query metrics still work.
+- No chat/objective/tool behavior changed.
+
+## Acceptance criteria
+
+- [x] status distinguishes empty/fresh/partially-stale/stale/error
+- [x] query provides explicit stale/empty diagnostics
+- [x] no implicit rebuild
+- [x] operator guidance documented
+- [x] independent test, architecture and security reviews completed
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_knowledge_cli.py tests/test_cli_app.py tests/test_sqlite_knowledge_store.py -q
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Expected report
+
+- `.agent/reports/M5.1.9.md`
+- Milestone status: `automatically-accepted`
+- Next eligible milestone: M5.1.10
+
+---
+
+# M5.1.10 — Presets and operator docs
+
+## Status
+
+automatically-accepted
+
+## Supervisor notes
+
+- Documented the recommended local chat/context profile.
+- Documented chat/context, objective metrics, knowledge lifecycle/query metrics and failure-case workflows.
+- Added a focused docs regression test.
+
+## Tasks
+
+### Task M5.1.10-T1 — Operator Preset Documentation
+
+## Milestone
+
+M5.1.10
+
+## Objective
+
+Document the recommended local profile, workflows and failure cases without changing runtime behavior.
+
+## Role
+
+Knowledge UX engineer / Documentation
+
+## Writable
+
+- `docs/knowledge-engine.md`
+- `tests/test_phase51_docs.py`
+- `.agent/*`
+
+## Read-only
+
+- CLI implementation
+- Config/bootstrap implementation
+- Tool policy/coordinator/audit implementation
+
+## Forbidden
+
+- Production dependency
+- New capability family
+- Default-on chat context
+- Automatic rebuild/watchers
+- MCP/network retrieval/semantic memory/automatic skills/external vector DB
+- ToolPolicy bypass
+
+## Dependencies
+
+- M5.1.9 automatically accepted
+
+## Applicable ADRs
+
+- ADR-048, ADR-058, ADR-059
+- ADR-063 through ADR-067 are Implemented and binding after project-owner approval.
+
+## CLI/context/tool impact
+
+- Documentation only.
+- No runtime behavior changed.
+
+## Acceptance criteria
+
+- [x] config documented
+- [x] chat/context/objective/knowledge workflows documented
+- [x] failure cases documented
+- [x] independent test, architecture and security reviews completed
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_phase51_docs.py tests/test_phase4_docs.py tests/test_cli_app.py tests/test_knowledge_cli.py -q
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Expected report
+
+- `.agent/reports/M5.1.10.md`
+- Milestone status: `automatically-accepted`
+- Next eligible milestone: M5.1.11
+
+---
+
+# M5.1.11 — Adversarial/regression suite
+
+## Status
+
+automatically-accepted
+
+## Supervisor notes
+
+- Added a Phase 5.1 adversarial checklist test file.
+- Corrective loop added a real stale-index chat-path test using SQLite store, hybrid retriever, ranker and compiler.
+
+## Tasks
+
+### Task M5.1.11-T1 — Phase 5.1 Adversarial Regression Coverage
+
+## Milestone
+
+M5.1.11
+
+## Objective
+
+Cover required Phase 5.1 adversarial and regression scenarios across context, retrieval, tools, metrics, CLI and Phase 1–5 compatibility.
+
+## Role
+
+Test agent / Security reviewer
+
+## Writable
+
+- `tests/test_phase51_adversarial.py`
+- `.agent/*`
+
+## Read-only
+
+- Production runtime/context/knowledge/tool code
+- Existing Phase 1–5 tests
+
+## Forbidden
+
+- Production behavior changes
+- Default-on chat context
+- Automatic rebuild/watchers
+- Stale knowledge as live authority
+- ToolPolicy bypass
+- MCP/network retrieval/semantic memory/automatic skills/external vector DB
+
+## Dependencies
+
+- M5.1.10 automatically accepted
+
+## Applicable ADRs
+
+- ADR-016 through ADR-025
+- ADR-048, ADR-055 through ADR-059
+- ADR-063 through ADR-067 are Proposed and treated as roadmap intent only.
+
+## CLI/context/tool impact
+
+- Test-only milestone.
+- No runtime behavior changed.
+
+## Acceptance criteria
+
+- [x] context disabled
+- [x] context enabled with empty index
+- [x] context enabled with stale index
+- [x] short-chat retrieval bypass
+- [x] project-query retrieval
+- [x] live-state capability preference
+- [x] tool-policy preservation
+- [x] budget overflow
+- [x] provenance preservation
+- [x] metrics disabled/enabled
+- [x] CLI malformed args
+- [x] Phase 1–5 regressions
+- [x] independent test, architecture and security reviews completed
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_phase51_adversarial.py tests/test_knowledge_adversarial.py tests/test_conversation_context.py tests/test_conversation_retrieval_policy.py tests/test_agent_runtime.py tests/test_cli_app.py tests/test_tool_policy.py tests/test_tool_coordinator.py -q
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Expected report
+
+- `.agent/reports/M5.1.11.md`
+- Milestone status: `automatically-accepted`
+- Next eligible milestone: M5.1.12
+
+---
+
+# M5.1.12 — End-to-end validation
+
+## Status
+
+automatically-accepted
+
+## Supervisor notes
+
+- Added deterministic E2E tests for plain chat, context-aware project chat, live Git state and empty/stale knowledge fallback.
+- Full regression remained green.
+
+## Tasks
+
+### Task M5.1.12-T1 — Mini-phase E2E Scenarios
+
+## Milestone
+
+M5.1.12
+
+## Objective
+
+Validate the required Phase 5.1 end-to-end chat/context/objective/knowledge scenarios through runtime and knowledge seams.
+
+## Role
+
+Integration validator
+
+## Writable
+
+- `tests/test_phase51_e2e.py`
+- `.agent/*`
+
+## Read-only
+
+- Runtime/context/knowledge/tool implementation
+- Existing regression suite
+
+## Forbidden
+
+- Network/model dependency for E2E tests
+- Production behavior change
+- Default-on chat context
+- Automatic rebuild/watchers
+- Stale knowledge as live-state authority
+- ToolPolicy bypass
+- MCP/network retrieval/semantic memory/automatic skills/external vector DB
+
+## Dependencies
+
+- M5.1.11 automatically accepted
+
+## Applicable ADRs
+
+- ADR-016 through ADR-025
+- ADR-048, ADR-055 through ADR-059
+- ADR-063 through ADR-067 are Proposed and treated as roadmap intent only.
+
+## CLI/context/tool impact
+
+- Test-only milestone.
+- No runtime behavior changed.
+
+## Acceptance criteria
+
+- [x] plain chat: retrieval skipped, tool calls 0
+- [x] context-aware project chat: knowledge retrieval, grounded response, no filesystem tool call when fresh evidence is sufficient
+- [x] live-state question: live `git_status` capability path, not indexed knowledge as authoritative state
+- [x] empty/stale knowledge: clear diagnostic, safe fallback, no implicit rebuild
+- [x] independent test, architecture and security reviews completed
+
+## Validation commands
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest tests/test_phase51_e2e.py tests/test_phase51_adversarial.py tests/test_agent_runtime.py tests/test_conversation_knowledge.py tests/test_conversation_context.py -q
+PKG_CONFIG_PATH=/home/rc-regalado/.local/lib/pkgconfig LD_LIBRARY_PATH=/home/rc-regalado/.local/lib PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q
+git diff --check
+```
+
+## Expected report
+
+- `.agent/reports/M5.1.12.md`
+- Milestone status: `automatically-accepted`
+- Next eligible milestone: M5.1.13
+
+## Task M5.1.13 — Final Mini-Phase Closure
+
+- Objective: Validate and close Phase 5.1, then queue one final human review.
+- Scope: final regression, E2E scenarios, ADR/documentation consistency, security and architecture review, canonical state and reports.
+- Acceptance evidence: `520 passed, 1 skipped`; focused Phase 5.1 tests `48 passed`; `git diff --check` passed; ADR-062 through ADR-067 Implemented; symlink indexing escape corrected; reusable `chat --context` state reset corrected.
+- Status: automatically-accepted; final phase status `implemented-awaiting-final-human-review`.
+- Report: `.agent/reports/M5.1.13.md`.

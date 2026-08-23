@@ -7,6 +7,8 @@ import time
 from pathlib import PurePosixPath
 
 from ai_assistant.application.tool_coordinator import ToolExecutionCoordinator
+from ai_assistant.application.tool_diagnostics import ToolLoopDiagnostics
+from ai_assistant.application.ports.tools import ToolDiagnosticLogger
 from ai_assistant.domain.tools import (
     ToolExecutionRequest,
     ToolExecutionResult,
@@ -61,6 +63,9 @@ class ExecutionEngine:
         evaluator: Evaluator,
         tools: ToolExecutionCoordinator,
         synthesis_context_provider=None,
+        tool_diagnostics: ToolDiagnosticLogger | None = None,
+        model_provider_name: str = "unknown",
+        model_name: str = "unknown",
     ) -> None:
         self._planner = planner
         self._validator = validator
@@ -72,6 +77,9 @@ class ExecutionEngine:
         self._evaluator = evaluator
         self._tools = tools
         self._synthesis_context_provider = synthesis_context_provider
+        self._tool_diagnostics = tool_diagnostics
+        self._model_provider_name = model_provider_name
+        self._model_name = model_name
 
     @property
     def last_planner_response(self) -> str | None:
@@ -147,7 +155,13 @@ class ExecutionEngine:
                 task.task_id,
                 task.capability.value,
             )
-            result = self._execute_tool(execution_id, session_id, task)
+            result = self._execute_tool(
+                execution_id,
+                session_id,
+                task,
+                round_index=usage.tool_calls,
+                tool_call_count=usage.tool_calls,
+            )
             usage = self._budget_manager.record_output(budget, usage, _output_bytes(result))
             _log_budget("output", usage)
             if result.status != ToolExecutionStatus.SUCCESS:
@@ -178,6 +192,8 @@ class ExecutionEngine:
         execution_id: str,
         session_id: str,
         task,
+        round_index: int,
+        tool_call_count: int,
     ) -> ToolExecutionResult:
         tool_name = self._registry.tool_name_for(task.capability)
         request = ToolExecutionRequest(
@@ -187,7 +203,28 @@ class ExecutionEngine:
             arguments=task.arguments,
             permission=_permission(task.capability),
         )
-        return self._tools.execute(request)
+        diagnostics = ToolLoopDiagnostics(
+            self._tool_diagnostics,
+            self._model_provider_name,
+            self._model_name,
+        )
+        diagnostics.requested(
+            request,
+            round_index=round_index,
+            tool_call_count=tool_call_count,
+            capability_name=task.capability.value,
+        )
+        started = time.monotonic()
+        result = self._tools.execute(request)
+        diagnostics.completed(
+            request,
+            result,
+            round_index=round_index,
+            tool_call_count=tool_call_count,
+            duration_ms=(time.monotonic() - started) * 1000,
+            capability_name=task.capability.value,
+        )
+        return result
 
     def _synthesize(self, objective: Objective, result: ExecutionResult) -> ExecutionResult:
         if self._synthesis_context_provider is None:

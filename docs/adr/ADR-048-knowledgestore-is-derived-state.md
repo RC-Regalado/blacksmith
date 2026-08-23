@@ -1,6 +1,6 @@
 # ADR-048 — KnowledgeStore Is Derived State
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-08-17
 - Deciders: Project owner
 

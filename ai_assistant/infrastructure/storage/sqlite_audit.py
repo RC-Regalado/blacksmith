@@ -10,21 +10,7 @@ from pathlib import Path
 from ai_assistant.application.ports.tools import AuditRecorder
 from ai_assistant.domain.errors import ToolAuditStoreError
 from ai_assistant.domain.tools import ToolAuditEvent
-
-_REDACTED = "[redacted]"
-_SENSITIVE_KEYS = {
-    "api_key",
-    "auth",
-    "authorization",
-    "content",
-    "file_content",
-    "password",
-    "prompt",
-    "response",
-    "secret",
-    "token",
-}
-
+from ai_assistant.infrastructure.sanitization import redact_sensitive
 
 @dataclass(frozen=True, slots=True)
 class AuditPurgeResult:
@@ -153,7 +139,7 @@ def _row(event: ToolAuditEvent) -> tuple[object, ...]:
         event.decision.value,
         event.status.value,
         event.workspace_id,
-        json.dumps(_redact(event.argument_summary), sort_keys=True),
+        json.dumps(redact_sensitive(event.argument_summary), sort_keys=True),
         event.started_at.isoformat(),
         event.ended_at.isoformat(),
         event.duration_ms,
@@ -162,7 +148,6 @@ def _row(event: ToolAuditEvent) -> tuple[object, ...]:
         event.error_code,
         json.dumps(list(event.artifact_ids), sort_keys=True),
     )
-
 
 def _expired_rows(
     rows: list[sqlite3.Row | tuple[object, ...]],
@@ -229,19 +214,3 @@ def _purge_row(result: AuditPurgeResult, now: datetime) -> tuple[object, ...]:
         None,
         "[]",
     )
-
-
-def _redact(value: object) -> object:
-    if isinstance(value, Mapping):
-        return {
-            str(key): _REDACTED if _is_sensitive(str(key)) else _redact(item)
-            for key, item in value.items()
-        }
-    if isinstance(value, list | tuple):
-        return [_redact(item) for item in value]
-    return value
-
-
-def _is_sensitive(key: str) -> bool:
-    normalized = key.lower()
-    return any(part in normalized for part in _SENSITIVE_KEYS)
