@@ -79,10 +79,22 @@ class KnowledgeCli:
         workspace = self._require_workspace()
         if clear:
             self._store.clear()
-        files = _files_for(_resolve(workspace, path))
+        target = _resolve(workspace, path)
+        recursive = target.is_dir()
+        files = _files_for(target)
         indexed = skipped = 0
         for file_path in files:
-            if self._index_file(workspace, file_path):
+            try:
+                changed = self._index_file(workspace, file_path)
+            except InvalidToolCallError:
+                # A directly named target still fails loudly; a recursive
+                # walk skips an individual unreadable file (e.g. compiled
+                # bytecode under __pycache__) instead of aborting the batch.
+                if not recursive:
+                    raise
+                skipped += 1
+                continue
+            if changed:
                 indexed += 1
             else:
                 skipped += 1

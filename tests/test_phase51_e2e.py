@@ -2,7 +2,7 @@
 
 import pytest
 
-from ai_assistant.agent.message import Message
+from ai_assistant.agent.message import FinishReason, Message, ModelResponse
 from ai_assistant.agent.planner import ToolCallDetector
 from ai_assistant.agent.runtime import AgentRuntime
 from ai_assistant.application.context import ContextBuilder
@@ -185,6 +185,9 @@ class InspectingModel:
         self._responses = responses
         self.calls: list[list[Message]] = []
 
-    def chat(self, messages: list[Message]) -> Message:
+    def chat(self, messages: list[Message]) -> ModelResponse:
         self.calls.append(messages)
-        return Message(role="assistant", content=self._responses.pop(0))
+        return ModelResponse(
+            message=Message(role="assistant", content=self._responses.pop(0)),
+            finish_reason=FinishReason.STOP,
+        )

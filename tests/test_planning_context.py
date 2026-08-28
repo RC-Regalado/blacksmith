@@ -19,6 +19,7 @@ from ai_assistant.knowledge import (
 from ai_assistant.platform.application import ModelBackedPlanner, StaticCapabilityRegistry
 from ai_assistant.platform.domain import Objective
 from ai_assistant.domain.message import Message
+from ai_assistant.domain.model_response import FinishReason, ModelResponse
 
 
 pytestmark = pytest.mark.unit
@@ -50,9 +51,12 @@ class _Model(ModelProvider):
     def __init__(self) -> None:
         self.messages: list[Message] = []
 
-    def chat(self, messages: list[Message]) -> Message:
+    def chat(self, messages: list[Message]) -> ModelResponse:
         self.messages = messages
-        return Message(
-            role="assistant",
-            content='{"plan_id":"plan-1","tasks":[{"capability":"InspectDirectory","arguments":{"path":"."}}]}',
+        return ModelResponse(
+            message=Message(
+                role="assistant",
+                content='{"plan_id":"plan-1","tasks":[{"capability":"InspectDirectory","arguments":{"path":"."}}]}',
+            ),
+            finish_reason=FinishReason.STOP,
         )

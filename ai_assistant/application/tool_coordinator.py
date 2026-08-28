@@ -1,5 +1,6 @@
 """Tool execution coordinator."""
 
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -77,41 +78,48 @@ class ToolExecutionCoordinator:
         decision = self._policy.decide(request, definition)
         if decision.kind != PolicyDecisionKind.ALLOW:
             return self._deny(request, decision.reason_code or "denied")
-        context = self._resolve_path(request, definition)
+        context, executor_operations = self._resolve_path(request, definition)
         if context is None:
-            return self._deny(request, REASON_PATH_DENIED)
+            return self._deny(request, REASON_PATH_DENIED, executor_operations=executor_operations)
         active_request = context.request
         if active_request.permission in _CONFIRMATION_REQUIRED:
             if self._confirmation is None:
-                return self._deny_context(context, "confirmation_required")
+                return self._deny_context(
+                    context, "confirmation_required", executor_operations=executor_operations
+                )
             if not self._confirmation.ensure_confirmed(
                 active_request.session_id,
                 context.workspace_id,
                 active_request.permission,
                 active_request.request_id,
             ):
-                return self._deny_context(context, "confirmation_denied")
+                return self._deny_context(
+                    context, "confirmation_denied", executor_operations=executor_operations
+                )
         self._audit.record(_event(context, decision, ToolExecutionStatus.ALLOWED))
-        result = self._execute(context)
+        result = replace(self._execute(context), executor_operations=executor_operations)
         self._audit.record(_event(context, decision, result.status, result))
         return result
 
     def _resolve_path(
         self, request: ToolExecutionRequest, definition: ToolDefinition
-    ) -> ToolExecutionContext | None:
+    ) -> tuple[ToolExecutionContext | None, int]:
         """Validate the request's path, attempting one bounded recovery.
 
         A single internal retry (case-only path correction) may run here
         without consuming an additional model tool round: this method is
         invoked exactly once per `execute()` call, which is itself exactly
-        one model tool request (ADR-024). Any internal retry is invisible
-        above this layer.
+        one model tool request (ADR-024/ADR-069 loop round accounting is the
+        caller's responsibility). Any internal retry is invisible above this
+        layer. Returns the resolved context (or `None` on denial) alongside
+        how many executor operations the resolution attempt spent, so the
+        caller can enforce a platform-owned `max_executor_operations` budget.
         """
         try:
-            return self._path_policy.validate(request, definition)
+            return self._path_policy.validate(request, definition), 1
         except InvalidToolCallError as exc:
             if not self._recovery_eligible(exc, definition):
-                return None
+                return None, 1
             return self._attempt_recovery(request, definition, exc)
 
     def _recovery_eligible(
@@ -128,7 +136,7 @@ class ToolExecutionCoordinator:
         request: ToolExecutionRequest,
         definition: ToolDefinition,
         original_exc: InvalidToolCallError,
-    ) -> ToolExecutionContext | None:
+    ) -> tuple[ToolExecutionContext | None, int]:
         requested_path = str(request.arguments.get("path", ""))
         # Operation 1 is the failed attempt already made by `_resolve_path`.
         executor_operations = 1
@@ -155,7 +163,7 @@ class ToolExecutionCoordinator:
                 code=getattr(exc, "code", REASON_PATH_DENIED),
                 message=str(exc) or "Recovery lookup failed.",
             )
-            return None
+            return None, executor_operations
 
         resolved_path = corrected_relative.as_posix()
         self._recovery_event(
@@ -189,7 +197,7 @@ class ToolExecutionCoordinator:
                 code=getattr(exc, "code", REASON_PATH_DENIED),
                 message=str(exc) or "Recovery retry failed.",
             )
-            return None
+            return None, executor_operations
 
         self._recovery_event(
             corrected_request,
@@ -199,7 +207,7 @@ class ToolExecutionCoordinator:
             executor_operations,
             recovery_operations,
         )
-        return context
+        return context, executor_operations
 
     def _recovery_event(
         self,
@@ -226,7 +234,9 @@ class ToolExecutionCoordinator:
             message=message,
         )
 
-    def _deny(self, request: ToolExecutionRequest, reason_code: str) -> ToolExecutionResult:
+    def _deny(
+        self, request: ToolExecutionRequest, reason_code: str, *, executor_operations: int = 0
+    ) -> ToolExecutionResult:
         decision = ToolPolicyDecision(
             kind=PolicyDecisionKind.DENY,
             reason_code=reason_code,
@@ -237,12 +247,13 @@ class ToolExecutionCoordinator:
             tool_name=request.tool_name,
             status=ToolExecutionStatus.DENIED,
             error=SanitizedToolError(code=reason_code, message="Tool request denied."),
+            executor_operations=executor_operations,
         )
         self._audit.record(_event(context, decision, ToolExecutionStatus.DENIED, result))
         return result
 
     def _deny_context(
-        self, context: ToolExecutionContext, reason_code: str
+        self, context: ToolExecutionContext, reason_code: str, *, executor_operations: int = 1
     ) -> ToolExecutionResult:
         decision = ToolPolicyDecision(
             kind=PolicyDecisionKind.DENY,
@@ -253,6 +264,7 @@ class ToolExecutionCoordinator:
             tool_name=context.request.tool_name,
             status=ToolExecutionStatus.DENIED,
             error=SanitizedToolError(code=reason_code, message="Tool request denied."),
+            executor_operations=executor_operations,
         )
         self._audit.record(_event(context, decision, ToolExecutionStatus.DENIED, result))
         return result
@@ -283,6 +295,7 @@ def _with_path(request: ToolExecutionRequest, path: str) -> ToolExecutionRequest
         permission=request.permission,
         timeout_seconds=request.timeout_seconds,
         dry_run=request.dry_run,
+        interaction_id=request.interaction_id,
     )
 
 
@@ -308,4 +321,5 @@ def _event(
         dry_run=context.request.dry_run,
         denial_reason=decision.reason_code,
         error_code=result.error.code if result and result.error else None,
+        interaction_id=context.request.interaction_id,
     )

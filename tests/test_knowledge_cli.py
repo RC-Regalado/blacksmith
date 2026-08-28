@@ -153,6 +153,18 @@ def test_knowledge_cli_skips_external_symlink_during_recursive_index(tmp_path, c
     assert "indexed=0 skipped=0" in capsys.readouterr().out
 
 
+def test_knowledge_cli_skips_non_utf8_file_during_recursive_index(tmp_path, capsys) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / "README.md").write_text("blacksmith setup\n", encoding="utf-8")
+    (workspace / "compiled.pyc").write_bytes(b"\xff\xd8\xb9\x00")
+    cli = KnowledgeCli(SQLiteKnowledgeStore(tmp_path / "knowledge.sqlite3"), str(workspace), 1024)
+
+    cli.run(("rebuild", "."))
+
+    assert "indexed=1 skipped=1" in capsys.readouterr().out
+
+
 class FailingStatusStore:
     def list_documents(self):
         raise KnowledgeStoreError("knowledge status unavailable.")

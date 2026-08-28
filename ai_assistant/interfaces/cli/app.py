@@ -71,6 +71,7 @@ class CliApplication:
                 print(response.content)
                 if show_metrics:
                     _print_context_metrics("conversation", self._runtime.last_context_metrics)
+                    _print_interaction_metrics(getattr(self._runtime, "last_interaction_metrics", None))
             except AssistantError as error:
                 logger.error("expected assistant error type=%s", type(error).__name__)
                 print(f"Error: {error}", file=sys.stderr)
@@ -175,6 +176,25 @@ def _print_context_metrics(label: str, metrics) -> None:
         f"raw_tokens={metrics.raw_context_estimated_tokens} "
         f"compiled_tokens={metrics.compiled_context_estimated_tokens} "
         f"reduction_ratio={metrics.context_reduction_ratio:.4f}"
+    )
+
+
+def _print_interaction_metrics(metrics) -> None:
+    if metrics is None:
+        return
+    print(
+        f"- interaction: outcome={metrics.outcome} "
+        f"model_calls={metrics.model_calls} "
+        f"finish_reason={metrics.finish_reason.value if metrics.finish_reason else 'n/a'} "
+        f"prompt_tokens={metrics.prompt_tokens if metrics.prompt_tokens is not None else 'n/a'} "
+        f"output_tokens={metrics.output_tokens if metrics.output_tokens is not None else 'n/a'} "
+        f"truncated={metrics.truncated} "
+        f"tool_rounds={metrics.tool_rounds} "
+        f"tool_requests={metrics.tool_requests} "
+        f"executor_operations={metrics.executor_operations} "
+        f"recovery_operations={metrics.recovery_operations} "
+        f"retrieval_attempted={metrics.retrieval_attempted} "
+        f"knowledge_chunks_selected={metrics.knowledge_chunks_selected}"
     )
 
 

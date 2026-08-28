@@ -43,9 +43,10 @@ class SQLiteAuditRecorder(AuditRecorder):
                     INSERT INTO tool_audit_events (
                         request_id, session_id, tool_name, permission, decision,
                         status, workspace_id, argument_summary, started_at, ended_at,
-                        duration_ms, dry_run, denial_reason, error_code, artifact_ids
+                        duration_ms, dry_run, denial_reason, error_code, artifact_ids,
+                        interaction_id
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     _row(event),
                 )
@@ -86,9 +87,10 @@ class SQLiteAuditRecorder(AuditRecorder):
                         INSERT INTO tool_audit_events (
                             request_id, session_id, tool_name, permission, decision,
                             status, workspace_id, argument_summary, started_at, ended_at,
-                            duration_ms, dry_run, denial_reason, error_code, artifact_ids
+                            duration_ms, dry_run, denial_reason, error_code, artifact_ids,
+                            interaction_id
                         )
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         _purge_row(result, current),
                     )
@@ -119,6 +121,7 @@ class SQLiteAuditRecorder(AuditRecorder):
                         denial_reason TEXT,
                         error_code TEXT,
                         artifact_ids TEXT NOT NULL,
+                        interaction_id TEXT,
                         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                     )
                     """
@@ -147,6 +150,7 @@ def _row(event: ToolAuditEvent) -> tuple[object, ...]:
         event.denial_reason,
         event.error_code,
         json.dumps(list(event.artifact_ids), sort_keys=True),
+        event.interaction_id,
     )
 
 def _expired_rows(
@@ -213,4 +217,5 @@ def _purge_row(result: AuditPurgeResult, now: datetime) -> tuple[object, ...]:
         None,
         None,
         "[]",
+        None,
     )

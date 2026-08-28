@@ -67,7 +67,7 @@ def test_openai_chat_posts_to_responses_with_timeout(
         timeout_seconds=2.5,
     ).chat([Message(role="user", content="hello")])
 
-    assert response == Message(role="assistant", content="ok")
+    assert response.message == Message(role="assistant", content="ok")
     assert captured["url"] == "http://openai.test/v1/responses"
     assert captured["timeout"] == 2.5
     assert captured["body"] == {

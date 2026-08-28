@@ -1,6 +1,7 @@
 """Conversation context assembly."""
 
 from ai_assistant.application.context import ContextBuilder
+from ai_assistant.application.conversation_budget import ConversationContextBudget, estimate_tokens
 from ai_assistant.domain.errors import InvalidKnowledgeError
 from ai_assistant.domain.message import Message
 from ai_assistant.knowledge import CompiledContext, ContextPurpose
@@ -11,14 +12,12 @@ class ConversationContextService:
     def __init__(
         self,
         context_builder: ContextBuilder,
-        max_total_context_tokens: int = 4096,
+        budget: ConversationContextBudget = ConversationContextBudget(),
         context_provider=None,
         retrieval_policy=None,
     ) -> None:
-        if max_total_context_tokens <= 0:
-            raise ValueError("max_total_context_tokens must be positive.")
+        self.budget = budget
         self._context_builder = context_builder
-        self._max_total_context_tokens = max_total_context_tokens
         self._context_provider = context_provider
         self._retrieval_policy = retrieval_policy
         self.last_diagnostic: str | None = None
@@ -38,7 +37,7 @@ class ConversationContextService:
         if compiled_context.purpose != ContextPurpose.CONVERSATION:
             raise InvalidKnowledgeError("conversation context requires conversation-purpose knowledge.")
         knowledge = _knowledge_message(compiled_context)
-        if _token_count(messages) + compiled_context.token_count > self._max_total_context_tokens:
+        if _token_count(messages) + compiled_context.token_count > self.budget.max_input_tokens:
             return messages
         return [messages[0], knowledge, *messages[1:]]
 
@@ -98,7 +97,7 @@ def _knowledge_message(context: CompiledContext) -> Message:
 
 
 def _token_count(messages: list[Message]) -> int:
-    return sum(len(message.content.split()) for message in messages)
+    return sum(estimate_tokens(message.content) for message in messages)
 
 
 def _with_diagnostic(messages: list[Message], diagnostic: str) -> list[Message]:

@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from ai_assistant.agent.context import ContextBuilder
-from ai_assistant.agent.message import Message
+from ai_assistant.agent.message import FinishReason, Message, ModelResponse
 from ai_assistant.agent.planner import ToolCallDetector
 from ai_assistant.agent.runtime import AgentRuntime
 from ai_assistant.application.path_policy import WorkspacePathPolicy
@@ -236,23 +236,37 @@ def test_runtime_phase_1_path_still_works_without_tool_execution() -> None:
     assert [message.role for message in memory.messages] == ["user", "assistant"]
 
 
-def test_runtime_second_tool_round_is_not_executed() -> None:
+def test_runtime_rejects_tool_round_once_budget_exhausted() -> None:
+    # ADR-069 superseded ADR-024's hard one-round cap with a bounded,
+    # guarded multi-round loop (default max_model_tool_rounds=3). Distinct
+    # non-duplicate requests must execute up to that budget, and only the
+    # round that would exceed it is blocked, with a real synthesized answer
+    # instead of the old fixed rejection string.
+    coordinator = ReturningCoordinator()
     runtime = AgentRuntime(
         context_builder=ContextBuilder(system_prompt="system"),
         memory=Memory(),
         model=SequenceModel(
             [
-                '{"tool_call":{"name":"read_file","arguments":{"path":"notes.txt"}}}',
-                '{"tool_call":{"name":"read_file","arguments":{"path":"again.txt"}}}',
+                '{"tool_call":{"name":"read_file","arguments":{"path":"one.txt"}}}',
+                '{"tool_call":{"name":"read_file","arguments":{"path":"two.txt"}}}',
+                '{"tool_call":{"name":"read_file","arguments":{"path":"three.txt"}}}',
+                '{"tool_call":{"name":"read_file","arguments":{"path":"four.txt"}}}',
+                "Here is a summary of what I found.",
             ]
         ),
         tool_detector=ToolCallDetector(),
-        tool_coordinator=ReturningCoordinator(),
+        tool_coordinator=coordinator,
     )
 
     response = runtime.respond("read")
 
-    assert response.content == "Tool round limit reached; no additional tool was executed."
+    assert [request.arguments["path"] for request in coordinator.requests] == [
+        "one.txt",
+        "two.txt",
+        "three.txt",
+    ]
+    assert response.content == "Here is a summary of what I found."
 
 
 def test_audit_and_logs_do_not_expose_sensitive_content(
@@ -382,13 +396,19 @@ class Model(ModelProvider):
     def __init__(self, response: str) -> None:
         self.response = response
 
-    def chat(self, messages: list[Message]) -> Message:
-        return Message(role="assistant", content=self.response)
+    def chat(self, messages: list[Message]) -> ModelResponse:
+        return ModelResponse(
+            message=Message(role="assistant", content=self.response),
+            finish_reason=FinishReason.STOP,
+        )
 
 
 class SequenceModel(ModelProvider):
     def __init__(self, responses: list[str]) -> None:
         self.responses = responses
 
-    def chat(self, messages: list[Message]) -> Message:
-        return Message(role="assistant", content=self.responses.pop(0))
+    def chat(self, messages: list[Message]) -> ModelResponse:
+        return ModelResponse(
+            message=Message(role="assistant", content=self.responses.pop(0)),
+            finish_reason=FinishReason.STOP,
+        )

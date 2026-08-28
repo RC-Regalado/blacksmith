@@ -26,9 +26,7 @@ class ToolCallInterpreter:
         try:
             data = json.loads(source)
         except json.JSONDecodeError:
-            if not fenced:
-                return None
-            candidate = _first_json_object(source)
+            candidate = _first_json_object(source if fenced else content)
             if candidate is None:
                 return None
             data = json.loads(candidate)

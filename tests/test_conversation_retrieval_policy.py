@@ -26,9 +26,19 @@ def test_retrieval_policy_allows_project_code_document_questions() -> None:
 def test_retrieval_policy_bypasses_volatile_live_state_questions() -> None:
     policy = ConversationRetrievalPolicy()
 
+    assert policy.allow("git status", context_enabled=True) is False
     assert policy.allow("What is the current git status?", context_enabled=True) is False
+    assert policy.allow("¿Que archivos están modificados en git?", context_enabled=True) is False
+    assert policy.allow("estado actual de git", context_enabled=True) is False
     assert policy.allow("What is the current test result?", context_enabled=True) is False
     assert policy.allow("Show the latest build result", context_enabled=True) is False
-    assert policy.allow("git status", context_enabled=True) is False
     assert policy.allow("are tests passing?", context_enabled=True) is False
     assert policy.allow("show build result", context_enabled=True) is False
+
+
+def test_retrieval_policy_allows_knowledge_questions_by_default() -> None:
+    policy = ConversationRetrievalPolicy()
+
+    assert policy.allow("¿Cómo funciona la integración con git?", context_enabled=True) is True
+    assert policy.allow("¿Cómo están implementados los tests?", context_enabled=True) is True
+    assert policy.allow("¿Que hace este proyecto?", context_enabled=True) is True

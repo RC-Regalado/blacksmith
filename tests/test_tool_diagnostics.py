@@ -6,7 +6,7 @@ import json
 import pytest
 
 from ai_assistant.agent.context import ContextBuilder
-from ai_assistant.agent.message import Message
+from ai_assistant.agent.message import FinishReason, Message, ModelResponse
 from ai_assistant.agent.planner import ToolCallDetector
 from ai_assistant.agent.runtime import AgentRuntime
 from ai_assistant.application.ports.memory import ConversationMemory
@@ -88,6 +88,41 @@ def test_runtime_logs_successful_tool_round(tmp_path) -> None:
     assert rows[1]["result"]["status"] == "success"
 
 
+def test_runtime_tags_one_turns_events_with_a_shared_interaction_id(tmp_path) -> None:
+    runtime = _runtime(
+        tmp_path,
+        SequenceModel(
+            [
+                '{"tool_call":{"id":"call-1","name":"read_file","arguments":{"path":"README.md"}}}',
+                "done",
+                '{"tool_call":{"id":"call-1","name":"read_file","arguments":{"path":"README.md"}}}',
+                "done",
+            ]
+        ),
+        _coordinator(
+            ToolExecutionResult(
+                "call-1",
+                "read_file",
+                ToolExecutionStatus.SUCCESS,
+                {"bytes_read": 1},
+            )
+        ),
+    )
+
+    runtime.respond("read")
+    first_interaction_id = runtime.last_interaction_id
+    rows = _rows(tmp_path)
+
+    assert first_interaction_id
+    assert {row["interaction_id"] for row in rows} == {first_interaction_id}
+
+    runtime.respond("read")
+    second_interaction_id = runtime.last_interaction_id
+
+    assert second_interaction_id
+    assert second_interaction_id != first_interaction_id
+
+
 def test_runtime_logs_denied_error_timeout_and_round_limit(tmp_path) -> None:
     for status, expected in (
         (ToolExecutionStatus.DENIED, "rejected"),
@@ -119,12 +154,18 @@ def test_runtime_logs_denied_error_timeout_and_round_limit(tmp_path) -> None:
         assert rows[-1]["error"] == {"code": "x", "message": "sanitized"}
         assert rows[-1]["arguments"]["path"] == "[redacted]"
 
+    # ADR-069 bounded multi-round loop: distinct (non-duplicate) requests
+    # execute up to the default budget of 3 rounds; only the round that
+    # would exceed it is rejected.
     runtime = _runtime(
         tmp_path / "limit",
         SequenceModel(
             [
-                '{"tool_call":{"name":"read_file","arguments":{"path":"README.md"}}}',
-                '{"tool_call":{"name":"list_directory","arguments":{"path":"."}}}',
+                '{"tool_call":{"name":"read_file","arguments":{"path":"one.md"}}}',
+                '{"tool_call":{"name":"read_file","arguments":{"path":"two.md"}}}',
+                '{"tool_call":{"name":"read_file","arguments":{"path":"three.md"}}}',
+                '{"tool_call":{"name":"read_file","arguments":{"path":"four.md"}}}',
+                "done",
             ]
         ),
         _coordinator(ToolExecutionResult("alpha:read_file", "read_file", ToolExecutionStatus.SUCCESS)),
@@ -133,10 +174,19 @@ def test_runtime_logs_denied_error_timeout_and_round_limit(tmp_path) -> None:
     runtime.respond("read")
 
     rows = _rows(tmp_path / "limit")
-    assert [row["status"] for row in rows] == ["requested", "executed", "requested", "rejected"]
-    assert rows[-1]["round_index"] == 2
-    assert rows[-1]["tool_call_count"] == 2
-    assert rows[-1]["error"]["code"] == "tool_round_limit_reached"
+    assert [row["status"] for row in rows] == [
+        "requested",
+        "executed",
+        "requested",
+        "executed",
+        "requested",
+        "executed",
+        "requested",
+        "rejected",
+    ]
+    assert rows[-1]["round_index"] == 4
+    assert rows[-1]["tool_call_count"] == 4
+    assert rows[-1]["error"]["code"] == "tool_loop_budget_exhausted"
 
 
 def test_runtime_continues_when_diagnostic_logger_fails() -> None:
@@ -206,8 +256,11 @@ class SequenceModel(ModelProvider):
     def __init__(self, responses: list[str]) -> None:
         self._responses = responses
 
-    def chat(self, messages: list[Message]) -> Message:
-        return Message(role="assistant", content=self._responses.pop(0))
+    def chat(self, messages: list[Message]) -> ModelResponse:
+        return ModelResponse(
+            message=Message(role="assistant", content=self._responses.pop(0)),
+            finish_reason=FinishReason.STOP,
+        )
 
 
 class FailingLogger:

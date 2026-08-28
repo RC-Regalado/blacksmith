@@ -46,7 +46,7 @@ Historical ADRs are never deleted or silently rewritten.
 | ADR-021 | Tool Timeouts and Resource Limits | Implemented |
 | ADR-022 | Unix Socket Tool Executor | Implemented |
 | ADR-023 | Error and Log Redaction | Implemented |
-| ADR-024 | Bounded Single Tool Round per Turn | Implemented |
+| ADR-024 | Bounded Single Tool Round per Turn | Superseded (by ADR-069) |
 | ADR-025 | Sensitive File Deny Policy | Implemented |
 | ADR-026 | Controlled Development Tool Allowlist | Implemented |
 | ADR-027 | Permission Levels and Confirmation Grants | Implemented |
@@ -90,3 +90,7 @@ Historical ADRs are never deleted or silently rewritten.
 | ADR-065 | Indexed Knowledge vs Live Capability Semantics | Implemented |
 | ADR-066 | Unified CLI Command Model | Implemented |
 | ADR-067 | Deterministic Conversation Retrieval Policy | Implemented |
+| ADR-068 | Provider-Neutral Model Response Metadata | Implemented |
+| ADR-069 | Bounded Multi-Round Conversational Tool Loop (supersedes ADR-024) | Implemented |
+| ADR-070 | Interaction Correlation and End-to-End Observability | Implemented |
+| ADR-071 | Conversation Context and Generation Budget | Implemented |

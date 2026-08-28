@@ -7,6 +7,7 @@ import logging
 from ai_assistant.application.ports.models import ModelProvider
 from ai_assistant.domain.errors import ConfigurationError
 from ai_assistant.domain.message import Message
+from ai_assistant.domain.model_response import ModelResponse
 from ai_assistant.infrastructure.models.dummy import DummyModel
 from ai_assistant.infrastructure.models.ollama import OllamaModelProvider
 from ai_assistant.infrastructure.models.openai_compatible import OpenAICompatibleModel
@@ -23,6 +24,8 @@ class ModelAdapterConfig:
     base_url: str = "https://api.openai.com/v1"
     api_key: str | None = None
     timeout_seconds: float = 60.0
+    ollama_num_ctx: int | None = None
+    ollama_num_predict: int | None = None
 
 
 class ModelAdapter(ModelProvider):
@@ -48,7 +51,7 @@ class ModelAdapter(ModelProvider):
         )
         return cls(provider_name=provider_key, provider=provider)
 
-    def chat(self, messages: list[Message]) -> Message:
+    def chat(self, messages: list[Message]) -> ModelResponse:
         return self._provider.chat(messages)
 
     @staticmethod
@@ -75,4 +78,6 @@ def _build_ollama_provider(config: ModelAdapterConfig) -> ModelProvider:
         model=config.model,
         base_url=config.base_url,
         timeout_seconds=config.timeout_seconds,
+        num_ctx=config.ollama_num_ctx,
+        num_predict=config.ollama_num_predict,
     )

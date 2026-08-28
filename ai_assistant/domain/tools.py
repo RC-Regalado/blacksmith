@@ -107,6 +107,7 @@ class ToolExecutionRequest:
     permission: ToolPermission = ToolPermission.READ_ONLY
     timeout_seconds: float = 5.0
     dry_run: bool = False
+    interaction_id: str | None = None
 
     def __post_init__(self) -> None:
         _require_text(self.request_id, "request_id")
@@ -250,6 +251,7 @@ class ToolExecutionResult:
     content: Mapping[str, object] | None = None
     error: SanitizedToolError | None = None
     truncated: bool = False
+    executor_operations: int = 1
 
     def __post_init__(self) -> None:
         _require_text(self.request_id, "request_id")
@@ -257,6 +259,8 @@ class ToolExecutionResult:
         if self.status in {ToolExecutionStatus.ERROR, ToolExecutionStatus.TIMEOUT}:
             if self.error is None:
                 raise InvalidToolCallError("error is required for failed results.")
+        if self.executor_operations < 0:
+            raise InvalidToolCallError("executor_operations cannot be negative.")
 
 
 @dataclass(frozen=True, slots=True)
@@ -275,6 +279,7 @@ class ToolCallLogEvent:
     result: Mapping[str, object] | None = None
     error: Mapping[str, object] | None = None
     capability_name: str | None = None
+    interaction_id: str | None = None
 
     def __post_init__(self) -> None:
         _require_text(self.session_id, "session_id")
@@ -286,6 +291,43 @@ class ToolCallLogEvent:
             raise InvalidToolCallError("round_index must be positive.")
         if self.tool_call_count <= 0:
             raise InvalidToolCallError("tool_call_count must be positive.")
+        if self.duration_ms < 0:
+            raise InvalidToolCallError("duration_ms cannot be negative.")
+
+
+class InteractionStage(StrEnum):
+    """Turn-level lifecycle stages correlated by `interaction_id` (ADR-070)."""
+
+    CONTEXT_RETRIEVAL = "context_retrieval"
+    MODEL_REQUEST = "model_request"
+    MODEL_RESPONSE = "model_response"
+    FINAL_SYNTHESIS = "final_synthesis"
+    INTERACTION_COMPLETED = "interaction_completed"
+
+
+@dataclass(frozen=True, slots=True)
+class InteractionLogEvent:
+    """A non-tool interaction-lifecycle record sharing the turn's `interaction_id`.
+
+    Sibling of `ToolCallLogEvent`: reuses the same JSONL file so a single
+    per-model/session/day log interleaves both tool and non-tool stages of
+    one turn, reconstructable by grouping on `interaction_id` alone.
+    """
+
+    timestamp: datetime
+    interaction_id: str
+    session_id: str
+    provider: str
+    model: str
+    stage: InteractionStage
+    payload: Mapping[str, object]
+    duration_ms: float = 0.0
+
+    def __post_init__(self) -> None:
+        _require_text(self.interaction_id, "interaction_id")
+        _require_text(self.session_id, "session_id")
+        _require_text(self.provider, "provider")
+        _require_text(self.model, "model")
         if self.duration_ms < 0:
             raise InvalidToolCallError("duration_ms cannot be negative.")
 
@@ -307,6 +349,7 @@ class ToolAuditEvent:
     denial_reason: str | None = None
     error_code: str | None = None
     artifact_ids: Sequence[str] = ()
+    interaction_id: str | None = None
 
     def __post_init__(self) -> None:
         _require_text(self.request_id, "request_id")

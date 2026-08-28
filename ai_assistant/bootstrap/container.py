@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from ai_assistant.application.context import ContextBuilder
+from ai_assistant.application.conversation_budget import ConversationContextBudget
 from ai_assistant.application.conversation_context import ConversationContextService
 from ai_assistant.application.confirmation import ConfirmationService
 from ai_assistant.application.ports.tools import ToolExecutor
@@ -20,7 +21,10 @@ from ai_assistant.infrastructure.storage.sqlite_audit import SQLiteAuditRecorder
 from ai_assistant.infrastructure.storage.sqlite_execution import SQLiteExecutionStore
 from ai_assistant.infrastructure.storage.sqlite_knowledge import SQLiteKnowledgeStore
 from ai_assistant.infrastructure.storage.sqlite_memory import SQLiteConversationStore
-from ai_assistant.infrastructure.tool_diagnostics import JsonlToolDiagnosticLogger
+from ai_assistant.infrastructure.tool_diagnostics import (
+    JsonlInteractionDiagnosticLogger,
+    JsonlToolDiagnosticLogger,
+)
 from ai_assistant.infrastructure.tools import (
     LocalReadOnlyToolExecutor,
     UnixSocketToolExecutor,
@@ -66,7 +70,10 @@ def create_application(config: AppConfig | None = None) -> CliApplication:
         context_builder=context_builder,
         conversation_context=ConversationContextService(
             context_builder,
-            app_config.context_limit,
+            ConversationContextBudget(
+                provider_context_window=app_config.context_limit,
+                reserved_output_tokens=app_config.reserved_output_tokens,
+            ),
             ConversationKnowledgeContextProvider(retriever, ranker, compiler),
             ConversationRetrievalPolicy(),
         ),
@@ -76,10 +83,13 @@ def create_application(config: AppConfig | None = None) -> CliApplication:
         tool_catalog=catalog,
         tool_coordinator=coordinator,
         tool_diagnostics=tool_diagnostics,
+        interaction_diagnostics=JsonlInteractionDiagnosticLogger(app_config.tool_log_dir),
         model_provider_name=app_config.provider,
         model_name=app_config.model,
         tool_timeout_seconds=app_config.tool_timeout,
         include_knowledge_context=app_config.context_engine,
+        ollama_num_ctx=app_config.ollama_num_ctx,
+        ollama_num_predict=app_config.ollama_num_predict,
         session_id=app_config.session,
     )
     return CliApplication(
@@ -120,6 +130,8 @@ def _model_config(config: AppConfig) -> ModelAdapterConfig:
         base_url=config.base_url,
         api_key=config.api_key,
         timeout_seconds=config.request_timeout,
+        ollama_num_ctx=config.ollama_num_ctx,
+        ollama_num_predict=config.ollama_num_predict,
     )
 
 

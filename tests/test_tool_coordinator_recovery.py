@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 from ai_assistant.agent.context import ContextBuilder
-from ai_assistant.agent.message import Message
+from ai_assistant.agent.message import FinishReason, Message, ModelResponse
 from ai_assistant.agent.planner import ToolCallDetector
 from ai_assistant.agent.runtime import AgentRuntime
 from ai_assistant.application.confirmation import ConfirmationService
@@ -225,6 +225,7 @@ def test_successful_recovery_reports_metrics_without_extra_round(tmp_path: Path)
     result = coordinator.execute(_request("read_file", "Agents.md"))
 
     assert result.status == ToolExecutionStatus.SUCCESS
+    assert result.executor_operations == 3
     success = _events_by_stage(diagnostics)["recovery_success"]
     assert len(success) == 1
     payload = success[0].result
@@ -234,6 +235,25 @@ def test_successful_recovery_reports_metrics_without_extra_round(tmp_path: Path)
     assert payload["recovery_operations"] == 1
     assert payload["requested_path"] == "Agents.md"
     assert payload["resolved_path"] == "AGENTS.md"
+
+
+def test_executor_operations_is_one_for_a_direct_success(tmp_path: Path) -> None:
+    (tmp_path / "AGENTS.md").write_text("guidelines", encoding="utf-8")
+    coordinator, _ = _coordinator(tmp_path)
+
+    result = coordinator.execute(_request("read_file", "AGENTS.md"))
+
+    assert result.status == ToolExecutionStatus.SUCCESS
+    assert result.executor_operations == 1
+
+
+def test_executor_operations_is_zero_for_an_unknown_tool(tmp_path: Path) -> None:
+    coordinator, _ = _coordinator(tmp_path)
+
+    result = coordinator.execute(_request("not_a_real_tool", "AGENTS.md"))
+
+    assert result.status == ToolExecutionStatus.DENIED
+    assert result.executor_operations == 0
 
 
 def test_recovery_attempt_is_capped_at_one(tmp_path: Path) -> None:
@@ -374,5 +394,8 @@ class SequenceModel(ModelProvider):
     def __init__(self, responses: list[str]) -> None:
         self.responses = responses
 
-    def chat(self, messages: list[Message]) -> Message:
-        return Message(role="assistant", content=self.responses.pop(0))
+    def chat(self, messages: list[Message]) -> ModelResponse:
+        return ModelResponse(
+            message=Message(role="assistant", content=self.responses.pop(0)),
+            finish_reason=FinishReason.STOP,
+        )

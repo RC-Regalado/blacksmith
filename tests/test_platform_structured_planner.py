@@ -8,6 +8,7 @@ from ai_assistant.application.ports.models import ModelProvider
 from ai_assistant.application.tool_catalog import StaticToolCatalog
 from ai_assistant.domain.errors import InvalidToolCallError
 from ai_assistant.domain.message import Message
+from ai_assistant.domain.model_response import FinishReason, ModelResponse
 from ai_assistant.platform.application import ModelBackedPlanner, StaticCapabilityRegistry
 from ai_assistant.platform.domain import CapabilityName, Objective
 
@@ -171,6 +172,9 @@ class _Model(ModelProvider):
         self._response = response
         self.messages: list[Message] = []
 
-    def chat(self, messages: list[Message]) -> Message:
+    def chat(self, messages: list[Message]) -> ModelResponse:
         self.messages = messages
-        return Message(role="assistant", content=self._response)
+        return ModelResponse(
+            message=Message(role="assistant", content=self._response),
+            finish_reason=FinishReason.STOP,
+        )

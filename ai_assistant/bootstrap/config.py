@@ -23,6 +23,9 @@ class AppConfig:
     log_level: str = "INFO"
     request_timeout: float = 60.0
     context_limit: int = 4096
+    reserved_output_tokens: int = 2048
+    ollama_num_ctx: int | None = None
+    ollama_num_predict: int | None = None
     workspace: str | None = None
     tool_execution: bool = False
     tool_timeout: float = 5.0
@@ -68,6 +71,10 @@ def load_app_config(env: Mapping[str, str] | None = None) -> AppConfig:
             source.get("AI_ASSISTANT_CONTEXT_LIMIT", "4096"),
             "AI_ASSISTANT_CONTEXT_LIMIT",
         ),
+        reserved_output_tokens=_non_negative_int(
+            source.get("AI_ASSISTANT_RESERVED_OUTPUT_TOKENS", "2048"),
+            "AI_ASSISTANT_RESERVED_OUTPUT_TOKENS",
+        ),
         workspace=_optional_text(source.get("AI_ASSISTANT_WORKSPACE")),
         tool_execution=_bool(
             source.get("AI_ASSISTANT_TOOL_EXECUTION", "false"),
@@ -112,6 +119,14 @@ def load_app_config(env: Mapping[str, str] | None = None) -> AppConfig:
         show_metrics=_bool(
             source.get("AI_ASSISTANT_SHOW_METRICS", "false"),
             "AI_ASSISTANT_SHOW_METRICS",
+        ),
+        ollama_num_ctx=_optional_positive_int(
+            source.get("AI_ASSISTANT_OLLAMA_NUM_CTX"),
+            "AI_ASSISTANT_OLLAMA_NUM_CTX",
+        ),
+        ollama_num_predict=_optional_positive_int(
+            source.get("AI_ASSISTANT_OLLAMA_NUM_PREDICT"),
+            "AI_ASSISTANT_OLLAMA_NUM_PREDICT",
         ),
         api_key=source.get("OPENAI_API_KEY"),
     )
@@ -187,3 +202,9 @@ def _optional_text(value: str | None) -> str | None:
         return None
     stripped = value.strip()
     return stripped or None
+
+
+def _optional_positive_int(value: str | None, name: str) -> int | None:
+    if value is None or not value.strip():
+        return None
+    return _positive_int(value, name)

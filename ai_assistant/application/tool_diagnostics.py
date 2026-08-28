@@ -4,8 +4,13 @@ from collections.abc import Mapping
 from datetime import UTC, datetime
 import logging
 
-from ai_assistant.application.ports.tools import ToolDiagnosticLogger
+from ai_assistant.application.ports.tools import (
+    InteractionDiagnosticLogger,
+    ToolDiagnosticLogger,
+)
 from ai_assistant.domain.tools import (
+    InteractionLogEvent,
+    InteractionStage,
     SanitizedToolError,
     ToolCallLogEvent,
     ToolDiagnosticStatus,
@@ -20,6 +25,58 @@ logger = logging.getLogger(__name__)
 class NullToolDiagnosticLogger(ToolDiagnosticLogger):
     def record(self, event: ToolCallLogEvent) -> None:
         return None
+
+
+class NullInteractionDiagnosticLogger(InteractionDiagnosticLogger):
+    def record(self, event: InteractionLogEvent) -> None:
+        return None
+
+
+class InteractionDiagnostics:
+    """Emits `InteractionLogEvent`s for the non-tool stages of one turn (ADR-070).
+
+    Every event carries the turn's `interaction_id`, so a reader can
+    reconstruct one complete interaction (context/retrieval, model
+    request/response, tool activity, final synthesis, completion) by
+    grouping the shared JSONL stream on that ID alone.
+    """
+
+    def __init__(
+        self,
+        sink: InteractionDiagnosticLogger | None,
+        provider: str,
+        model: str,
+    ) -> None:
+        self._sink = sink or NullInteractionDiagnosticLogger()
+        self._provider = provider or "unknown"
+        self._model = model or "unknown"
+
+    def record(
+        self,
+        stage: InteractionStage,
+        *,
+        session_id: str,
+        interaction_id: str | None,
+        payload: Mapping[str, object],
+        duration_ms: float = 0.0,
+    ) -> None:
+        if interaction_id is None:
+            return
+        try:
+            self._sink.record(
+                InteractionLogEvent(
+                    timestamp=datetime.now(UTC),
+                    interaction_id=interaction_id,
+                    session_id=session_id,
+                    provider=self._provider,
+                    model=self._model,
+                    stage=stage,
+                    payload=payload,
+                    duration_ms=duration_ms,
+                )
+            )
+        except Exception:  # noqa: BLE001 - diagnostics must not affect the turn.
+            logger.warning("interaction diagnostic logging failed", exc_info=True)
 
 
 class ToolLoopDiagnostics:
@@ -149,6 +206,7 @@ class ToolLoopDiagnostics:
                     result=result,
                     error=error,
                     duration_ms=duration_ms,
+                    interaction_id=request.interaction_id,
                 )
             )
         except Exception:  # noqa: BLE001 - diagnostics must not affect tool execution.

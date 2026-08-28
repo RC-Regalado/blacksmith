@@ -47,7 +47,7 @@ class ModelBackedPlanner(Planner):
 
     def create_plan(self, objective: Objective) -> Plan:
         context = None if self._context_provider is None else self._context_provider.build(objective)
-        response = self._model.chat(_messages(objective, self._registry, context))
+        response = self._model.chat(_messages(objective, self._registry, context)).message
         self.last_response_content = response.content
         payload = _loads_object(response.content)
         plan_id = _text(payload, "plan_id")

@@ -91,6 +91,27 @@ def test_interpreter_detects_fenced_tool_call_with_trailing_garbage() -> None:
     )
 
 
+def test_interpreter_detects_explanatory_text_before_fenced_tool_call() -> None:
+    message = Message(
+        role="assistant",
+        content=(
+            "Knowledge context requested, but no fresh indexed knowledge matched. "
+            "No rebuild was run.\n"
+            "Let me check the current workspace structure to understand what kind "
+            "of project you're working with.\n\n"
+            '```json\n{"tool_call":{"name":"list_directory","arguments":{"path":"."}}}\n```'
+        ),
+    )
+
+    plan = ToolCallInterpreter().interpret(message)
+
+    assert plan.has_tool_call is True
+    assert plan.tool_call == ToolCall(
+        name="list_directory",
+        arguments={"path": "."},
+    )
+
+
 def test_interpreter_ignores_plain_assistant_text() -> None:
     message = Message(role="assistant", content="no tools")
 

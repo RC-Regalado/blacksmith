@@ -45,6 +45,22 @@ def test_sqlite_audit_records_all_outcomes(
     assert row["artifact_ids"] == '["artifact-1"]'
 
 
+def test_sqlite_audit_persists_interaction_id(tmp_path: Path) -> None:
+    database = tmp_path / "audit.sqlite3"
+
+    SQLiteAuditRecorder(database).record(_event(interaction_id="turn-abc123"))
+
+    assert _rows(database)[0]["interaction_id"] == "turn-abc123"
+
+
+def test_sqlite_audit_allows_missing_interaction_id(tmp_path: Path) -> None:
+    database = tmp_path / "audit.sqlite3"
+
+    SQLiteAuditRecorder(database).record(_event())
+
+    assert _rows(database)[0]["interaction_id"] is None
+
+
 def test_sqlite_audit_does_not_persist_file_contents_or_sensitive_values(
     tmp_path: Path,
 ) -> None:
@@ -141,6 +157,7 @@ def _event(
     argument_summary: dict[str, object] | None = None,
     started: datetime | None = None,
     tool_name: str = "read_file",
+    interaction_id: str | None = None,
 ) -> ToolAuditEvent:
     event_started = started or datetime(2026, 8, 1, tzinfo=UTC)
     return ToolAuditEvent(
@@ -158,6 +175,7 @@ def _event(
         denial_reason="denied" if decision == PolicyDecisionKind.DENY else None,
         error_code="error" if status == ToolExecutionStatus.ERROR else None,
         artifact_ids=("artifact-1",),
+        interaction_id=interaction_id,
     )
 
 

@@ -1,43 +1,58 @@
 """Deterministic conversation retrieval policy."""
 
+import unicodedata
+
 _ACKNOWLEDGEMENTS = {"ok", "okay", "thanks", "thank you", "yes", "no", "hello", "hi"}
-_PROJECT_TERMS = {
-    "architecture",
-    "code",
-    "class",
-    "function",
-    "module",
-    "project",
-    "readme",
-    "adr",
-    "document",
-    "docs",
-    "test",
-    "executionengine",
+_LIVE_TARGET_WORDS = {"build", "diff", "git", "status", "test", "tests"}
+_LIVE_STATE_WORDS = {
+    "actual",
+    "actualmente",
+    "ahora",
+    "cambio",
+    "cambios",
+    "changed",
+    "changes",
+    "current",
+    "currently",
+    "diff",
+    "estado",
+    "hoy",
+    "latest",
+    "modificada",
+    "modificadas",
+    "modificado",
+    "modificados",
+    "modified",
+    "now",
+    "passing",
+    "result",
+    "status",
+    "today",
 }
-_LIVE_STATE_TERMS = ("current", "currently", "now", "latest", "today")
-_LIVE_STATE_TARGETS = ("git", "status", "diff", "test", "tests", "build", "changed", "changes")
-_LIVE_STATE_PHRASES = (
-    "git status",
-    "git diff",
-    "test result",
-    "tests passing",
-    "build result",
-    "show build",
-)
 
 
 class ConversationRetrievalPolicy:
     def allow(self, text: str, *, context_enabled: bool) -> bool:
         if not context_enabled:
             return False
-        normalized = " ".join(text.casefold().strip().split())
+        normalized = _normalize(text)
         if not normalized or normalized in _ACKNOWLEDGEMENTS or len(normalized.split()) <= 2:
             return False
-        if any(term in normalized for term in _LIVE_STATE_TERMS) and any(
-            target in normalized for target in _LIVE_STATE_TARGETS
-        ):
+        if _is_live_state(normalized):
             return False
-        if any(phrase in normalized for phrase in _LIVE_STATE_PHRASES):
-            return False
-        return any(term in normalized for term in _PROJECT_TERMS)
+        return True
+
+
+def _normalize(text: str) -> str:
+    ascii_text = (
+        unicodedata.normalize("NFKD", text.casefold())
+        .encode("ascii", "ignore")
+        .decode("ascii")
+    )
+    chars = (char if char.isalnum() else " " for char in ascii_text)
+    return " ".join("".join(chars).split())
+
+
+def _is_live_state(normalized: str) -> bool:
+    tokens = set(normalized.split())
+    return bool(tokens & _LIVE_TARGET_WORDS) and bool(tokens & _LIVE_STATE_WORDS)

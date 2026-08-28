@@ -3,6 +3,7 @@
 import pytest
 
 from ai_assistant.application.context import ContextBuilder
+from ai_assistant.application.conversation_budget import ConversationContextBudget
 from ai_assistant.application.conversation_context import ConversationContextService
 from ai_assistant.domain.errors import InvalidKnowledgeError
 from ai_assistant.domain.message import Message
@@ -41,11 +42,28 @@ def test_conversation_context_includes_separate_knowledge_when_enabled() -> None
 
 
 def test_conversation_context_enforces_total_budget() -> None:
-    service = ConversationContextService(ContextBuilder("system"), max_total_context_tokens=1)
+    budget = ConversationContextBudget(provider_context_window=1, reserved_output_tokens=0)
+    service = ConversationContextService(ContextBuilder("system"), budget)
 
     messages = service.build([], "question", _compiled(), include_knowledge=True)
 
     assert [message.role for message in messages] == ["system", "user"]
+
+
+def test_conversation_context_budget_reserves_output_space() -> None:
+    # window=3, reserve=2 -> max_input_tokens=1, same effective ceiling as the
+    # window=1/reserve=0 case above, proving the reserve is actually enforced.
+    budget = ConversationContextBudget(provider_context_window=3, reserved_output_tokens=2)
+    service = ConversationContextService(ContextBuilder("system"), budget)
+
+    messages = service.build([], "question", _compiled(), include_knowledge=True)
+
+    assert [message.role for message in messages] == ["system", "user"]
+
+
+def test_conversation_context_budget_rejects_invalid_reserve() -> None:
+    with pytest.raises(Exception, match="reserved_output_tokens"):
+        ConversationContextBudget(provider_context_window=100, reserved_output_tokens=100)
 
 
 def test_conversation_context_rejects_planning_context() -> None:

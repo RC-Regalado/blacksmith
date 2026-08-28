@@ -3,7 +3,7 @@
 import pytest
 
 from ai_assistant.application.errors import ConfigurationError
-from ai_assistant.agent.message import Message
+from ai_assistant.agent.message import FinishReason, Message
 from ai_assistant.infrastructure.models.adapter import ModelAdapter, ModelAdapterConfig
 from ai_assistant.infrastructure.models.ollama import OllamaModelProvider
 from ai_assistant.infrastructure.models.openai_compatible import OpenAICompatibleModel
@@ -18,7 +18,8 @@ def test_dummy_provider_delegates_to_dummy_model() -> None:
     response = adapter.chat([Message(role="user", content="hola")])
 
     assert adapter.provider_name == "dummy"
-    assert response == Message(role="assistant", content="Echo: hola")
+    assert response.message == Message(role="assistant", content="Echo: hola")
+    assert response.finish_reason == FinishReason.STOP
 
 
 def test_openai_provider_can_be_constructed_without_api_key() -> None:

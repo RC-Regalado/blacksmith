@@ -5,7 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from ai_assistant.agent.message import Message
+from ai_assistant.agent.message import FinishReason, Message
+from ai_assistant.application.interaction_metrics import InteractionMetrics
 from ai_assistant.bootstrap.config import AppConfig
 from ai_assistant.bootstrap.container import create_application
 from ai_assistant.cli.app import CliApplication, CliConfirmationPrompter
@@ -146,6 +147,32 @@ def test_cli_chat_metrics_print_context_metrics(
     assert "context_conversation: candidates=2 ranked=1 selected=1" in capsys.readouterr().out
 
 
+def test_cli_chat_metrics_print_interaction_metrics(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    inputs = iter(["hello", "quit"])
+    monkeypatch.setattr(builtins, "input", lambda _prompt: next(inputs))
+
+    CliApplication(InteractionMetricsRuntime()).run(("chat", "--metrics"))
+
+    out = capsys.readouterr().out
+    assert "interaction: outcome=direct_answer model_calls=1 finish_reason=stop" in out
+    assert "tool_rounds=0 tool_requests=0" in out
+
+
+def test_cli_chat_metrics_tolerates_runtime_without_interaction_metrics(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    inputs = iter(["hello", "quit"])
+    monkeypatch.setattr(builtins, "input", lambda _prompt: next(inputs))
+
+    CliApplication(FakeRuntime()).run(("chat", "--metrics"))
+
+    assert "interaction:" not in capsys.readouterr().out
+
+
 @pytest.mark.parametrize("args", (("bogus",), ("--metrics",), ("chat", "extra")))
 def test_cli_malformed_args_print_usage(
     args: tuple[str, ...],
@@ -172,7 +199,9 @@ def test_bootstrap_creates_cli_application(tmp_path: Path) -> None:
 
 
 def test_bootstrap_wires_context_limit(tmp_path: Path) -> None:
-    config = AppConfig(database=str(tmp_path / "test.sqlite3"), context_limit=123)
+    config = AppConfig(
+        database=str(tmp_path / "test.sqlite3"), context_limit=123, reserved_output_tokens=0
+    )
 
     app = create_application(config)
 
@@ -375,6 +404,26 @@ class DiagnosticRuntime(FakeRuntime):
 class MetricsRuntime(FakeRuntime):
     def respond(self, user_input: str) -> Message:
         self.last_context_metrics = ContextMetrics(ContextPurpose.CONVERSATION, 2, 1, 10, 4, 1)
+        return Message(role="assistant", content="ok")
+
+
+class InteractionMetricsRuntime(FakeRuntime):
+    def respond(self, user_input: str) -> Message:
+        self.last_interaction_metrics = InteractionMetrics(
+            interaction_id="abc123",
+            outcome="direct_answer",
+            model_calls=1,
+            prompt_tokens=10,
+            output_tokens=5,
+            finish_reason=FinishReason.STOP,
+            truncated=False,
+            tool_rounds=0,
+            tool_requests=0,
+            executor_operations=0,
+            recovery_operations=0,
+            retrieval_attempted=False,
+            knowledge_chunks_selected=0,
+        )
         return Message(role="assistant", content="ok")
 
 

@@ -24,6 +24,7 @@ from ai_assistant.domain.errors import (
     UnsupportedFileTypeError,
 )
 from ai_assistant.domain.message import Message, Role
+from ai_assistant.domain.model_response import FinishReason, ModelResponse
 from ai_assistant.domain.session import DEFAULT_SESSION_ID, SessionId, validate_session_id
 from ai_assistant.domain.tools import (
     AuditRetentionClass,
@@ -55,6 +56,7 @@ __all__ = [
     "ConversationStoreError",
     "ExecutionStoreError",
     "DEFAULT_SESSION_ID",
+    "FinishReason",
     "InvalidMessageError",
     "InvalidKnowledgeError",
     "InvalidSessionError",
@@ -64,6 +66,7 @@ __all__ = [
     "ModelConnectionError",
     "ModelNotFoundError",
     "ModelProtocolError",
+    "ModelResponse",
     "ModelTimeoutError",
     "PathNotFoundError",
     "PathOutsideWorkspaceError",

@@ -1,10 +1,10 @@
 # ADR-024 — Bounded Single Tool Round per Turn
 
-- Status: Implemented
+- Status: Superseded
 - Date: 2026-07-30
 - Deciders: Project owner
 - Supersedes:
-- Superseded by:
+- Superseded by: ADR-069
 
 ## Context
 

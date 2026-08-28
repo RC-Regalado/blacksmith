@@ -8,7 +8,7 @@ import pytest
 
 from ai_assistant.application.errors import ConfigurationError, ModelProtocolError
 from ai_assistant.agent.context import ContextBuilder
-from ai_assistant.agent.message import Message
+from ai_assistant.agent.message import FinishReason, Message, ModelResponse
 from ai_assistant.infrastructure.models.adapter import ModelAdapter, ModelAdapterConfig
 from ai_assistant.infrastructure.models.openai_compatible import OpenAICompatibleModel
 from ai_assistant.agent.planner import ToolCallDetector
@@ -119,5 +119,8 @@ class FakeModel(ModelProvider):
     def __init__(self, response: str) -> None:
         self._response = response
 
-    def chat(self, messages: list[Message]) -> Message:
-        return Message(role="assistant", content=self._response)
+    def chat(self, messages: list[Message]) -> ModelResponse:
+        return ModelResponse(
+            message=Message(role="assistant", content=self._response),
+            finish_reason=FinishReason.STOP,
+        )

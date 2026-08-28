@@ -8,7 +8,7 @@ from urllib.error import HTTPError, URLError
 
 import pytest
 
-from ai_assistant.agent.message import Message
+from ai_assistant.agent.message import FinishReason, Message
 from ai_assistant.infrastructure.models.ollama import OllamaModelProvider
 from ai_assistant.application.errors import (
     ModelConnectionError,
@@ -61,7 +61,7 @@ def test_ollama_chat_returns_assistant_message(
         [Message(role="user", content="hello")]
     )
 
-    assert response == Message(role="assistant", content="hola")
+    assert response.message == Message(role="assistant", content="hola")
 
 
 def test_ollama_tool_call_response_maps_to_internal_json(
@@ -91,9 +91,76 @@ def test_ollama_tool_call_response_maps_to_internal_json(
         [Message(role="user", content="list files")]
     )
 
-    assert json.loads(response.content) == {
+    assert json.loads(response.message.content) == {
         "tool_call": {"name": "list_directory", "arguments": {"path": "."}}
     }
+    assert response.finish_reason == FinishReason.TOOL_CALL
+
+
+def test_ollama_length_termination_surfaces_truncation_and_tokens(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "ai_assistant.infrastructure.models.ollama.urlopen",
+        lambda *_args, **_kwargs: FakeResponse(
+            {
+                "message": {"role": "assistant", "content": "hola"},
+                "done": True,
+                "done_reason": "length",
+                "prompt_eval_count": 120,
+                "eval_count": 45,
+            }
+        ),
+    )
+
+    response = OllamaModelProvider(model="gemma").chat(
+        [Message(role="user", content="hello")]
+    )
+
+    assert response.finish_reason == FinishReason.LENGTH
+    assert response.truncated is True
+    assert response.prompt_tokens == 120
+    assert response.output_tokens == 45
+
+
+def test_ollama_stop_termination_is_not_truncated(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "ai_assistant.infrastructure.models.ollama.urlopen",
+        lambda *_args, **_kwargs: FakeResponse(
+            {
+                "message": {"role": "assistant", "content": "hola"},
+                "done": True,
+                "done_reason": "stop",
+                "prompt_eval_count": 10,
+                "eval_count": 5,
+            }
+        ),
+    )
+
+    response = OllamaModelProvider(model="gemma").chat(
+        [Message(role="user", content="hello")]
+    )
+
+    assert response.finish_reason == FinishReason.STOP
+    assert response.truncated is False
+
+
+def test_ollama_sends_configured_num_ctx_and_num_predict() -> None:
+    provider = OllamaModelProvider(model="gemma", num_ctx=4096, num_predict=512)
+
+    payload = provider._build_payload([Message(role="user", content="hello")])
+
+    assert payload["options"] == {"num_ctx": 4096, "num_predict": 512}
+
+
+def test_ollama_omits_options_when_not_configured() -> None:
+    provider = OllamaModelProvider(model="gemma")
+
+    payload = provider._build_payload([Message(role="user", content="hello")])
+
+    assert "options" not in payload
 
 
 def test_ollama_posts_to_api_chat_with_timeout(

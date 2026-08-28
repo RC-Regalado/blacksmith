@@ -17,6 +17,7 @@ from ai_assistant.domain.errors import (
     ModelTimeoutError,
 )
 from ai_assistant.domain.message import Message
+from ai_assistant.domain.model_response import FinishReason, ModelResponse
 
 
 logger = logging.getLogger(__name__)
@@ -29,13 +30,14 @@ class OpenAICompatibleModel(ModelProvider):
     base_url: str = "https://api.openai.com/v1"
     timeout_seconds: float = 60.0
 
-    def chat(self, messages: list[Message]) -> Message:
+    def chat(self, messages: list[Message]) -> ModelResponse:
         if not messages:
             raise InvalidMessageError("OpenAICompatibleModel requires messages.")
 
         payload = self._build_payload(messages)
         data = self._post_json("/responses", payload)
-        return Message(role="assistant", content=self._extract_text(data))
+        message = Message(role="assistant", content=self._extract_text(data))
+        return _to_model_response(message, data)
 
     def _build_payload(self, messages: list[Message]) -> dict[str, Any]:
         system_messages = [
@@ -135,3 +137,29 @@ class OpenAICompatibleModel(ModelProvider):
                 if isinstance(text, str) and text:
                     return text
         return None
+
+
+def _to_model_response(message: Message, data: dict[str, Any]) -> ModelResponse:
+    status = data.get("status")
+    incomplete_reason = data.get("incomplete_details", {})
+    if not isinstance(incomplete_reason, dict):
+        incomplete_reason = {}
+    if status == "completed":
+        finish_reason = FinishReason.STOP
+    elif incomplete_reason.get("reason") == "max_output_tokens":
+        finish_reason = FinishReason.LENGTH
+    else:
+        finish_reason = FinishReason.UNKNOWN
+    usage = data.get("usage", {})
+    if not isinstance(usage, dict):
+        usage = {}
+    prompt_tokens = usage.get("input_tokens")
+    output_tokens = usage.get("output_tokens")
+    return ModelResponse(
+        message=message,
+        finish_reason=finish_reason,
+        prompt_tokens=prompt_tokens if isinstance(prompt_tokens, int) else None,
+        output_tokens=output_tokens if isinstance(output_tokens, int) else None,
+        truncated=finish_reason == FinishReason.LENGTH,
+        metadata={"status": status},
+    )
