@@ -184,6 +184,39 @@ def test_runtime_uses_tool_result_for_final_answer() -> None:
     ]
 
 
+def test_runtime_tool_error_contract_does_not_relabel_malformed_response() -> None:
+    model = SequenceModel(
+        [
+            '{"tool_call":{"id":"call-1","name":"list_directory","arguments":{"path":"."}}}',
+            "Final answer",
+        ]
+    )
+    runtime = AgentRuntime(
+        context_builder=ContextBuilder(system_prompt="System prompt"),
+        memory=FakeConversationStore(),
+        model=model,
+        tool_detector=ToolCallDetector(),
+        tool_coordinator=FakeToolCoordinator(
+            ToolExecutionResult(
+                request_id="call-1",
+                tool_name="list_directory",
+                status=ToolExecutionStatus.ERROR,
+                error=SanitizedToolError(
+                    code="malformed_response",
+                    message="Tool execution failed.",
+                ),
+            )
+        ),
+        session_id="alpha",
+    )
+
+    runtime.respond("List files")
+
+    tool_payload = json.loads(model.calls[1][-1].content)
+    assert tool_payload["error"]["code"] == "malformed_response"
+    assert tool_payload["error"]["code"] not in {"permission_denied", "path_denied", "not_found"}
+
+
 def test_runtime_executes_operator_tool_json_without_model_call() -> None:
     model = SequenceModel(["should not be used"])
     coordinator = FakeToolCoordinator(

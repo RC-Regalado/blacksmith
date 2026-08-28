@@ -2,6 +2,7 @@
 
 import json
 import sqlite3
+import unicodedata
 from pathlib import Path
 from math import sqrt
 
@@ -17,6 +18,33 @@ from ai_assistant.knowledge.domain import (
     RetrievalCandidate,
 )
 from ai_assistant.knowledge.ports import KnowledgeStore
+
+_FTS_STOPWORDS = frozenset(
+    {
+        "a",
+        "an",
+        "and",
+        "are",
+        "como",
+        "de",
+        "del",
+        "does",
+        "el",
+        "en",
+        "este",
+        "esta",
+        "hace",
+        "how",
+        "is",
+        "la",
+        "los",
+        "que",
+        "the",
+        "this",
+        "what",
+        "with",
+    }
+)
 
 
 class SQLiteKnowledgeStore(KnowledgeStore):
@@ -395,7 +423,27 @@ def _lexical_sql(query: KnowledgeQuery) -> tuple[str, tuple[str, ...]]:
 
 
 def _fts_phrase(text: str) -> str:
-    return '"' + text.replace('"', '""') + '"'
+    terms = _fts_terms(text)
+    if not terms:
+        return '"' + text.replace('"', '""') + '"'
+    return " OR ".join(f'"{term}"' for term in terms)
+
+
+def _fts_terms(text: str) -> tuple[str, ...]:
+    ascii_text = (
+        unicodedata.normalize("NFKD", text.casefold())
+        .encode("ascii", "ignore")
+        .decode("ascii")
+    )
+    normalized = "".join(char if char.isalnum() else " " for char in ascii_text)
+    seen: set[str] = set()
+    terms: list[str] = []
+    for token in normalized.split():
+        if len(token) < 3 or token in _FTS_STOPWORDS or token in seen:
+            continue
+        seen.add(token)
+        terms.append(token)
+    return tuple(terms)
 
 
 def _candidate_from_row(row: tuple[object, ...]) -> RetrievalCandidate:

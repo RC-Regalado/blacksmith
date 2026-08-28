@@ -86,6 +86,18 @@ def test_missing_socket_becomes_typed_error(tmp_path: Path) -> None:
     assert result.error.code == "missing_socket"
 
 
+def test_stale_socket_becomes_connection_refused(tmp_path: Path) -> None:
+    socket_path = tmp_path / "stale.sock"
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as server:
+        server.bind(str(socket_path))
+
+    result = UnixSocketToolExecutor(socket_path).execute(_context())
+
+    assert result.status == ToolExecutionStatus.ERROR
+    assert result.error is not None
+    assert result.error.code == "connection_refused"
+
+
 def test_timeout_becomes_typed_error(tmp_path: Path) -> None:
     thread = _server(tmp_path / "tool.sock", [], None, delay=0.2)
 
@@ -118,7 +130,18 @@ def test_socket_disconnect_becomes_typed_error(tmp_path: Path) -> None:
     thread.join(timeout=2)
     assert result.status == ToolExecutionStatus.ERROR
     assert result.error is not None
-    assert result.error.code == "malformed_response"
+    assert result.error.code == "incomplete_response"
+
+
+def test_success_response_requires_json_object_content(tmp_path: Path) -> None:
+    thread = _server(tmp_path / "tool.sock", [], _response("req-1", 1, b"[]"))
+
+    result = UnixSocketToolExecutor(tmp_path / "tool.sock").execute(_context())
+
+    thread.join(timeout=2)
+    assert result.status == ToolExecutionStatus.ERROR
+    assert result.error is not None
+    assert result.error.code == "invalid_response_schema"
 
 
 def test_oversized_response_becomes_typed_error(tmp_path: Path) -> None:

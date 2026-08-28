@@ -12,6 +12,8 @@ were used only for orientation on what changed.
 
 Estado general: **READY TO CONTINUE**.
 
+Human review found a missed runtime case after the first audit: `chat --context --metrics` for `¿Que hace este proyecto?` produced `context_conversation: candidates=0 ranked=0 selected=0 ... retrieval_attempted=True knowledge_chunks_selected=0` and then entered the tool loop. Supervisor reproduction confirmed the retrieval-side root cause: `ConversationRetrievalPolicy` allowed the prompt, but the lexical store required an exact full-query FTS phrase; generic natural-language project-summary prompts did not retrieve project knowledge unless the full phrase existed verbatim. Corrective task `M5.2.16-R1` is now complete and independently validated: the same prompt now reports `candidates=12 ranked=12 selected=12` and `tool_rounds=0`; full suite is `585 passed, 17 skipped`.
+
 All 8 mandatory findings from the baseline (`FINDING-001` through `005`,
 `007`, `008`, `009`) are genuinely resolved in current source, verified both
 by the existing regression suite and by fresh, independently-constructed
@@ -385,6 +387,8 @@ sign-off, not a blocker to the verdict below.
 ## 13. Final Verdict
 
 **READY TO CONTINUE**
+
+This verdict includes the M5.2.16-R1 human-review corrective addendum above.
 
 All 8 mandatory findings (FINDING-001, 002, 003, 004, 005, 007, 008, 009) are
 genuinely PASS, each backed by (a) current source inspection with exact

@@ -216,9 +216,32 @@ def test_sqlite_knowledge_store_lexical_search_excludes_stale_chunks(tmp_path) -
 def test_sqlite_knowledge_store_lexical_search_quotes_invalid_fts_syntax(tmp_path) -> None:
     store = SQLiteKnowledgeStore(tmp_path / "knowledge.sqlite3")
     store.save_document(_document())
-    store.save_chunks("doc-1", (KnowledgeChunk("chunk-1", "doc-1", "what is blacksmith?", 0, 3, "hash-1"),))
+    store.save_chunks("doc-1", (KnowledgeChunk("chunk-1", "doc-1", "blacksmith? setup", 0, 2, "chunk-hash"),))
 
     assert store.lexical_search(KnowledgeQuery('"blacksmith?"'))[0].chunk_id == "chunk-1"
+
+
+def test_sqlite_knowledge_store_lexical_search_tokenizes_natural_language_queries(tmp_path) -> None:
+    store = SQLiteKnowledgeStore(tmp_path / "knowledge.sqlite3")
+    store.save_document(_document())
+    store.save_chunks(
+        "doc-1",
+        (
+            KnowledgeChunk(
+                "chunk-1",
+                "doc-1",
+                "El proyecto implementa un asistente local con contexto y herramientas.",
+                0,
+                9,
+                "chunk-hash",
+            ),
+        ),
+    )
+
+    results = store.lexical_search(KnowledgeQuery("¿Que hace este proyecto?"))
+
+    assert len(results) == 1
+    assert results[0].chunk_id == "chunk-1"
 
 
 def test_sqlite_knowledge_store_persists_embeddings(tmp_path) -> None:

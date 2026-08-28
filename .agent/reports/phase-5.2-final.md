@@ -4,6 +4,12 @@
 
 `implemented-awaiting-final-human-review`
 
+## Human review addendum — 2026-08-28
+
+The original closure verdict is reopened. During final review, the owner reported that `chat --context --metrics` for `¿Que hace este proyecto?` still returned `context_conversation: candidates=0 ranked=0 selected=0 ... retrieval_attempted=True knowledge_chunks_selected=0` and then used the tool loop. The supervisor reproduced the retrieval-side failure and traced it to exact-phrase lexical retrieval for natural-language project-summary prompts.
+
+Corrective task `M5.2.16-R1` has been completed and independently validated. The same prompt now selects indexed knowledge (`candidates=12 ranked=12 selected=12` against the current `assistant_knowledge.sqlite3`) and the dummy-provider CLI smoke path no longer enters the tool loop (`tool_rounds=0`). Three independent reviewers returned PASS (test/retrieval, architecture, security). A focused regression also verifies that project-summary expansion does not override live-state bypass for `What is the current project git status?`.
+
 ## Baseline
 
 `docs/audits/chat-tool-context-audit.md` — verdict at start: **REMEDIATION REQUIRED** (8 PASS / 18 PARTIAL / 8 FAIL / 4 NOT VERIFIED across 18 findings; 3 BLOCKER findings: FINDING-001/002/003).
@@ -34,7 +40,7 @@ FINDING-006, 010–014, 016–018 remain PARTIAL/NOT VERIFIED as at baseline (01
 
 ## Full regression
 
-`PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q` → **578 passed, 17 skipped, 0 failed** (both in the independent audit's fresh run and in this report's own final confirmation run). `git diff --check` clean.
+Independent audit run before M5.2.16-R1: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q` → **578 passed, 17 skipped, 0 failed**. Supervisor re-run after closure-state synchronization: **582 passed, 17 skipped, 0 failed**. Final supervisor re-run after M5.2.16-R1: `PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m pytest -q -p no:cacheprovider` → **585 passed, 17 skipped, 0 failed**. `git diff --check` clean.
 
 ## ADR disposition
 
@@ -55,8 +61,8 @@ FINDING-006, 010–014, 016–018 remain PARTIAL/NOT VERIFIED as at baseline (01
 
 ## Verdict
 
-The independent post-remediation audit's final verdict is **READY TO CONTINUE**. This report accepts that verdict and sets Phase 5.2's status to `implemented-awaiting-final-human-review`, per the binding instruction that this milestone is a **required human gate** — the supervisor does not declare the phase closed unilaterally; it stops here for the project owner's sign-off.
+The previous independent post-remediation audit's final verdict was **READY TO CONTINUE**, but human review correctly found a missed context-sufficiency case. After M5.2.16-R1, the corrective retrieval change has local and independent validation and the closure package is reconciled. Current verdict: **READY TO CONTINUE**, pending explicit owner sign-off.
 
 ## Next action
 
-Awaiting human review and explicit approval of this closure package (this report + `docs/audits/chat-tool-context-audit-post-remediation.md` + the ADR-069/070/071 `Implemented` promotion). No further Phase 5.2 or Phase 5.3 work should begin until that approval is given.
+Awaiting human review and explicit approval of the corrected closure package. No Phase 5.3 work should begin until that approval is given.

@@ -10,11 +10,11 @@ Phase 5.2: Runtime Hardening & Audit Remediation
 
 ## Current milestone
 
-- ID: M5.2.8 / M5.2.9 / M5.2.10 / M5.2.11 / M5.2.12
-- Name: ToolLoopBudget + controller, duplicate guard, progress guard, bounded multi-round chat, final synthesis on exhaustion
-- Status: in-progress
+- ID: M5.2.16
+- Name: Repeat deep audit and close
+- Status: implemented-awaiting-final-human-review
 - Source: `docs/roadmap-phase-5.2.md`
-- Note: M5.2.6/M5.2.7 automatically-accepted after triple independent validation (all PASS, 547 passed/17 skipped, no security regression; `interaction_id` confirmed inert metadata never consulted by ToolPolicy/PathPolicy). ADR-070/ADR-071 remain Accepted (partial implementation, residual items tracked in M5.2.6/M5.2.7 reports). This next block is the core ADR-069 redesign (the actual FINDING-001/003/004/005 remediation) and is handled as one cohesive milestone group since the guards, budget and multi-round loop are mutually dependent inside the same `AgentRuntime` tool-loop redesign.
+- Note: Final human review found a real residual defect: `chat --context --metrics "¿Que hace este proyecto?"` attempted retrieval but selected 0 chunks, then used the tool loop. Corrective task M5.2.16-R1 fixed deterministic local retrieval for generic project-summary prompts and was independently validated by test, architecture and security reviewers. Smoke now reports `candidates=12 ranked=12 selected=12` and `tool_rounds=0`; full suite 585 passed/17 skipped. Phase 5.2 is again queued for final owner review; no Phase 5.3 work may begin until explicit approval.
 
 ## Milestone status vocabulary
 
@@ -274,4 +274,7 @@ Record before Phase 3 implementation:
 - Phase 5.2 status: in-progress (M5.2.16 — final closure, required human gate).
 - Date: 2026-08-28
 - Summary: M5.2.16 executed. A fresh, independent audit agent (with no access to this session's context, instructed not to trust milestone self-reports) repeated the original deep audit against current source, ran the full suite fresh (578 passed/17 skipped/0 failed), and personally constructed and read live reproductions (a real `AgentRuntime` via `create_application()`, a scripted model, a real JSONL diagnostics sink) rather than trusting any milestone report's description. Wrote `docs/audits/chat-tool-context-audit-post-remediation.md`: verdict **READY TO CONTINUE**. All 8 mandatory/near-mandatory findings (FINDING-001 through 005, 007, 008, 009) confirmed genuinely PASS with live evidence. Zero security/path-recovery regressions found (C toolserver untouched entirely; every previously-PASS PathPolicy/recovery/confirmation control re-verified). One new, previously-undocumented residual found: `redact_sensitive`'s path-value redaction over-redacts the literal `"."` path segment (over-redaction only, no under-redaction, same category/severity as the already-tracked token-key residual) — added to the backlog, not a blocker. Audit explicitly recommended promoting ADR-069/070/071 from `Accepted` to `Implemented`, finding no gap between what those ADRs promise and what the code/tests/live reproduction do; applied immediately (`docs/adr/ADR-069/070/071-*.md`, `docs/adr/README.md`). Wrote `.agent/reports/phase-5.2-final.md` mapping every baseline finding to its final status. Full suite re-confirmed green after the ADR edits: `578 passed, 17 skipped, 0 failures`; `git diff --check` clean.
-- **Phase 5.2 status: implemented-awaiting-final-human-review. STOPPING here per the required human gate — no further Phase 5.2 or Phase 5.3 work begins until the project owner explicitly reviews and approves this closure package.**
+- Phase 5.2 status: implemented-awaiting-final-human-review. STOPPING here per the required human gate — no further Phase 5.2 or Phase 5.3 work begins until the project owner explicitly reviews and approves this closure package.**
+- Date: 2026-08-28
+- Summary: Owner final review found a missed context-sufficiency case: `¿Que hace este proyecto?` with context enabled produced `candidates=0 selected=0` and entered `tool_loop`. Supervisor reproduced the failure, reopened Phase 5.2 as rework-required, implemented M5.2.16-R1 via TDD, and revalidated. Root cause was exact full-phrase FTS matching for natural-language generic project-summary prompts; fix adds deterministic local tokenized FTS matching and scoped conversation query expansion, preserving live-state bypass/no network/no auto rebuild/no semantic memory. Smoke now shows `context_conversation: candidates=12 ranked=12 selected=12` and `interaction: outcome=direct_answer ... tool_rounds=0`. Independent test, architecture and security reviewers all PASS; added focused live-state regression; full suite `585 passed, 17 skipped`; `git diff --check` clean.
+- Phase 5.2 status: implemented-awaiting-final-human-review (re-queued after M5.2.16-R1); awaiting final owner approval.

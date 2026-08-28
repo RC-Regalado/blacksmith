@@ -122,6 +122,24 @@ def test_tool_policy_path_preserved_for_context_enabled_live_state() -> None:
     assert [request.tool_name for request in coordinator.requests] == ["git_status"]
 
 
+def test_project_summary_query_expansion_does_not_override_live_state_bypass() -> None:
+    provider = EmptyContextProvider()
+    service = ConversationContextService(
+        ContextBuilder("system"),
+        context_provider=provider,
+        retrieval_policy=ConversationRetrievalPolicy(),
+    )
+
+    messages = service.build_with_retrieval(
+        [],
+        "What is the current project git status?",
+        include_knowledge=True,
+    )
+
+    assert [message.role for message in messages] == ["system", "user"]
+    assert provider.calls == 0
+
+
 def test_budget_overflow_and_provenance_preservation(tmp_path) -> None:
     from ai_assistant.infrastructure.storage.sqlite_knowledge import SQLiteKnowledgeStore
 
