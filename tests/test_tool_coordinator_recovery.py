@@ -80,14 +80,14 @@ def test_exact_match_does_not_trigger_recovery(tmp_path: Path) -> None:
 # --- Caso 3: genuinely missing path stays PATH_NOT_FOUND --------------------
 
 
-def test_missing_file_falls_back_to_path_denied(tmp_path: Path) -> None:
+def test_missing_file_preserves_path_not_found(tmp_path: Path) -> None:
     coordinator, diagnostics = _coordinator(tmp_path)
 
     result = coordinator.execute(_request("read_file", "missing.md"))
 
     assert result.status == ToolExecutionStatus.DENIED
     assert result.error is not None
-    assert result.error.code == "path_denied"
+    assert result.error.code == "path_not_found"
     stages = _recovery_stages(diagnostics)
     assert stages == ["recovery_started", "recovery_failed"]
     assert _last_recovery_error_code(diagnostics) == "path_not_found"
@@ -105,7 +105,7 @@ def test_ambiguous_case_variants_are_denied_without_guessing(tmp_path: Path) -> 
 
     assert result.status == ToolExecutionStatus.DENIED
     assert result.error is not None
-    assert result.error.code == "path_denied"
+    assert result.error.code == "ambiguous_path"
     assert _last_recovery_error_code(diagnostics) == "ambiguous_path"
 
 
@@ -119,7 +119,7 @@ def test_traversal_is_denied_before_recovery(tmp_path: Path) -> None:
 
     assert result.status == ToolExecutionStatus.DENIED
     assert result.error is not None
-    assert result.error.code == "path_denied"
+    assert result.error.code == "path_outside_workspace"
     assert _recovery_stages(diagnostics) == []
 
 
@@ -134,7 +134,7 @@ def test_sensitive_path_is_denied_without_recovery(tmp_path: Path) -> None:
 
     assert result.status == ToolExecutionStatus.DENIED
     assert result.error is not None
-    assert result.error.code == "path_denied"
+    assert result.error.code == "sensitive_path"
     assert _recovery_stages(diagnostics) == []
 
 
@@ -146,7 +146,7 @@ def test_case_variant_of_sensitive_path_is_still_denied(tmp_path: Path) -> None:
 
     assert result.status == ToolExecutionStatus.DENIED
     assert result.error is not None
-    assert result.error.code == "path_denied"
+    assert result.error.code == "path_not_found"
     # Recovery is attempted (the raw lookup looks like a plain miss) but the
     # sensitive candidate must never be offered, so it still falls back.
     assert _recovery_stages(diagnostics) == ["recovery_started", "recovery_failed"]
@@ -166,7 +166,7 @@ def test_external_symlink_is_denied(tmp_path: Path) -> None:
 
     assert result.status == ToolExecutionStatus.DENIED
     assert result.error is not None
-    assert result.error.code == "path_denied"
+    assert result.error.code == "path_outside_workspace"
     assert _recovery_stages(diagnostics) == []
     outside.unlink()
 
@@ -181,7 +181,7 @@ def test_case_variant_of_external_symlink_is_denied_after_retry(tmp_path: Path) 
 
     assert result.status == ToolExecutionStatus.DENIED
     assert result.error is not None
-    assert result.error.code == "path_denied"
+    assert result.error.code == "path_outside_workspace"
     # The corrected candidate is found, but the full re-validation pipeline
     # still catches the workspace escape on retry.
     assert _recovery_stages(diagnostics) == [
@@ -213,6 +213,25 @@ def test_write_wrong_case_is_denied_without_recovery(tmp_path: Path) -> None:
 
     assert result.status == ToolExecutionStatus.DENIED
     assert _recovery_stages(diagnostics) == []
+
+
+def test_permission_denied_is_model_facing(tmp_path: Path) -> None:
+    (tmp_path / "notes.txt").write_text("old", encoding="utf-8")
+    coordinator, _ = _coordinator(tmp_path)
+
+    result = coordinator.execute(
+        ToolExecutionRequest(
+            request_id="req-1",
+            session_id="default",
+            tool_name="read_file",
+            arguments={"path": "notes.txt"},
+            permission=ToolPermission.WRITE_WORKSPACE,
+        )
+    )
+
+    assert result.status == ToolExecutionStatus.DENIED
+    assert result.error is not None
+    assert result.error.code == "permission_denied"
 
 
 # --- Caso 9: budget/metrics for a successful recovery -----------------------

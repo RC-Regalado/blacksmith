@@ -33,12 +33,14 @@ class ContextBudget:
     max_sources: int = 8
     max_chunks: int = 12
     max_chunk_tokens: int = 800
+    max_chunks_per_source: int = 0
 
     def __post_init__(self) -> None:
         _require_positive(self.max_context_tokens, "max_context_tokens")
         _require_positive(self.max_sources, "max_sources")
         _require_positive(self.max_chunks, "max_chunks")
         _require_positive(self.max_chunk_tokens, "max_chunk_tokens")
+        _require_non_negative(self.max_chunks_per_source, "max_chunks_per_source")
 
 
 @dataclass(frozen=True, slots=True)
@@ -214,6 +216,13 @@ def _validate_budget(evidence: Sequence[ContextEvidence], budget: ContextBudget)
         raise InvalidKnowledgeError("compiled context exceeds token budget.")
     if any(item.candidate.token_count > budget.max_chunk_tokens for item in evidence):
         raise InvalidKnowledgeError("compiled context exceeds per-chunk budget.")
+    if budget.max_chunks_per_source > 0:
+        counts: dict[str, int] = {}
+        for item in evidence:
+            document_id = item.candidate.document_id
+            counts[document_id] = counts.get(document_id, 0) + 1
+        if any(count > budget.max_chunks_per_source for count in counts.values()):
+            raise InvalidKnowledgeError("compiled context exceeds per-source chunk budget.")
 
 
 def _coerce_enum(obj: object, name: str, enum_type) -> None:

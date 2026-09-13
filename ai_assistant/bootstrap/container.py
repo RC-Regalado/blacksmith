@@ -60,7 +60,7 @@ def create_application(config: AppConfig | None = None) -> CliApplication:
     coordinator = _tool_coordinator(app_config, catalog, tool_diagnostics)
     context_builder = ContextBuilder(
         system_prompt=_system_prompt(app_config),
-        context_limit=app_config.context_limit,
+        context_limit=app_config.model_input_budget,
     )
     knowledge_store = SQLiteKnowledgeStore(app_config.knowledge_database)
     retriever = HybridRetriever(knowledge_store)
@@ -71,8 +71,9 @@ def create_application(config: AppConfig | None = None) -> CliApplication:
         conversation_context=ConversationContextService(
             context_builder,
             ConversationContextBudget(
-                provider_context_window=app_config.context_limit,
-                reserved_output_tokens=app_config.reserved_output_tokens,
+                provider_context_window=app_config.model_context_window,
+                reserved_output_tokens=app_config.model_max_output_tokens,
+                safety_margin_tokens=app_config.model_context_safety_margin,
             ),
             ConversationKnowledgeContextProvider(retriever, ranker, compiler),
             ConversationRetrievalPolicy(),
@@ -88,8 +89,8 @@ def create_application(config: AppConfig | None = None) -> CliApplication:
         model_name=app_config.model,
         tool_timeout_seconds=app_config.tool_timeout,
         include_knowledge_context=app_config.context_engine,
-        ollama_num_ctx=app_config.ollama_num_ctx,
-        ollama_num_predict=app_config.ollama_num_predict,
+        model_context_window=app_config.model_context_window,
+        model_max_output_tokens=app_config.model_max_output_tokens,
         session_id=app_config.session,
     )
     return CliApplication(
@@ -130,8 +131,8 @@ def _model_config(config: AppConfig) -> ModelAdapterConfig:
         base_url=config.base_url,
         api_key=config.api_key,
         timeout_seconds=config.request_timeout,
-        ollama_num_ctx=config.ollama_num_ctx,
-        ollama_num_predict=config.ollama_num_predict,
+        model_context_window=config.model_context_window,
+        model_max_output_tokens=config.model_max_output_tokens,
     )
 
 

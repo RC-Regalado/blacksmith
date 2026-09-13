@@ -187,6 +187,39 @@ def test_ollama_posts_to_api_chat_with_timeout(
     }
 
 
+def test_ollama_request_uses_provider_neutral_runtime_budget(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_urlopen(request, timeout: float):
+        captured["payload"] = json.loads(request.data.decode("utf-8"))
+        captured["timeout"] = timeout
+        return FakeResponse({"message": {"role": "assistant", "content": "ok"}})
+
+    monkeypatch.setattr("ai_assistant.infrastructure.models.ollama.urlopen", fake_urlopen)
+    inputs = iter(["hello", "quit"])
+    monkeypatch.setattr(builtins, "input", lambda _prompt: next(inputs))
+    app = create_application(
+        AppConfig(
+            provider="ollama",
+            model="gemma",
+            base_url="http://localhost:11434",
+            database=str(tmp_path / "assistant.sqlite3"),
+            model_context_window=3072,
+            model_max_output_tokens=768,
+        )
+    )
+
+    app.run()
+
+    payload = captured["payload"]
+    assert isinstance(payload, dict)
+    assert payload["options"] == {"num_ctx": 3072, "num_predict": 768}
+    assert captured["timeout"] == 60.0
+
+
 def test_ollama_missing_model_maps_to_typed_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

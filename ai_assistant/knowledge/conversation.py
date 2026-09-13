@@ -9,6 +9,7 @@ from ai_assistant.knowledge.ranking import KnowledgeRanker
 from ai_assistant.knowledge.retrieval import HybridRetriever
 
 _PROJECT_SUMMARY_TERMS = "AI Assistant README project proyecto arquitectura contexto Context Knowledge Engine"
+_CONVERSATION_MAX_CHUNKS_PER_SOURCE = 3
 
 
 class ConversationKnowledgeContextProvider:
@@ -22,7 +23,9 @@ class ConversationKnowledgeContextProvider:
         self._retriever = retriever
         self._ranker = ranker
         self._compiler = compiler
-        self._budget = budget or ContextBudget()
+        self._budget = budget or ContextBudget(
+            max_chunks_per_source=_CONVERSATION_MAX_CHUNKS_PER_SOURCE
+        )
         self.last_metrics: ContextMetrics | None = None
 
     def build(self, text: str) -> CompiledContext:

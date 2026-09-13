@@ -244,6 +244,25 @@ def test_sqlite_knowledge_store_lexical_search_tokenizes_natural_language_querie
     assert results[0].chunk_id == "chunk-1"
 
 
+def test_sqlite_knowledge_store_preserves_distinct_fts5_scores(tmp_path) -> None:
+    store = SQLiteKnowledgeStore(tmp_path / "knowledge.sqlite3")
+    store.save_document(_document())
+    store.save_chunks(
+        "doc-1",
+        (
+            KnowledgeChunk("strong", "doc-1", "timer timer timer schedule", 0, 4, "hash-1"),
+            KnowledgeChunk("weak", "doc-1", "timer", 1, 1, "hash-2"),
+        ),
+    )
+
+    results = store.lexical_search(KnowledgeQuery("timer schedule"))
+
+    scores = {candidate.chunk_id: candidate.score for candidate in results}
+    assert scores["strong"] > scores["weak"]
+    assert scores["strong"] != scores["weak"]
+    assert all(score >= 0 for score in scores.values())
+
+
 def test_sqlite_knowledge_store_persists_embeddings(tmp_path) -> None:
     store = SQLiteKnowledgeStore(tmp_path / "knowledge.sqlite3")
     embedding = DummyEmbeddingProvider(dimension=4).embed_texts(("blacksmith setup",))[0]

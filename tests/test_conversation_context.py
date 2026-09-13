@@ -66,6 +66,16 @@ def test_conversation_context_budget_rejects_invalid_reserve() -> None:
         ConversationContextBudget(provider_context_window=100, reserved_output_tokens=100)
 
 
+def test_conversation_context_budget_subtracts_safety_margin() -> None:
+    budget = ConversationContextBudget(
+        provider_context_window=100,
+        reserved_output_tokens=20,
+        safety_margin_tokens=5,
+    )
+
+    assert budget.max_input_tokens == 75
+
+
 def test_conversation_context_rejects_planning_context() -> None:
     service = ConversationContextService(ContextBuilder("system"))
 

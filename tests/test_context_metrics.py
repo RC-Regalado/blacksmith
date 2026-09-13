@@ -39,6 +39,12 @@ def test_context_metrics_reports_reduction_ratio() -> None:
     assert metrics.raw_context_estimated_tokens == 8
     assert metrics.compiled_context_estimated_tokens == 2
     assert metrics.context_reduction_ratio == 0.75
+    assert metrics.lexical_candidates == 2
+    assert metrics.symbol_candidates == 0
+    assert metrics.semantic_candidates == 0
+    assert metrics.merged_candidates == 2
+    assert metrics.selected_candidates == 1
+    assert metrics.unique_sources_selected == 1
 
 
 def test_empty_context_metrics_has_zero_reduction() -> None:

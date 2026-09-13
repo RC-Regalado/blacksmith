@@ -200,13 +200,37 @@ def test_bootstrap_creates_cli_application(tmp_path: Path) -> None:
 
 def test_bootstrap_wires_context_limit(tmp_path: Path) -> None:
     config = AppConfig(
-        database=str(tmp_path / "test.sqlite3"), context_limit=123, reserved_output_tokens=0
+        database=str(tmp_path / "test.sqlite3"),
+        model_context_window=123,
+        model_max_output_tokens=1,
+        model_context_safety_margin=0,
     )
 
     app = create_application(config)
 
-    assert app._runtime.context_builder.context_limit == 123
+    assert app._runtime.context_builder.context_limit == 122
     assert app._runtime.conversation_context is not None
+
+
+def test_bootstrap_wires_coherent_ollama_context_budget(tmp_path: Path) -> None:
+    config = AppConfig(
+        provider="ollama",
+        model="gemma",
+        database=str(tmp_path / "test.sqlite3"),
+        model_context_window=3072,
+        model_max_output_tokens=768,
+        model_context_safety_margin=32,
+    )
+
+    app = create_application(config)
+
+    assert app._runtime.conversation_context is not None
+    assert app._runtime.conversation_context.budget.provider_context_window == 3072
+    assert app._runtime.conversation_context.budget.reserved_output_tokens == 768
+    assert app._runtime.conversation_context.budget.safety_margin_tokens == 32
+    assert app._runtime.conversation_context.budget.max_input_tokens == 2272
+    assert app._runtime.model_context_window == 3072
+    assert app._runtime.model_max_output_tokens == 768
 
 
 def test_bootstrap_leaves_tools_disabled_by_default(tmp_path: Path) -> None:

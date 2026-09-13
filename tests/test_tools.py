@@ -121,6 +121,25 @@ def test_interpreter_ignores_plain_assistant_text() -> None:
     assert plan.tool_call is None
 
 
+@pytest.mark.parametrize(
+    "content",
+    [
+        "not json before {not valid json}",
+        '{"tool_call": }',
+        "```json\n{not valid json}\n```",
+    ],
+)
+def test_interpreter_does_not_leak_json_decode_error_for_invalid_brace_candidate(
+    content: str,
+) -> None:
+    message = Message(role="assistant", content=content)
+
+    plan = ToolCallInterpreter().interpret(message)
+
+    assert plan.has_tool_call is False
+    assert plan.tool_call is None
+
+
 def test_interpreter_ignores_non_assistant_messages() -> None:
     message = Message(role="user", content='{"tool_call":{"name":"search"}}')
 

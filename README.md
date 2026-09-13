@@ -37,7 +37,8 @@ Exit with `quit`, `exit` or EOF.
 
 ## Configuration
 
-Configuration is loaded once at bootstrap from environment variables.
+Configuration is loaded once at bootstrap. Precedence is process environment,
+then `.env`, then application defaults.
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -51,7 +52,9 @@ Configuration is loaded once at bootstrap from environment variables.
 | `AI_ASSISTANT_SYSTEM_PROMPT` | `You are a local AI assistant.` | System prompt |
 | `AI_ASSISTANT_LOG_LEVEL` | `INFO` | Python logging level |
 | `AI_ASSISTANT_REQUEST_TIMEOUT` | `60` | Provider request timeout in seconds |
-| `AI_ASSISTANT_CONTEXT_LIMIT` | `4096` | Simple character budget for context |
+| `AI_ASSISTANT_MODEL_CONTEXT_WINDOW` | `4096` | Provider-neutral model context window |
+| `AI_ASSISTANT_MODEL_MAX_OUTPUT_TOKENS` | `2048` | Provider-neutral generation reserve; Ollama maps it to `num_predict` |
+| `AI_ASSISTANT_MODEL_CONTEXT_SAFETY_MARGIN` | `0` | Extra input headroom subtracted from compiled context |
 | `AI_ASSISTANT_WORKSPACE` | unset | Workspace root for tools |
 | `AI_ASSISTANT_TOOL_EXECUTION` | `false` | Enables tools when `true` and workspace is set |
 | `AI_ASSISTANT_TOOL_TIMEOUT` | `5` | Tool timeout in seconds, capped at 30 |
@@ -99,7 +102,9 @@ AI_ASSISTANT_WORKSPACE="$PWD" \
 AI_ASSISTANT_TOOL_EXECUTION=true \
 AI_ASSISTANT_TOOL_EXECUTOR=unix_socket \
 AI_ASSISTANT_TOOL_SOCKET=c_toolserver/build/toolserver.sock \
-AI_ASSISTANT_CONTEXT_LIMIT=2048 \
+AI_ASSISTANT_MODEL_CONTEXT_WINDOW=2048 \
+AI_ASSISTANT_MODEL_MAX_OUTPUT_TOKENS=512 \
+AI_ASSISTANT_MODEL_CONTEXT_SAFETY_MARGIN=0 \
 python main.py
 ```
 

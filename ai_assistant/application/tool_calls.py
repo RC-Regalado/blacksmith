@@ -29,7 +29,10 @@ class ToolCallInterpreter:
             candidate = _first_json_object(source if fenced else content)
             if candidate is None:
                 return None
-            data = json.loads(candidate)
+            try:
+                data = json.loads(candidate)
+            except json.JSONDecodeError:
+                return None
         return data if isinstance(data, dict) else None
 
     def _tool_call(self, data: Any) -> ToolCall:

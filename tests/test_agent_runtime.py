@@ -7,6 +7,7 @@ import pytest
 from ai_assistant.agent.context import ContextBuilder
 from ai_assistant.application.conversation_budget import ConversationContextBudget
 from ai_assistant.application.conversation_context import ConversationContextService
+from ai_assistant.application.errors import ConfigurationError
 from ai_assistant.application.ports.memory import (
     ConversationMemory,
     SessionId,
@@ -26,7 +27,15 @@ from ai_assistant.domain.tools import (
     ToolPermission,
 )
 from ai_assistant.infrastructure.tool_diagnostics import JsonlInteractionDiagnosticLogger
-from ai_assistant.knowledge import CompiledContext, ContextBudget, ContextPurpose
+from ai_assistant.knowledge import (
+    CompiledContext,
+    ContextBudget,
+    ContextEvidence,
+    ContextPurpose,
+    FreshnessStatus,
+    KnowledgeSourceType,
+    RetrievalCandidate,
+)
 from ai_assistant.knowledge import ConversationRetrievalPolicy
 
 
@@ -83,11 +92,10 @@ def test_context_builder_merges_system_history_and_user_input() -> None:
 
 
 def test_context_builder_prefers_recent_history_within_budget() -> None:
-    # Budget is a word-count estimate (ADR-071), not a character count: each
-    # history message below costs 3 estimated tokens, so budget=9 leaves room
-    # (after the 1-token system prompt and 1-token user input) for only the
-    # two most recent of three history messages.
-    builder = ContextBuilder(system_prompt="S", context_limit=9)
+    # Budget is an approximate token estimate: each history message below costs
+    # 4 estimated tokens, so budget=10 leaves room for only the two most recent
+    # of three history messages after system prompt and user input.
+    builder = ContextBuilder(system_prompt="S", context_limit=10)
     history = [
         Message(role="user", content="old message body"),
         Message(role="assistant", content="mid message body"),
@@ -790,23 +798,23 @@ def test_runtime_does_not_redact_token_counts_in_interaction_diagnostics(tmp_pat
 
 
 def test_runtime_coordinates_context_budget_with_ollama_generation_limits() -> None:
-    # FINDING-008 (ADR-071): the application-level context budget and the
-    # Ollama-side generation limits are configured independently; this
-    # asserts they land in one observable record instead of staying two
-    # numbers an operator would have to cross-reference by hand.
     sink = RecordingInteractionLogger()
     runtime = AgentRuntime(
         context_builder=ContextBuilder(system_prompt="system"),
         conversation_context=ConversationContextService(
             ContextBuilder(system_prompt="system"),
-            ConversationContextBudget(provider_context_window=4096, reserved_output_tokens=512),
+            ConversationContextBudget(
+                provider_context_window=4096,
+                reserved_output_tokens=512,
+                safety_margin_tokens=64,
+            ),
         ),
         memory=FakeConversationStore(),
         model=FakeModel("ok"),
         tool_detector=ToolCallDetector(),
         interaction_diagnostics=sink,
-        ollama_num_ctx=2048,
-        ollama_num_predict=256,
+        model_context_window=4096,
+        model_max_output_tokens=512,
         session_id="alpha",
     )
 
@@ -817,9 +825,10 @@ def test_runtime_coordinates_context_budget_with_ollama_generation_limits() -> N
     )
     assert context_event.payload["provider_context_window"] == 4096
     assert context_event.payload["reserved_output_length"] == 512
-    assert context_event.payload["max_input_length"] == 3584
-    assert context_event.payload["model_num_ctx"] == 2048
-    assert context_event.payload["model_num_predict"] == 256
+    assert context_event.payload["context_safety_margin"] == 64
+    assert context_event.payload["max_input_length"] == 3520
+    assert context_event.payload["model_context_window"] == 4096
+    assert context_event.payload["model_max_output_length"] == 512
 
 
 def test_runtime_context_budget_coordination_survives_jsonl_redaction(tmp_path) -> None:
@@ -838,8 +847,8 @@ def test_runtime_context_budget_coordination_survives_jsonl_redaction(tmp_path) 
         model=FakeModel("ok"),
         tool_detector=ToolCallDetector(),
         interaction_diagnostics=JsonlInteractionDiagnosticLogger(tmp_path),
-        ollama_num_ctx=2048,
-        ollama_num_predict=256,
+        model_context_window=4096,
+        model_max_output_tokens=512,
         session_id="alpha",
     )
 
@@ -851,8 +860,120 @@ def test_runtime_context_budget_coordination_survives_jsonl_redaction(tmp_path) 
     assert context_row["payload"]["provider_context_window"] == 4096
     assert context_row["payload"]["reserved_output_length"] == 512
     assert context_row["payload"]["max_input_length"] == 3584
-    assert context_row["payload"]["model_num_ctx"] == 2048
-    assert context_row["payload"]["model_num_predict"] == 256
+    assert context_row["payload"]["model_context_window"] == 4096
+    assert context_row["payload"]["model_max_output_length"] == 512
+
+
+def test_runtime_enforces_final_model_input_budget_with_history_knowledge_and_tools() -> None:
+    memory = FakeConversationStore()
+    memory.append_many(
+        "alpha",
+        [
+            Message(role="user", content="old user " + ("u" * 2000)),
+            Message(role="assistant", content="old assistant " + ("a" * 2000)),
+            Message(role="tool", content='{"content":"' + ("t" * 5000) + '"}'),
+        ],
+    )
+    model = SequenceModel(["ok"])
+    sink = RecordingInteractionLogger()
+    runtime = AgentRuntime(
+        context_builder=ContextBuilder(system_prompt="system " + ("s" * 200)),
+        conversation_context=ConversationContextService(
+            ContextBuilder(system_prompt="system " + ("s" * 200)),
+            ConversationContextBudget(provider_context_window=300, reserved_output_tokens=100),
+            StaticContextProvider("knowledge " + ("k" * 600)),
+            AllowPolicy(),
+        ),
+        memory=memory,
+        model=model,
+        tool_detector=ToolCallDetector(),
+        interaction_diagnostics=sink,
+        model_context_window=300,
+        model_max_output_tokens=100,
+        include_knowledge_context=True,
+        session_id="alpha",
+    )
+
+    runtime.respond("current user intent")
+
+    request = next(event for event in sink.events if event.stage == InteractionStage.MODEL_REQUEST)
+    assert request.payload["estimated_final_input_length"] <= request.payload["effective_input_budget"]
+    assert model.calls[0][0].role == "system"
+    assert model.calls[0][-1].content == "current user intent"
+
+
+def test_runtime_classifies_context_window_length_termination() -> None:
+    sink = RecordingInteractionLogger()
+    runtime = AgentRuntime(
+        context_builder=ContextBuilder(system_prompt="system"),
+        conversation_context=ConversationContextService(
+            ContextBuilder(system_prompt="system"),
+            ConversationContextBudget(provider_context_window=8192, reserved_output_tokens=2048),
+        ),
+        memory=FakeConversationStore(),
+        model=MetadataModel(
+            "partial",
+            finish_reason=FinishReason.LENGTH,
+            prompt_tokens=7901,
+            output_tokens=291,
+            truncated=True,
+        ),
+        tool_detector=ToolCallDetector(),
+        interaction_diagnostics=sink,
+        model_context_window=8192,
+        model_max_output_tokens=2048,
+        session_id="alpha",
+    )
+
+    runtime.respond("hello")
+
+    response = next(event for event in sink.events if event.stage == InteractionStage.MODEL_RESPONSE)
+    assert response.payload["termination_cause"] == "context_window"
+
+
+def test_runtime_classifies_generation_limit_termination() -> None:
+    sink = RecordingInteractionLogger()
+    runtime = AgentRuntime(
+        context_builder=ContextBuilder(system_prompt="system"),
+        memory=FakeConversationStore(),
+        model=MetadataModel(
+            "partial",
+            finish_reason=FinishReason.LENGTH,
+            prompt_tokens=10,
+            output_tokens=128,
+            truncated=True,
+        ),
+        tool_detector=ToolCallDetector(),
+        interaction_diagnostics=sink,
+        model_context_window=8192,
+        model_max_output_tokens=128,
+        session_id="alpha",
+    )
+
+    runtime.respond("hello")
+
+    response = next(event for event in sink.events if event.stage == InteractionStage.MODEL_RESPONSE)
+    assert response.payload["termination_cause"] == "generation_limit"
+
+
+def test_runtime_rejects_incoherent_provider_budget() -> None:
+    with pytest.raises(ConfigurationError, match="model_context_window"):
+        AgentRuntime(
+            context_builder=ContextBuilder(system_prompt="system"),
+            conversation_context=ConversationContextService(
+                ContextBuilder(system_prompt="system"),
+                ConversationContextBudget(
+                    provider_context_window=4096,
+                    reserved_output_tokens=512,
+                ),
+            ),
+            memory=FakeConversationStore(),
+            model=FakeModel("ok"),
+            tool_detector=ToolCallDetector(),
+            model_context_window=2048,
+            model_max_output_tokens=512,
+            session_id="alpha",
+        )
 
 
 def test_runtime_reports_interaction_metrics_for_a_bounded_tool_loop() -> None:
@@ -1050,6 +1171,34 @@ class EmptyContextProvider:
     def build(self, _text: str) -> CompiledContext:
         self.calls += 1
         return CompiledContext(ContextPurpose.CONVERSATION, (), ContextBudget())
+
+
+class StaticContextProvider:
+    def __init__(self, text: str) -> None:
+        self._text = text
+
+    def build(self, _text: str) -> CompiledContext:
+        candidate = _knowledge_candidate("chunk-1", len(self._text.split()))
+        return CompiledContext(
+            ContextPurpose.CONVERSATION,
+            (ContextEvidence(candidate, self._text),),
+            ContextBudget(),
+        )
+
+
+def _knowledge_candidate(chunk_id: str, token_count: int) -> RetrievalCandidate:
+    return RetrievalCandidate(
+        chunk_id=chunk_id,
+        document_id="doc-1",
+        source_type=KnowledgeSourceType.FILE,
+        source_uri="README.md",
+        source_version="v1",
+        content_hash="chunk-hash",
+        score=1.0,
+        retrieval_method="fts5",
+        token_count=token_count,
+        freshness=FreshnessStatus.FRESH,
+    )
 
 
 class AllowPolicy:

@@ -19,7 +19,7 @@ def test_model_and_context_are_environment_selected(
         {
             "AI_ASSISTANT_PROVIDER": "ollama",
             "AI_ASSISTANT_MODEL": "installed-gemma-q4",
-            "AI_ASSISTANT_CONTEXT_LIMIT": "8192",
+            "AI_ASSISTANT_MODEL_CONTEXT_WINDOW": "8192",
         }
     )
 
@@ -28,5 +28,5 @@ def test_model_and_context_are_environment_selected(
     )
 
     assert config.model == "installed-gemma-q4"
-    assert config.context_limit == 8192
+    assert config.model_context_window == 8192
     assert "provider=ollama model=installed-gemma-q4" in caplog.text

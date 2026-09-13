@@ -143,10 +143,10 @@ def test_unknown_and_shell_like_tools_are_denied_with_stable_code(
 @pytest.mark.parametrize(
     ("path", "code"),
     [
-        ("../outside.txt", "path_denied"),
-        ("/tmp/outside.txt", "path_denied"),
-        (".env", "path_denied"),
-        ("secret.pem", "path_denied"),
+        ("../outside.txt", "path_outside_workspace"),
+        ("/tmp/outside.txt", "path_outside_workspace"),
+        (".env", "sensitive_path"),
+        ("secret.pem", "sensitive_path"),
     ],
 )
 def test_path_attacks_are_denied_with_stable_code(
@@ -168,7 +168,7 @@ def test_external_symlink_and_special_file_are_denied(tmp_path: Path) -> None:
     outside.write_text("secret", encoding="utf-8")
     (tmp_path / "link.txt").symlink_to(outside)
 
-    assert _denied_code(tmp_path, "link.txt") == "path_denied"
+    assert _denied_code(tmp_path, "link.txt") == "path_outside_workspace"
 
 
 def test_limits_and_malformed_arguments_have_stable_reason_codes() -> None:

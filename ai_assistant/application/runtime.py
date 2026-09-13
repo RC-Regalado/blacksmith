@@ -7,7 +7,9 @@ from time import perf_counter
 from uuid import uuid4
 
 from ai_assistant.application.context import ContextBuilder
+from ai_assistant.application.conversation_budget import estimate_tokens
 from ai_assistant.application.conversation_context import ConversationContextService
+from ai_assistant.application.errors import ConfigurationError
 from ai_assistant.application.interaction_metrics import InteractionMetrics
 from ai_assistant.application.ports.memory import ConversationMemory
 from ai_assistant.application.ports.models import ModelProvider
@@ -23,7 +25,7 @@ from ai_assistant.application.tool_loop import (
     fingerprint,
 )
 from ai_assistant.domain.message import Message
-from ai_assistant.domain.model_response import ModelResponse
+from ai_assistant.domain.model_response import FinishReason, ModelResponse
 from ai_assistant.domain.session import DEFAULT_SESSION_ID, SessionId, validate_session_id
 from ai_assistant.domain.tools import (
     InteractionStage,
@@ -63,8 +65,8 @@ class AgentRuntime:
     model_name: str = "unknown"
     tool_timeout_seconds: float = 5.0
     include_knowledge_context: bool = False
-    ollama_num_ctx: int | None = None
-    ollama_num_predict: int | None = None
+    model_context_window: int | None = None
+    model_max_output_tokens: int | None = None
     session_id: SessionId = DEFAULT_SESSION_ID
     last_tool_plan: ToolCallPlan = field(
         default_factory=lambda: ToolCallPlan(has_tool_call=False),
@@ -82,6 +84,24 @@ class AgentRuntime:
 
     def __post_init__(self) -> None:
         self.session_id = validate_session_id(self.session_id)
+        self._validate_provider_budget()
+
+    def _validate_provider_budget(self) -> None:
+        if self.conversation_context is None:
+            return
+        budget = getattr(self.conversation_context, "budget", None)
+        if budget is None:
+            return
+        if (
+            self.model_context_window is not None
+            and self.model_context_window != budget.provider_context_window
+        ):
+            raise ConfigurationError("model_context_window must match provider_context_window.")
+        if (
+            self.model_max_output_tokens is not None
+            and self.model_max_output_tokens != budget.reserved_output_tokens
+        ):
+            raise ConfigurationError("model_max_output_tokens must match reserved_output_tokens.")
 
     def respond(self, user_input: str) -> Message:
         started = perf_counter()
@@ -302,17 +322,27 @@ class AgentRuntime:
         return response
 
     def _call_model(self, messages: list[Message], *, round_index: int) -> ModelResponse:
+        bounded_messages, composition = self._bounded_model_messages(messages)
         self._interaction_diagnostics().record(
             InteractionStage.MODEL_REQUEST,
             session_id=self.session_id,
             interaction_id=self.last_interaction_id,
-            payload={"round_index": round_index, "message_count": len(messages)},
+            payload={
+                "round_index": round_index,
+                "message_count": len(bounded_messages),
+                **composition,
+            },
         )
         started = perf_counter()
-        response = self.model.chat(messages)
+        response = self.model.chat(bounded_messages)
         duration_ms = (perf_counter() - started) * 1000
         self._model_calls_used += 1
         self._last_model_response = response
+        termination_cause = _termination_cause(
+            response,
+            context_window=self.model_context_window,
+            output_limit=self.model_max_output_tokens,
+        )
         self._interaction_diagnostics().record(
             InteractionStage.MODEL_RESPONSE,
             session_id=self.session_id,
@@ -328,10 +358,41 @@ class AgentRuntime:
                 "input_length": response.prompt_tokens,
                 "output_length": response.output_tokens,
                 "truncated": response.truncated,
+                "termination_cause": termination_cause,
             },
             duration_ms=duration_ms,
         )
         return response
+
+    def _bounded_model_messages(
+        self,
+        messages: list[Message],
+    ) -> tuple[list[Message], dict[str, int]]:
+        budget = self._effective_input_budget()
+        required = _required_message_indexes(messages)
+        selected = set(required)
+        required_cost = sum(estimate_tokens(messages[index].content) for index in selected)
+        if required_cost > budget:
+            raise ConfigurationError("required model input exceeds effective input budget.")
+        remaining = budget - required_cost
+        for index in _optional_message_order(messages, selected):
+            cost = estimate_tokens(messages[index].content)
+            if cost <= remaining:
+                selected.add(index)
+                remaining -= cost
+        bounded = [message for index, message in enumerate(messages) if index in selected]
+        composition = _composition_metrics(bounded, budget)
+        composition["original_message_count"] = len(messages)
+        composition["dropped_message_count"] = len(messages) - len(bounded)
+        return bounded, composition
+
+    def _effective_input_budget(self) -> int:
+        budget = getattr(self.conversation_context, "budget", None)
+        if budget is not None:
+            return budget.max_input_tokens
+        if self.model_context_window is not None and self.model_max_output_tokens is not None:
+            return self.model_context_window - self.model_max_output_tokens
+        return self.context_builder.context_limit
 
     def _tool_request(self) -> ToolExecutionRequest:
         tool_call = self.last_tool_plan.tool_call
@@ -393,12 +454,14 @@ class AgentRuntime:
             payload["knowledge_candidates"] = metrics.knowledge_candidates
             payload["knowledge_chunks_selected"] = metrics.knowledge_chunks_selected
             payload["context_reduction_ratio"] = metrics.context_reduction_ratio
-        # FINDING-008 (ADR-071): surface the application-level context budget
-        # (`ConversationContextBudget`, driven by AI_ASSISTANT_CONTEXT_LIMIT)
-        # alongside the Ollama-side generation limits (`ollama_num_ctx`/
-        # `ollama_num_predict`, M5.2.5) as one observable record per turn,
-        # instead of two independently-configured, uncoordinated numbers an
-        # operator has to cross-reference by hand.
+            payload["lexical_candidates"] = metrics.lexical_candidates
+            payload["symbol_candidates"] = metrics.symbol_candidates
+            payload["semantic_candidates"] = metrics.semantic_candidates
+            payload["merged_candidates"] = metrics.merged_candidates
+            payload["selected_candidates"] = metrics.selected_candidates
+            payload["unique_sources_selected"] = metrics.unique_sources_selected
+        # FINDING-008 (ADR-071): surface the provider-neutral runtime budget
+        # as one observable record per turn.
         # Key names deliberately avoid the substring "token" (see the
         # matching comment in `_call_model`): `redact_sensitive` would
         # otherwise blank `reserved_output_tokens`/`max_input_tokens` even
@@ -407,9 +470,10 @@ class AgentRuntime:
         if budget is not None:
             payload["provider_context_window"] = budget.provider_context_window
             payload["reserved_output_length"] = budget.reserved_output_tokens
+            payload["context_safety_margin"] = budget.safety_margin_tokens
             payload["max_input_length"] = budget.max_input_tokens
-        payload["model_num_ctx"] = self.ollama_num_ctx
-        payload["model_num_predict"] = self.ollama_num_predict
+        payload["model_context_window"] = self.model_context_window
+        payload["model_max_output_length"] = self.model_max_output_tokens
         self._interaction_diagnostics().record(
             InteractionStage.CONTEXT_RETRIEVAL,
             session_id=self.session_id,
@@ -491,6 +555,110 @@ def _duplicate_rejection(request: ToolExecutionRequest) -> ToolExecutionResult:
         ),
         executor_operations=0,
     )
+
+
+def _required_message_indexes(messages: list[Message]) -> set[int]:
+    indexes: set[int] = set()
+    if messages:
+        indexes.add(0)
+    user_indexes = [index for index, message in enumerate(messages) if message.role == "user"]
+    if user_indexes:
+        indexes.add(user_indexes[-1])
+    return indexes
+
+
+def _optional_message_order(messages: list[Message], selected: set[int]) -> list[int]:
+    indexes = [index for index in range(len(messages)) if index not in selected]
+    return sorted(indexes, key=lambda index: (_message_priority(messages, index), -index))
+
+
+def _message_priority(messages: list[Message], index: int) -> int:
+    message = messages[index]
+    if message.role == "tool":
+        return 0
+    if _is_knowledge_message(message):
+        return 1
+    return 2
+
+
+def _composition_metrics(messages: list[Message], budget: int) -> dict[str, int]:
+    latest_user = _latest_user_index(messages)
+    return {
+        "system_input_length": sum(
+            _base_system_tokens(message) for index, message in enumerate(messages) if index == 0
+        ),
+        "history_input_length": sum(
+            estimate_tokens(message.content)
+            for index, message in enumerate(messages)
+            if index != 0 and index != latest_user and message.role not in {"system", "tool"}
+        ),
+        "knowledge_input_length": sum(
+            estimate_tokens(message.content)
+            for index, message in enumerate(messages)
+            if index != 0 and _is_knowledge_message(message)
+        ),
+        "tool_schema_input_length": sum(
+            _tool_instruction_tokens(message) for index, message in enumerate(messages) if index == 0
+        ),
+        "tool_result_input_length": sum(
+            estimate_tokens(message.content) for message in messages if message.role == "tool"
+        ),
+        "user_input_length": estimate_tokens(messages[latest_user].content)
+        if latest_user is not None
+        else 0,
+        "estimated_final_input_length": sum(estimate_tokens(message.content) for message in messages),
+        "effective_input_budget": budget,
+    }
+
+
+def _latest_user_index(messages: list[Message]) -> int | None:
+    for index in range(len(messages) - 1, -1, -1):
+        if messages[index].role == "user":
+            return index
+    return None
+
+
+def _is_knowledge_message(message: Message) -> bool:
+    return message.role == "system" and (
+        message.content.startswith("Relevant derived knowledge:")
+        or message.content.startswith("Knowledge context requested,")
+    )
+
+
+def _base_system_tokens(message: Message) -> int:
+    return estimate_tokens(_split_tool_instructions(message.content)[0])
+
+
+def _tool_instruction_tokens(message: Message) -> int:
+    return estimate_tokens(_split_tool_instructions(message.content)[1])
+
+
+def _split_tool_instructions(content: str) -> tuple[str, str]:
+    marker = "When the user asks to use a local tool"
+    index = content.find(marker)
+    if index < 0:
+        return content, ""
+    return content[:index].strip(), content[index:].strip()
+
+
+def _termination_cause(
+    response: ModelResponse,
+    *,
+    context_window: int | None,
+    output_limit: int | None,
+) -> str | None:
+    if response.finish_reason != FinishReason.LENGTH:
+        return None
+    if (
+        context_window is not None
+        and response.prompt_tokens is not None
+        and response.output_tokens is not None
+        and response.prompt_tokens + response.output_tokens >= context_window
+    ):
+        return "context_window"
+    if output_limit is not None and response.output_tokens is not None and response.output_tokens >= output_limit:
+        return "generation_limit"
+    return "unknown"
 
 
 def _exhaustion_summary(history: list[ToolCallAttempt], reason: str) -> str:

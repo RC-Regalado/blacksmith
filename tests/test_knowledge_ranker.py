@@ -44,6 +44,17 @@ def test_knowledge_ranker_excludes_stale_candidates_and_respects_limit() -> None
     assert [item.candidate.chunk_id for item in ranked] == ["chunk-3"]
 
 
+def test_knowledge_ranker_preserves_relevance_ordering() -> None:
+    candidates = (
+        _candidate("weak", "fts5", 1.5),
+        _candidate("strong", "fts5", 4.0),
+    )
+
+    ranked = KnowledgeRanker().rank(candidates, limit=2)
+
+    assert [item.candidate.chunk_id for item in ranked] == ["strong", "weak"]
+
+
 def test_knowledge_ranker_rejects_invalid_limit() -> None:
     with pytest.raises(ValueError, match="limit"):
         KnowledgeRanker().rank((), limit=0)

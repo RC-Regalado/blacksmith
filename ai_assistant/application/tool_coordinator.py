@@ -78,9 +78,13 @@ class ToolExecutionCoordinator:
         decision = self._policy.decide(request, definition)
         if decision.kind != PolicyDecisionKind.ALLOW:
             return self._deny(request, decision.reason_code or "denied")
-        context, executor_operations = self._resolve_path(request, definition)
+        context, executor_operations, error_code = self._resolve_path(request, definition)
         if context is None:
-            return self._deny(request, REASON_PATH_DENIED, executor_operations=executor_operations)
+            return self._deny(
+                request,
+                error_code or REASON_PATH_DENIED,
+                executor_operations=executor_operations,
+            )
         active_request = context.request
         if active_request.permission in _CONFIRMATION_REQUIRED:
             if self._confirmation is None:
@@ -103,7 +107,7 @@ class ToolExecutionCoordinator:
 
     def _resolve_path(
         self, request: ToolExecutionRequest, definition: ToolDefinition
-    ) -> tuple[ToolExecutionContext | None, int]:
+    ) -> tuple[ToolExecutionContext | None, int, str | None]:
         """Validate the request's path, attempting one bounded recovery.
 
         A single internal retry (case-only path correction) may run here
@@ -116,10 +120,10 @@ class ToolExecutionCoordinator:
         caller can enforce a platform-owned `max_executor_operations` budget.
         """
         try:
-            return self._path_policy.validate(request, definition), 1
+            return self._path_policy.validate(request, definition), 1, None
         except InvalidToolCallError as exc:
             if not self._recovery_eligible(exc, definition):
-                return None, 1
+                return None, 1, getattr(exc, "code", REASON_PATH_DENIED)
             return self._attempt_recovery(request, definition, exc)
 
     def _recovery_eligible(
@@ -136,7 +140,7 @@ class ToolExecutionCoordinator:
         request: ToolExecutionRequest,
         definition: ToolDefinition,
         original_exc: InvalidToolCallError,
-    ) -> tuple[ToolExecutionContext | None, int]:
+    ) -> tuple[ToolExecutionContext | None, int, str | None]:
         requested_path = str(request.arguments.get("path", ""))
         # Operation 1 is the failed attempt already made by `_resolve_path`.
         executor_operations = 1
@@ -163,7 +167,7 @@ class ToolExecutionCoordinator:
                 code=getattr(exc, "code", REASON_PATH_DENIED),
                 message=str(exc) or "Recovery lookup failed.",
             )
-            return None, executor_operations
+            return None, executor_operations, getattr(exc, "code", REASON_PATH_DENIED)
 
         resolved_path = corrected_relative.as_posix()
         self._recovery_event(
@@ -197,7 +201,7 @@ class ToolExecutionCoordinator:
                 code=getattr(exc, "code", REASON_PATH_DENIED),
                 message=str(exc) or "Recovery retry failed.",
             )
-            return None, executor_operations
+            return None, executor_operations, getattr(exc, "code", REASON_PATH_DENIED)
 
         self._recovery_event(
             corrected_request,
@@ -207,7 +211,7 @@ class ToolExecutionCoordinator:
             executor_operations,
             recovery_operations,
         )
-        return context, executor_operations
+        return context, executor_operations, None
 
     def _recovery_event(
         self,

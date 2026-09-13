@@ -479,7 +479,10 @@ def _metadata_matches(metadata: dict[str, object], query: KnowledgeQuery) -> boo
 
 
 def _score(rank: float) -> float:
-    return 1.0 / (1.0 + max(0.0, rank))
+    # SQLite FTS5 bm25() is lower-is-better and commonly returns negative
+    # values. Convert it to a non-negative, monotonic score where better
+    # lexical matches keep a higher candidate score instead of collapsing.
+    return 1.0 + max(0.0, -rank)
 
 
 def _embedding_to_row(chunk_id: str, embedding: EmbeddingVector) -> tuple[str, str, str, str, str, int, str]:

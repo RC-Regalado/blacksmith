@@ -1125,16 +1125,16 @@ AI_ASSISTANT_SESSION=default
 AI_ASSISTANT_SYSTEM_PROMPT=...
 AI_ASSISTANT_LOG_LEVEL=INFO
 AI_ASSISTANT_REQUEST_TIMEOUT=120
-AI_ASSISTANT_CONTEXT_LIMIT=4096
+AI_ASSISTANT_MODEL_CONTEXT_WINDOW=4096
+AI_ASSISTANT_MODEL_MAX_OUTPUT_TOKENS=2048
+AI_ASSISTANT_MODEL_CONTEXT_SAFETY_MARGIN=0
 ```
 
-Precedencia futura:
+Precedencia:
 
 ```text
-CLI args > environment > defaults
+process environment > .env > defaults
 ```
-
-Phase 1 no requiere `.env`, TOML ni frameworks de configuración.
 
 ---
 

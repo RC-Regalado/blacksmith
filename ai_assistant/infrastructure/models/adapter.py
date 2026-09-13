@@ -24,8 +24,8 @@ class ModelAdapterConfig:
     base_url: str = "https://api.openai.com/v1"
     api_key: str | None = None
     timeout_seconds: float = 60.0
-    ollama_num_ctx: int | None = None
-    ollama_num_predict: int | None = None
+    model_context_window: int | None = None
+    model_max_output_tokens: int | None = None
 
 
 class ModelAdapter(ModelProvider):
@@ -78,6 +78,6 @@ def _build_ollama_provider(config: ModelAdapterConfig) -> ModelProvider:
         model=config.model,
         base_url=config.base_url,
         timeout_seconds=config.timeout_seconds,
-        num_ctx=config.ollama_num_ctx,
-        num_predict=config.ollama_num_predict,
+        num_ctx=config.model_context_window,
+        num_predict=config.model_max_output_tokens,
     )
