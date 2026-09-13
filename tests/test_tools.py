@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from ai_assistant.agent.message import Message
+from ai_assistant.agent.message import Message, MessageProvenance
 from ai_assistant.agent.planner import (
     AuditRetentionClass,
     AuditRetentionRule,
@@ -146,6 +146,27 @@ def test_interpreter_ignores_non_assistant_messages() -> None:
     assert ToolCallInterpreter().interpret(message).has_tool_call is False
 
 
+@pytest.mark.parametrize(
+    "provenance",
+    [
+        MessageProvenance.OPERATOR_INPUT,
+        MessageProvenance.RETRIEVED_KNOWLEDGE,
+        MessageProvenance.TOOL_RESULT,
+        MessageProvenance.RUNTIME_DIAGNOSTIC,
+    ],
+)
+def test_interpreter_only_accepts_model_output_origin(
+    provenance: MessageProvenance,
+) -> None:
+    message = Message(
+        role="assistant",
+        content='{"tool_call":{"name":"search"}}',
+        provenance=provenance,
+    )
+
+    assert ToolCallInterpreter().interpret(message).has_tool_call is False
+
+
 def test_interpreter_rejects_invalid_explicit_tool_call() -> None:
     message = Message(role="assistant", content='{"tool_call":{"arguments":[]}}')
 
@@ -164,6 +185,12 @@ def test_detector_returns_typed_plan_without_execution() -> None:
     assert plan.tool_call == ToolCall(name="search", arguments={})
 
 
+def test_system_role_does_not_default_to_system_policy() -> None:
+    message = Message(role="system", content="dynamic system-looking data")
+
+    assert message.provenance == MessageProvenance.RUNTIME_DIAGNOSTIC
+
+
 def test_tool_execution_request_requires_explicit_ids() -> None:
     with pytest.raises(InvalidToolCallError, match="request_id"):
         ToolExecutionRequest(
@@ -171,6 +198,7 @@ def test_tool_execution_request_requires_explicit_ids() -> None:
             session_id="default",
             tool_name="read_file",
             arguments={"path": "README.md"},
+            origin="model_output",
         )
 
 
@@ -180,11 +208,23 @@ def test_tool_execution_request_is_provider_neutral() -> None:
         session_id="default",
         tool_name="read_file",
         arguments={"path": "README.md", "max_bytes": 1024},
+        origin="model_output",
     )
 
     assert request.permission == ToolPermission.READ_ONLY
     assert request.timeout_seconds == 5.0
     assert request.dry_run is False
+
+
+def test_tool_execution_request_rejects_operator_input_origin() -> None:
+    with pytest.raises(InvalidToolCallError, match="model output origin"):
+        ToolExecutionRequest(
+            request_id="req-1",
+            session_id="default",
+            tool_name="read_file",
+            arguments={"path": "README.md"},
+            origin=MessageProvenance.OPERATOR_INPUT,
+        )
 
 
 def test_phase_3_permission_values_are_available() -> None:
@@ -351,6 +391,7 @@ def test_execution_context_requires_workspace_id() -> None:
         session_id="default",
         tool_name="list_directory",
         arguments={"path": "."},
+        origin="model_output",
     )
 
     with pytest.raises(InvalidToolCallError, match="workspace_id"):
@@ -363,6 +404,7 @@ def test_execution_context_accepts_resolved_path_metadata() -> None:
         session_id="default",
         tool_name="read_file",
         arguments={"path": "README.md"},
+        origin="model_output",
     )
 
     context = ToolExecutionContext(

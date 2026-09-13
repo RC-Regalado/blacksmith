@@ -3,7 +3,7 @@
 import pytest
 
 from ai_assistant.application.errors import ConfigurationError
-from ai_assistant.agent.message import FinishReason, Message
+from ai_assistant.agent.message import FinishReason, Message, MessageProvenance
 from ai_assistant.infrastructure.models.adapter import ModelAdapter, ModelAdapterConfig
 from ai_assistant.infrastructure.models.ollama import OllamaModelProvider
 from ai_assistant.infrastructure.models.openai_compatible import OpenAICompatibleModel
@@ -52,7 +52,11 @@ def test_build_payload_separates_system_instructions() -> None:
 
     payload = model._build_payload(
         [
-            Message(role="system", content="Sistema"),
+            Message(
+                role="system",
+                content="Sistema",
+                provenance=MessageProvenance.SYSTEM_POLICY,
+            ),
             Message(role="user", content="Hola"),
         ]
     )

@@ -16,7 +16,7 @@ from ai_assistant.domain.errors import (
     ModelProtocolError,
     ModelTimeoutError,
 )
-from ai_assistant.domain.message import Message
+from ai_assistant.domain.message import Message, MessageProvenance
 from ai_assistant.domain.model_response import FinishReason, ModelResponse
 
 
@@ -87,9 +87,9 @@ class OllamaModelProvider(ModelProvider):
         )
 
     def _message_item(self, message: Message) -> dict[str, str]:
-        if message.role == "tool":
+        if message.provenance == MessageProvenance.TOOL_RESULT:
             return {"role": "user", "content": f"Tool result:\n{message.content}"}
-        return {"role": message.role, "content": message.content}
+        return {"role": _transport_role(message), "content": message.content}
 
     def _post_json(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
         started = perf_counter()
@@ -172,3 +172,11 @@ def _tool_call_text(message: dict[str, Any]) -> str | None:
         {"tool_call": {"name": function["name"], "arguments": arguments}},
         sort_keys=True,
     )
+
+
+def _transport_role(message: Message) -> str:
+    if message.provenance == MessageProvenance.SYSTEM_POLICY:
+        return "system"
+    if message.provenance == MessageProvenance.MODEL_OUTPUT:
+        return "assistant"
+    return "user"

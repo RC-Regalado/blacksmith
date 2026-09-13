@@ -300,6 +300,7 @@ def _with_path(request: ToolExecutionRequest, path: str) -> ToolExecutionRequest
         timeout_seconds=request.timeout_seconds,
         dry_run=request.dry_run,
         interaction_id=request.interaction_id,
+        origin=request.origin,
     )
 
 

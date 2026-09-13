@@ -221,6 +221,7 @@ def _validate(workspace: Path, tool_name: str, path: str):
         session_id="default",
         tool_name=tool_name,
         arguments={"path": path},
+        origin="model_output",
     )
     return WorkspacePathPolicy(str(workspace)).validate(request, definition)
 
@@ -233,6 +234,7 @@ def _validate_write(workspace: Path, path: str, mode: str):
         session_id="default",
         tool_name="write",
         arguments={"path": path, "content": "ok", "mode": mode},
+        origin="model_output",
     )
     return WorkspacePathPolicy(str(workspace)).validate(request, definition)
 

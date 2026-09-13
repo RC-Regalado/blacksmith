@@ -23,7 +23,7 @@ from ai_assistant.domain.errors import (
     ToolPathError,
     UnsupportedFileTypeError,
 )
-from ai_assistant.domain.message import Message, Role
+from ai_assistant.domain.message import Message, MessageProvenance, Role
 from ai_assistant.domain.model_response import FinishReason, ModelResponse
 from ai_assistant.domain.session import DEFAULT_SESSION_ID, SessionId, validate_session_id
 from ai_assistant.domain.tools import (
@@ -63,6 +63,7 @@ __all__ = [
     "InvalidToolCallError",
     "KnowledgeStoreError",
     "Message",
+    "MessageProvenance",
     "ModelConnectionError",
     "ModelNotFoundError",
     "ModelProtocolError",

@@ -183,6 +183,7 @@ def _context(
             arguments={"path": "../unsafe.txt", "max_bytes": 8},
             timeout_seconds=timeout_seconds,
             permission=permission,
+            origin="model_output",
         ),
         workspace_id=str(root),
         resolved_path=str(root / "safe.txt"),

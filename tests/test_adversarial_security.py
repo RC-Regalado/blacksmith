@@ -309,6 +309,7 @@ def _request(tool_name: str, arguments: dict[str, object]) -> ToolExecutionReque
         session_id="default",
         tool_name=tool_name,
         arguments=arguments,
+        origin="model_output",
     )
 
 

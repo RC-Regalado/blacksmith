@@ -66,6 +66,7 @@ def test_tool_execution_ports_can_be_implemented_by_fakes() -> None:
         session_id="default",
         tool_name="read_file",
         arguments={"path": "notes.txt"},
+        origin="model_output",
     )
 
     definition = catalog.definition_for(request.tool_name)
@@ -93,6 +94,7 @@ def test_tool_executor_contract_receives_authorized_context() -> None:
         session_id="default",
         tool_name="list_dir",
         arguments={"path": "."},
+        origin="model_output",
     )
     context = ToolExecutionContext(request=request, workspace_id="workspace")
 

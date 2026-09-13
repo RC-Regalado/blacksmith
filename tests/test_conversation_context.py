@@ -6,7 +6,7 @@ from ai_assistant.application.context import ContextBuilder
 from ai_assistant.application.conversation_budget import ConversationContextBudget
 from ai_assistant.application.conversation_context import ConversationContextService
 from ai_assistant.domain.errors import InvalidKnowledgeError
-from ai_assistant.domain.message import Message
+from ai_assistant.domain.message import Message, MessageProvenance
 from ai_assistant.knowledge import (
     CompiledContext,
     ContextBudget,
@@ -35,7 +35,8 @@ def test_conversation_context_includes_separate_knowledge_when_enabled() -> None
 
     messages = service.build([], "question", _compiled(), include_knowledge=True)
 
-    assert [message.role for message in messages] == ["system", "system", "user"]
+    assert [message.role for message in messages] == ["system", "user", "user"]
+    assert messages[1].provenance == MessageProvenance.RETRIEVED_KNOWLEDGE
     assert "Relevant derived knowledge" in messages[1].content
     assert "README.md#chunk-1" in messages[1].content
     assert messages[-1].content == "question"
@@ -92,6 +93,7 @@ def test_conversation_context_retrieval_empty_index_adds_visible_diagnostic() ->
     messages = service.build_with_retrieval([], "question", include_knowledge=True)
 
     assert "no fresh indexed knowledge matched" in messages[1].content
+    assert messages[1].provenance == MessageProvenance.RUNTIME_DIAGNOSTIC
     assert service.last_diagnostic == messages[1].content
     assert messages[-1].content == "question"
 

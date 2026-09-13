@@ -202,6 +202,7 @@ class ExecutionEngine:
             tool_name=tool_name,
             arguments=task.arguments,
             permission=_permission(task.capability),
+            origin="model_output",
         )
         diagnostics = ToolLoopDiagnostics(
             self._tool_diagnostics,

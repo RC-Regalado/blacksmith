@@ -5,7 +5,7 @@ import json
 
 from ai_assistant.application.ports.models import ModelProvider
 from ai_assistant.domain.errors import InvalidToolCallError
-from ai_assistant.domain.message import Message
+from ai_assistant.domain.message import Message, MessageProvenance
 from ai_assistant.knowledge.domain import CompiledContext
 from ai_assistant.knowledge.metrics import ContextMetrics
 from ai_assistant.platform.domain.objective import Objective
@@ -70,6 +70,7 @@ def _messages(
     return [
         Message(
             role="system",
+            provenance=MessageProvenance.SYSTEM_POLICY,
             content=(
                 "Return only valid JSON. Do not add Markdown, labels, explanations, "
                 "tool calls or trailing commas. Schema: "

@@ -8,6 +8,7 @@ import re
 from types import MappingProxyType
 
 from ai_assistant.domain.errors import InvalidToolCallError
+from ai_assistant.domain.message import MessageProvenance
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,6 +109,7 @@ class ToolExecutionRequest:
     timeout_seconds: float = 5.0
     dry_run: bool = False
     interaction_id: str | None = None
+    origin: MessageProvenance | str = field(kw_only=True)
 
     def __post_init__(self) -> None:
         _require_text(self.request_id, "request_id")
@@ -117,6 +119,10 @@ class ToolExecutionRequest:
             raise InvalidToolCallError("arguments must be an object.")
         if self.timeout_seconds <= 0:
             raise InvalidToolCallError("timeout_seconds must be positive.")
+        origin = MessageProvenance(self.origin)
+        if origin != MessageProvenance.MODEL_OUTPUT:
+            raise InvalidToolCallError("tool execution requires model output origin.")
+        object.__setattr__(self, "origin", origin)
 
 
 @dataclass(frozen=True, slots=True)

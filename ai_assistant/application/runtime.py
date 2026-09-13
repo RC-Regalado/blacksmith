@@ -24,7 +24,7 @@ from ai_assistant.application.tool_loop import (
     ToolLoopBudget,
     fingerprint,
 )
-from ai_assistant.domain.message import Message
+from ai_assistant.domain.message import Message, MessageProvenance
 from ai_assistant.domain.model_response import FinishReason, ModelResponse
 from ai_assistant.domain.session import DEFAULT_SESSION_ID, SessionId, validate_session_id
 from ai_assistant.domain.tools import (
@@ -123,40 +123,15 @@ class AgentRuntime:
         self._record_context_retrieval()
         outcome = "error"
         try:
-            direct_plan = self.tool_detector.detect(
-                Message(role="assistant", content=user_input)
-            )
-            if direct_plan.has_tool_call and self.tool_coordinator:
-                self.last_tool_plan = direct_plan
-                request = self._tool_request()
-                diagnostics = self._diagnostics()
-                diagnostics.requested(request, round_index=1, tool_call_count=1)
-                tool_started = perf_counter()
-                result = self.tool_coordinator.execute(request)
-                diagnostics.completed(
-                    request,
-                    result,
-                    round_index=1,
-                    tool_call_count=1,
-                    duration_ms=(perf_counter() - tool_started) * 1000,
-                )
-                self._record_tool_spend(result)
-                response = Message(
-                    role="assistant",
-                    content=_tool_result_content(result),
-                )
-                self._persist_turn(user_input, response)
-                outcome = "direct_tool_call"
+            model_response = self._call_model(context, round_index=1)
+            self.last_tool_plan = self.tool_detector.detect(model_response.message)
+            if self.last_tool_plan.has_tool_call and self.tool_coordinator:
+                response = self._run_tool_loop(user_input, context, model_response.message)
+                outcome = "tool_loop"
             else:
-                model_response = self._call_model(context, round_index=1)
-                self.last_tool_plan = self.tool_detector.detect(model_response.message)
-                if self.last_tool_plan.has_tool_call and self.tool_coordinator:
-                    response = self._run_tool_loop(user_input, context, model_response.message)
-                    outcome = "tool_loop"
-                else:
-                    response = model_response.message
-                    self._persist_turn(user_input, response)
-                    outcome = "direct_answer"
+                response = model_response.message
+                self._persist_turn(user_input, response)
+                outcome = "direct_answer"
         except Exception:
             duration_ms = (perf_counter() - started) * 1000
             logger.error(
@@ -195,7 +170,13 @@ class AgentRuntime:
         duplicate_guard = DuplicateCallGuard()
         progress_guard = ProgressGuard()
         conversation = list(context)
-        persisted: list[Message] = [Message(role="user", content=user_input)]
+        persisted: list[Message] = [
+            Message(
+                role="user",
+                content=user_input,
+                provenance=MessageProvenance.OPERATOR_INPUT,
+            )
+        ]
         history: list[ToolCallAttempt] = []
         executor_operations_used = 0
         round_index = 1
@@ -249,6 +230,7 @@ class AgentRuntime:
                 content=_tool_result_content(tool_result),
                 tool_name=tool_result.tool_name,
                 tool_call_id=tool_call.tool_call_id,
+                provenance=MessageProvenance.TOOL_RESULT,
             )
             persisted.append(tool_message)
             conversation = [*conversation, tool_request_message, tool_message]
@@ -291,6 +273,7 @@ class AgentRuntime:
         self._tool_rounds_used += 1
         synthesis_prompt = Message(
             role="user",
+            provenance=MessageProvenance.RUNTIME_DIAGNOSTIC,
             content=(
                 "No more tools are available this turn "
                 f"({_REASON_MESSAGES[reason]}). Provide your best final answer to "
@@ -410,6 +393,7 @@ class AgentRuntime:
             ),
             timeout_seconds=self.tool_timeout_seconds,
             interaction_id=self.last_interaction_id,
+            origin=MessageProvenance.MODEL_OUTPUT,
         )
 
     def _persist_turn(self, user_input: str, response: Message) -> None:
@@ -590,7 +574,10 @@ def _composition_metrics(messages: list[Message], budget: int) -> dict[str, int]
         "history_input_length": sum(
             estimate_tokens(message.content)
             for index, message in enumerate(messages)
-            if index != 0 and index != latest_user and message.role not in {"system", "tool"}
+            if index != 0
+            and index != latest_user
+            and message.role not in {"system", "tool"}
+            and not _is_knowledge_message(message)
         ),
         "knowledge_input_length": sum(
             estimate_tokens(message.content)
@@ -619,7 +606,10 @@ def _latest_user_index(messages: list[Message]) -> int | None:
 
 
 def _is_knowledge_message(message: Message) -> bool:
-    return message.role == "system" and (
+    return message.provenance in {
+        MessageProvenance.RETRIEVED_KNOWLEDGE,
+        MessageProvenance.RUNTIME_DIAGNOSTIC,
+    } or message.role == "system" and (
         message.content.startswith("Relevant derived knowledge:")
         or message.content.startswith("Knowledge context requested,")
     )

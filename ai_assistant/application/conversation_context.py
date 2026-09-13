@@ -3,7 +3,7 @@
 from ai_assistant.application.context import ContextBuilder
 from ai_assistant.application.conversation_budget import ConversationContextBudget, estimate_tokens
 from ai_assistant.domain.errors import InvalidKnowledgeError
-from ai_assistant.domain.message import Message
+from ai_assistant.domain.message import Message, MessageProvenance
 from ai_assistant.knowledge import CompiledContext, ContextPurpose
 from ai_assistant.knowledge.metrics import ContextMetrics
 
@@ -93,7 +93,11 @@ def _knowledge_message(context: CompiledContext) -> Message:
             for item in context.evidence
         ),
     ]
-    return Message(role="system", content="\n".join(lines))
+    return Message(
+        role="user",
+        content="\n".join(lines),
+        provenance=MessageProvenance.RETRIEVED_KNOWLEDGE,
+    )
 
 
 def _token_count(messages: list[Message]) -> int:
@@ -101,4 +105,12 @@ def _token_count(messages: list[Message]) -> int:
 
 
 def _with_diagnostic(messages: list[Message], diagnostic: str) -> list[Message]:
-    return [messages[0], Message(role="system", content=diagnostic), *messages[1:]]
+    return [
+        messages[0],
+        Message(
+            role="user",
+            content=diagnostic,
+            provenance=MessageProvenance.RUNTIME_DIAGNOSTIC,
+        ),
+        *messages[1:],
+    ]

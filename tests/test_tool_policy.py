@@ -315,6 +315,7 @@ def _request(
         arguments=arguments,
         permission=permission,  # type: ignore[arg-type]
         timeout_seconds=timeout_seconds,
+        origin="model_output",
     )
 
 

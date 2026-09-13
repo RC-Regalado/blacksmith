@@ -16,7 +16,7 @@ from ai_assistant.domain.errors import (
     ModelProtocolError,
     ModelTimeoutError,
 )
-from ai_assistant.domain.message import Message
+from ai_assistant.domain.message import Message, MessageProvenance
 from ai_assistant.domain.model_response import FinishReason, ModelResponse
 
 
@@ -41,9 +41,15 @@ class OpenAICompatibleModel(ModelProvider):
 
     def _build_payload(self, messages: list[Message]) -> dict[str, Any]:
         system_messages = [
-            message.content for message in messages if message.role == "system"
+            message.content
+            for message in messages
+            if message.provenance == MessageProvenance.SYSTEM_POLICY
         ]
-        input_messages = [message for message in messages if message.role != "system"]
+        input_messages = [
+            message
+            for message in messages
+            if message.provenance != MessageProvenance.SYSTEM_POLICY
+        ]
         payload: dict[str, Any] = {
             "model": self.model,
             "input": [self._input_item(message) for message in input_messages],
@@ -55,7 +61,7 @@ class OpenAICompatibleModel(ModelProvider):
         return payload
 
     def _input_item(self, message: Message) -> dict[str, Any]:
-        return {"role": message.role, "content": message.content}
+        return {"role": _transport_role(message), "content": message.content}
 
     def _post_json(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
         started = perf_counter()
@@ -163,3 +169,9 @@ def _to_model_response(message: Message, data: dict[str, Any]) -> ModelResponse:
         truncated=finish_reason == FinishReason.LENGTH,
         metadata={"status": status},
     )
+
+
+def _transport_role(message: Message) -> str:
+    if message.provenance == MessageProvenance.MODEL_OUTPUT:
+        return "assistant"
+    return "user"

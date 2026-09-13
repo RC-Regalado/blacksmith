@@ -208,6 +208,7 @@ def test_write_wrong_case_is_denied_without_recovery(tmp_path: Path) -> None:
             tool_name="write",
             arguments={"path": "Notes.txt", "content": "new", "mode": "replace"},
             permission=ToolPermission.WRITE_WORKSPACE,
+            origin="model_output",
         )
     )
 
@@ -226,6 +227,7 @@ def test_permission_denied_is_model_facing(tmp_path: Path) -> None:
             tool_name="read_file",
             arguments={"path": "notes.txt"},
             permission=ToolPermission.WRITE_WORKSPACE,
+            origin="model_output",
         )
     )
 
@@ -346,6 +348,7 @@ def _request(tool_name: str, path: str) -> ToolExecutionRequest:
         session_id="default",
         tool_name=tool_name,
         arguments={"path": path},
+        origin="model_output",
     )
 
 
