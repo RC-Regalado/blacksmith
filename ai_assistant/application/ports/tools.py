@@ -3,7 +3,9 @@
 from abc import ABC, abstractmethod
 
 from ai_assistant.domain.tools import (
+    InteractionLogEvent,
     ToolAuditEvent,
+    ToolCallLogEvent,
     ToolDefinition,
     ToolExecutionContext,
     ToolExecutionRequest,
@@ -44,6 +46,18 @@ class ToolExecutor(ABC):
 class AuditRecorder(ABC):
     @abstractmethod
     def record(self, event: ToolAuditEvent) -> None:
+        raise NotImplementedError
+
+
+class ToolDiagnosticLogger(ABC):
+    @abstractmethod
+    def record(self, event: ToolCallLogEvent) -> None:
+        raise NotImplementedError
+
+
+class InteractionDiagnosticLogger(ABC):
+    @abstractmethod
+    def record(self, event: InteractionLogEvent) -> None:
         raise NotImplementedError
 
 

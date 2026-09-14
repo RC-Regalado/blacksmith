@@ -3,11 +3,15 @@
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from ai_assistant.application.errors import ConfigurationError
 
 SUPPORTED_PROVIDERS = frozenset({"dummy", "ollama", "openai", "chatgpt"})
 SUPPORTED_TOOL_EXECUTORS = frozenset({"unix_socket", "local"})
+DEFAULT_MODEL_CONTEXT_WINDOW = 4096
+DEFAULT_MODEL_MAX_OUTPUT_TOKENS = 2048
+DEFAULT_MODEL_CONTEXT_SAFETY_MARGIN = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -16,11 +20,15 @@ class AppConfig:
     model: str = ""
     base_url: str = "https://api.openai.com/v1"
     database: str = "assistant.sqlite3"
+    execution_database: str = "assistant_execution.sqlite3"
+    knowledge_database: str = "assistant_knowledge.sqlite3"
     session: str = "default"
     system_prompt: str = "You are a local AI assistant."
     log_level: str = "INFO"
     request_timeout: float = 60.0
-    context_limit: int = 4096
+    model_context_window: int = DEFAULT_MODEL_CONTEXT_WINDOW
+    model_max_output_tokens: int = DEFAULT_MODEL_MAX_OUTPUT_TOKENS
+    model_context_safety_margin: int = DEFAULT_MODEL_CONTEXT_SAFETY_MARGIN
     workspace: str | None = None
     tool_execution: bool = False
     tool_timeout: float = 5.0
@@ -31,17 +39,84 @@ class AppConfig:
     audit_auto_purge: bool = False
     tool_executor: str = "unix_socket"
     tool_socket: str = "c_toolserver/build/toolserver.sock"
+    tool_log_dir: str = "logs/tools"
+    context_engine: bool = False
+    show_metrics: bool = False
     api_key: str | None = field(default=None, repr=False)
 
+    def __post_init__(self) -> None:
+        if self.model_context_window <= 0:
+            raise ConfigurationError("model_context_window must be positive.")
+        if self.model_max_output_tokens <= 0:
+            raise ConfigurationError("model_max_output_tokens must be positive.")
+        if self.model_context_safety_margin < 0:
+            raise ConfigurationError("model_context_safety_margin cannot be negative.")
+        reserved = self.model_max_output_tokens + self.model_context_safety_margin
+        if reserved >= self.model_context_window:
+            raise ConfigurationError(
+                "model_max_output_tokens plus model_context_safety_margin must be less than model_context_window."
+            )
+        if self.provider == "ollama":
+            _validate_ollama_budget(self)
 
-def load_app_config(env: Mapping[str, str] | None = None) -> AppConfig:
-    source = os.environ if env is None else env
+    @property
+    def context_limit(self) -> int:
+        return self.model_context_window
+
+    @property
+    def reserved_output_tokens(self) -> int:
+        return self.model_max_output_tokens
+
+    @property
+    def model_input_budget(self) -> int:
+        return (
+            self.model_context_window
+            - self.model_max_output_tokens
+            - self.model_context_safety_margin
+        )
+
+
+def load_app_config(
+    env: Mapping[str, str] | None = None,
+    env_file: str | Path | None = None,
+) -> AppConfig:
+    file_path = Path(".env") if env is None and env_file is None else env_file
+    source = {**_load_env_file(file_path), **dict(os.environ if env is None else env)}
     provider = _provider(source.get("AI_ASSISTANT_PROVIDER", "dummy"))
+    model_context_window = _positive_int(
+        source.get(
+            "AI_ASSISTANT_MODEL_CONTEXT_WINDOW",
+            str(DEFAULT_MODEL_CONTEXT_WINDOW),
+        ),
+        "AI_ASSISTANT_MODEL_CONTEXT_WINDOW",
+    )
+    model_max_output_tokens = _positive_int(
+        source.get(
+            "AI_ASSISTANT_MODEL_MAX_OUTPUT_TOKENS",
+            str(_default_max_output_tokens(model_context_window)),
+        ),
+        "AI_ASSISTANT_MODEL_MAX_OUTPUT_TOKENS",
+    )
+    model_context_safety_margin = _non_negative_int(
+        source.get(
+            "AI_ASSISTANT_MODEL_CONTEXT_SAFETY_MARGIN",
+            str(DEFAULT_MODEL_CONTEXT_SAFETY_MARGIN),
+        ),
+        "AI_ASSISTANT_MODEL_CONTEXT_SAFETY_MARGIN",
+    )
     return AppConfig(
         provider=provider,
         model=source.get("AI_ASSISTANT_MODEL", ""),
         base_url=source.get("AI_ASSISTANT_BASE_URL", _default_base_url(provider)),
         database=source.get("AI_ASSISTANT_DATABASE", "assistant.sqlite3"),
+        execution_database=source.get(
+            "AI_ASSISTANT_EXECUTION_DATABASE",
+            "assistant_execution.sqlite3",
+        ),
+        knowledge_database=source.get(
+            "AI_ASSISTANT_KNOWLEDGE_DATABASE",
+            "assistant_knowledge.sqlite3",
+        ),
         session=source.get("AI_ASSISTANT_SESSION", "default"),
         system_prompt=source.get(
             "AI_ASSISTANT_SYSTEM_PROMPT", "You are a local AI assistant."
@@ -51,10 +126,9 @@ def load_app_config(env: Mapping[str, str] | None = None) -> AppConfig:
             source.get("AI_ASSISTANT_REQUEST_TIMEOUT", "60"),
             "AI_ASSISTANT_REQUEST_TIMEOUT",
         ),
-        context_limit=_positive_int(
-            source.get("AI_ASSISTANT_CONTEXT_LIMIT", "4096"),
-            "AI_ASSISTANT_CONTEXT_LIMIT",
-        ),
+        model_context_window=model_context_window,
+        model_max_output_tokens=model_max_output_tokens,
+        model_context_safety_margin=model_context_safety_margin,
         workspace=_optional_text(source.get("AI_ASSISTANT_WORKSPACE")),
         tool_execution=_bool(
             source.get("AI_ASSISTANT_TOOL_EXECUTION", "false"),
@@ -91,6 +165,15 @@ def load_app_config(env: Mapping[str, str] | None = None) -> AppConfig:
             "AI_ASSISTANT_TOOL_SOCKET",
             "c_toolserver/build/toolserver.sock",
         ),
+        tool_log_dir=source.get("AI_ASSISTANT_TOOL_LOG_DIR", "logs/tools"),
+        context_engine=_bool(
+            source.get("AI_ASSISTANT_CONTEXT_ENGINE", "false"),
+            "AI_ASSISTANT_CONTEXT_ENGINE",
+        ),
+        show_metrics=_bool(
+            source.get("AI_ASSISTANT_SHOW_METRICS", "false"),
+            "AI_ASSISTANT_SHOW_METRICS",
+        ),
         api_key=source.get("OPENAI_API_KEY"),
     )
 
@@ -119,6 +202,43 @@ def _default_base_url(provider: str) -> str:
     if provider == "ollama":
         return "http://localhost:11434"
     return "https://api.openai.com/v1"
+
+
+def _default_max_output_tokens(context_window: int) -> int:
+    return min(DEFAULT_MODEL_MAX_OUTPUT_TOKENS, max(1, context_window // 2))
+
+
+def _validate_ollama_budget(config: AppConfig) -> None:
+    if config.model_max_output_tokens <= 0:
+        raise ConfigurationError("model_max_output_tokens must be positive for Ollama.")
+
+
+def _load_env_file(env_file: str | Path | None) -> dict[str, str]:
+    if env_file is None:
+        return {}
+    path = Path(env_file)
+    if not path.exists():
+        return {}
+    values: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        parsed = _parse_env_line(line)
+        if parsed is not None:
+            key, value = parsed
+            values[key] = value
+    return values
+
+
+def _parse_env_line(line: str) -> tuple[str, str] | None:
+    stripped = line.strip()
+    if not stripped or stripped.startswith("#") or "=" not in stripped:
+        return None
+    if stripped.startswith("export "):
+        stripped = stripped[7:].lstrip()
+    key, value = stripped.split("=", 1)
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+        value = value[1:-1]
+    return key.strip(), value
 
 
 def _positive_float(value: str, name: str) -> float:
@@ -165,3 +285,9 @@ def _optional_text(value: str | None) -> str | None:
         return None
     stripped = value.strip()
     return stripped or None
+
+
+def _optional_positive_int(value: str | None, name: str) -> int | None:
+    if value is None or not value.strip():
+        return None
+    return _positive_int(value, name)

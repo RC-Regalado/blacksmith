@@ -1,52 +1,12 @@
-# Milestone Report — <MILESTONE-ID>
-
+# Phase 5 Milestone Report — <MILESTONE-ID>
 ## Status
-
 implemented-awaiting-human-review
-
 ## Objective
-
-## Tasks completed
-
-| Task | Result | Validation |
-|---|---|---|
-
-## Combined changes
-
-## Acceptance criteria evidence
-
-| Criterion | Evidence | Status |
-|---|---|---|
-
-## Validation executed
-
-```text
-command
-result
-```
-
+## Tasks
+## Acceptance evidence
+## Validation
 ## Architecture review
-
-- Applicable ADRs:
-- Conformance:
-- Deviations:
-
-## Security and safety review
-
-- Findings:
-- Residual risks:
-
-## Documentation
-
-- Updated:
-- Not required:
-
-## Known limitations
-
+## Freshness review
+## Security review
+## Metrics
 ## Human review focus
-
-## Suggested commit
-
-```text
-type(scope): description
-```

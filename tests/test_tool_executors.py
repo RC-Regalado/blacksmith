@@ -82,6 +82,7 @@ def _context(arguments: dict[str, object] | None = None) -> ToolExecutionContext
             session_id="default",
             tool_name="read_file",
             arguments=arguments or {"path": "README.md"},
+            origin="model_output",
         ),
         workspace_id="workspace",
         resolved_path="/workspace/README.md",

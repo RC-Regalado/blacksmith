@@ -4,13 +4,13 @@ import json
 from typing import Any
 
 from ai_assistant.domain.errors import InvalidToolCallError
-from ai_assistant.domain.message import Message
+from ai_assistant.domain.message import Message, MessageProvenance
 from ai_assistant.domain.tools import ToolCall, ToolCallPlan
 
 
 class ToolCallInterpreter:
     def interpret(self, message: Message) -> ToolCallPlan:
-        if message.role != "assistant":
+        if message.role != "assistant" or message.provenance != MessageProvenance.MODEL_OUTPUT:
             return ToolCallPlan(has_tool_call=False)
 
         content = self._json_object(message.content)
@@ -26,12 +26,13 @@ class ToolCallInterpreter:
         try:
             data = json.loads(source)
         except json.JSONDecodeError:
-            if not fenced:
-                return None
-            candidate = _first_json_object(source)
+            candidate = _first_json_object(source if fenced else content)
             if candidate is None:
                 return None
-            data = json.loads(candidate)
+            try:
+                data = json.loads(candidate)
+            except json.JSONDecodeError:
+                return None
         return data if isinstance(data, dict) else None
 
     def _tool_call(self, data: Any) -> ToolCall:

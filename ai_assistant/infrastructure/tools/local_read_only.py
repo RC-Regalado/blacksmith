@@ -167,7 +167,7 @@ def _list_directory(context: ToolExecutionContext) -> ToolExecutionResult:
 
 
 def _search_text(context: ToolExecutionContext) -> ToolExecutionResult:
-    rg = shutil.which(_RG)
+    rg = shutil.which(_RG, path=os.defpath)
     if rg is None:
         return _error(context, "search_backend_unavailable", "ripgrep is unavailable.")
     path = _resolved_path(context)
@@ -178,7 +178,7 @@ def _search_text(context: ToolExecutionContext) -> ToolExecutionResult:
 
 
 def _git_status(context: ToolExecutionContext) -> ToolExecutionResult:
-    git = shutil.which(_GIT)
+    git = shutil.which(_GIT, path=os.defpath)
     if git is None:
         return _error(context, "git_unavailable", "git is unavailable.")
     root = _git_root(context, git)
@@ -202,7 +202,7 @@ def _git_status(context: ToolExecutionContext) -> ToolExecutionResult:
 
 
 def _git_diff(context: ToolExecutionContext) -> ToolExecutionResult:
-    git = shutil.which(_GIT)
+    git = shutil.which(_GIT, path=os.defpath)
     if git is None:
         return _error(context, "git_unavailable", "git is unavailable.")
     root = _git_root(context, git)
@@ -458,7 +458,7 @@ def _run_git(
                 "PAGER": "cat",
                 "GIT_EXTERNAL_DIFF": "",
                 "GIT_CONFIG_NOSYSTEM": "1",
-                "PATH": os.environ.get("PATH", ""),
+                "PATH": os.defpath,
             },
             capture_output=True,
             text=True,
@@ -518,7 +518,7 @@ def _process_timeout(
 
 
 def _process_env(profile_env: Mapping[str, str]) -> dict[str, str]:
-    return {"PATH": os.environ.get("PATH", ""), **dict(profile_env)}
+    return {"PATH": os.defpath, **dict(profile_env)}
 
 
 def _stdout_limit(context: ToolExecutionContext, profile_limit: int) -> int:

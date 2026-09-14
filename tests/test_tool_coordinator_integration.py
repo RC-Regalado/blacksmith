@@ -36,6 +36,7 @@ def test_coordinator_uses_local_executor_and_sqlite_audit(tmp_path: Path) -> Non
             session_id="default",
             tool_name="read_file",
             arguments={"path": "notes.txt"},
+            origin="model_output",
         )
     )
 

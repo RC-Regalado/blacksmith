@@ -16,10 +16,16 @@ from ai_assistant.domain.errors import (
     ModelProtocolError,
     ModelTimeoutError,
 )
-from ai_assistant.domain.message import Message
+from ai_assistant.domain.message import Message, MessageProvenance
+from ai_assistant.domain.model_response import FinishReason, ModelResponse
 
 
 logger = logging.getLogger(__name__)
+
+_FINISH_REASONS: dict[Any, FinishReason] = {
+    "stop": FinishReason.STOP,
+    "length": FinishReason.LENGTH,
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,25 +33,63 @@ class OllamaModelProvider(ModelProvider):
     model: str
     base_url: str = "http://localhost:11434"
     timeout_seconds: float = 60.0
+    num_ctx: int | None = None
+    num_predict: int | None = None
 
-    def chat(self, messages: list[Message]) -> Message:
+    def chat(self, messages: list[Message]) -> ModelResponse:
         if not messages:
             raise InvalidMessageError("OllamaModelProvider requires messages.")
         payload = self._build_payload(messages)
         data = self._post_json("/api/chat", payload)
-        return Message(role="assistant", content=self._extract_text(data))
+        used_tool_call = _tool_call_text(data.get("message") or {}) is not None
+        message = Message(role="assistant", content=self._extract_text(data))
+        return self._to_model_response(message, data, used_tool_call=used_tool_call)
 
     def _build_payload(self, messages: list[Message]) -> dict[str, Any]:
-        return {
+        payload: dict[str, Any] = {
             "model": self.model,
             "messages": [self._message_item(message) for message in messages],
             "stream": False,
         }
+        options = self._options()
+        if options:
+            payload["options"] = options
+        return payload
+
+    def _options(self) -> dict[str, int]:
+        options: dict[str, int] = {}
+        if self.num_ctx is not None:
+            options["num_ctx"] = self.num_ctx
+        if self.num_predict is not None:
+            options["num_predict"] = self.num_predict
+        return options
+
+    def _to_model_response(
+        self, message: Message, data: dict[str, Any], *, used_tool_call: bool
+    ) -> ModelResponse:
+        if used_tool_call:
+            finish_reason = FinishReason.TOOL_CALL
+        else:
+            finish_reason = _FINISH_REASONS.get(data.get("done_reason"), FinishReason.UNKNOWN)
+        prompt_tokens = data.get("prompt_eval_count")
+        output_tokens = data.get("eval_count")
+        return ModelResponse(
+            message=message,
+            finish_reason=finish_reason,
+            prompt_tokens=prompt_tokens if isinstance(prompt_tokens, int) else None,
+            output_tokens=output_tokens if isinstance(output_tokens, int) else None,
+            truncated=finish_reason == FinishReason.LENGTH,
+            metadata={
+                "done": data.get("done"),
+                "configured_num_ctx": self.num_ctx,
+                "configured_num_predict": self.num_predict,
+            },
+        )
 
     def _message_item(self, message: Message) -> dict[str, str]:
-        if message.role == "tool":
+        if message.provenance == MessageProvenance.TOOL_RESULT:
             return {"role": "user", "content": f"Tool result:\n{message.content}"}
-        return {"role": message.role, "content": message.content}
+        return {"role": _transport_role(message), "content": message.content}
 
     def _post_json(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
         started = perf_counter()
@@ -71,6 +115,16 @@ class OllamaModelProvider(ModelProvider):
         self._log_success(started)
         return data
 
+    def _log_success(self, started: float) -> None:
+        logger.info(
+            "model request completed provider=ollama model=%s duration_ms=%.2f "
+            "num_ctx=%s num_predict=%s",
+            self.model,
+            (perf_counter() - started) * 1000,
+            self.num_ctx if self.num_ctx is not None else "default",
+            self.num_predict if self.num_predict is not None else "default",
+        )
+
     def _extract_text(self, data: dict[str, Any]) -> str:
         message = data.get("message")
         if not isinstance(message, dict):
@@ -95,13 +149,6 @@ class OllamaModelProvider(ModelProvider):
             return ModelTimeoutError("Ollama request timed out.")
         return ModelConnectionError("Ollama service is not available.")
 
-    def _log_success(self, started: float) -> None:
-        logger.info(
-            "model request completed provider=ollama model=%s duration_ms=%.2f",
-            self.model,
-            (perf_counter() - started) * 1000,
-        )
-
     def _log_failure(self, started: float, http_status: int | None = None) -> None:
         logger.error(
             "model request failed provider=ollama model=%s duration_ms=%.2f status=%s",
@@ -125,3 +172,11 @@ def _tool_call_text(message: dict[str, Any]) -> str | None:
         {"tool_call": {"name": function["name"], "arguments": arguments}},
         sort_keys=True,
     )
+
+
+def _transport_role(message: Message) -> str:
+    if message.provenance == MessageProvenance.SYSTEM_POLICY:
+        return "system"
+    if message.provenance == MessageProvenance.MODEL_OUTPUT:
+        return "assistant"
+    return "user"

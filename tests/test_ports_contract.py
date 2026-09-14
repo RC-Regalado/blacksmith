@@ -13,7 +13,7 @@ from ai_assistant.application.ports.tools import (
     ToolExecutor,
     ToolPolicy,
 )
-from ai_assistant.agent.message import Message
+from ai_assistant.agent.message import FinishReason, Message, ModelResponse
 from ai_assistant.domain.tools import (
     PolicyDecisionKind,
     ToolAuditEvent,
@@ -35,7 +35,7 @@ def test_model_provider_contract_returns_message() -> None:
 
     response = provider.chat([Message(role="user", content="Hello")])
 
-    assert response == Message(role="assistant", content="ok")
+    assert response.message == Message(role="assistant", content="ok")
 
 
 def test_conversation_memory_contract_preserves_messages() -> None:
@@ -66,6 +66,7 @@ def test_tool_execution_ports_can_be_implemented_by_fakes() -> None:
         session_id="default",
         tool_name="read_file",
         arguments={"path": "notes.txt"},
+        origin="model_output",
     )
 
     definition = catalog.definition_for(request.tool_name)
@@ -93,6 +94,7 @@ def test_tool_executor_contract_receives_authorized_context() -> None:
         session_id="default",
         tool_name="list_dir",
         arguments={"path": "."},
+        origin="model_output",
     )
     context = ToolExecutionContext(request=request, workspace_id="workspace")
 
@@ -102,8 +104,11 @@ def test_tool_executor_contract_receives_authorized_context() -> None:
 
 
 class ContractModel(ModelProvider):
-    def chat(self, messages: list[Message]) -> Message:
-        return Message(role="assistant", content="ok")
+    def chat(self, messages: list[Message]) -> ModelResponse:
+        return ModelResponse(
+            message=Message(role="assistant", content="ok"),
+            finish_reason=FinishReason.STOP,
+        )
 
 
 class ContractMemory(ConversationMemory):

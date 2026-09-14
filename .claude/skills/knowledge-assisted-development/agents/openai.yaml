@@ -1,0 +1,15 @@
+interface:
+  display_name: knowledge assisted development
+  short_description: Use the project's Context & Knowledge Engine to reduce repository
+    wandering, retrieve relevant architecture/code/history context, verify provenance
+    and freshness, then confirm volatile state with live repository tools before implementing
+    changes.
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

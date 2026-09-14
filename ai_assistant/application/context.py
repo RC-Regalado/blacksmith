@@ -2,7 +2,8 @@
 
 from dataclasses import dataclass
 
-from ai_assistant.domain.message import Message
+from ai_assistant.application.conversation_budget import estimate_tokens
+from ai_assistant.domain.message import Message, MessageProvenance
 
 
 @dataclass(frozen=True, slots=True)
@@ -16,19 +17,31 @@ class ContextBuilder:
 
         selected_history = self._select_history(history, user_input)
         return [
-            Message(role="system", content=self.system_prompt),
+            Message(
+                role="system",
+                content=self.system_prompt,
+                provenance=MessageProvenance.SYSTEM_POLICY,
+            ),
             *selected_history,
-            Message(role="user", content=user_input),
+            Message(
+                role="user",
+                content=user_input,
+                provenance=MessageProvenance.OPERATOR_INPUT,
+            ),
         ]
 
     def _select_history(self, history: list[Message], user_input: str) -> list[Message]:
-        remaining = self.context_limit - len(self.system_prompt) - len(user_input)
+        remaining = (
+            self.context_limit
+            - estimate_tokens(self.system_prompt)
+            - estimate_tokens(user_input)
+        )
         if remaining <= 0:
             return []
 
         selected: list[Message] = []
         for message in reversed(history):
-            cost = len(message.content)
+            cost = estimate_tokens(message.content)
             if cost > remaining:
                 break
             selected.append(message)

@@ -58,7 +58,9 @@ class UnixSocketToolExecutor(ToolExecutor):
             return _failure(context, ToolExecutionStatus.TIMEOUT, "timeout")
         except socket.timeout:
             return _failure(context, ToolExecutionStatus.TIMEOUT, "timeout")
-        except (FrameError, UnixSocketClientError, OSError, ValueError, json.JSONDecodeError):
+        except UnixSocketClientError as exc:
+            return _failure(context, ToolExecutionStatus.ERROR, exc.code)
+        except (FrameError, OSError, ValueError, json.JSONDecodeError, TypeError):
             return _failure(context, ToolExecutionStatus.ERROR, "malformed_response")
 
 
@@ -87,7 +89,12 @@ def _decode_result(context: ToolExecutionContext, payload: bytes) -> ToolExecuti
         return _failure(context, ToolExecutionStatus.ERROR, "response_id_mismatch")
     status = int(fields.get(2, 0))
     if status == _OK:
-        content = json.loads(bytes(fields.get(4, b"{}")).decode("utf-8"))
+        content_data = fields.get(4, b"{}")
+        if not isinstance(content_data, bytes):
+            return _failure(context, ToolExecutionStatus.ERROR, "invalid_response_schema")
+        content = json.loads(content_data.decode("utf-8"))
+        if not isinstance(content, dict):
+            return _failure(context, ToolExecutionStatus.ERROR, "invalid_response_schema")
         content.setdefault("path", context.relative_path)
         return ToolExecutionResult(
             request_id=request_id,

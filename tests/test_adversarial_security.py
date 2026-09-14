@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from ai_assistant.agent.context import ContextBuilder
-from ai_assistant.agent.message import Message
+from ai_assistant.agent.message import FinishReason, Message, ModelResponse
 from ai_assistant.agent.planner import ToolCallDetector
 from ai_assistant.agent.runtime import AgentRuntime
 from ai_assistant.application.path_policy import WorkspacePathPolicy
@@ -143,10 +143,10 @@ def test_unknown_and_shell_like_tools_are_denied_with_stable_code(
 @pytest.mark.parametrize(
     ("path", "code"),
     [
-        ("../outside.txt", "path_denied"),
-        ("/tmp/outside.txt", "path_denied"),
-        (".env", "path_denied"),
-        ("secret.pem", "path_denied"),
+        ("../outside.txt", "path_outside_workspace"),
+        ("/tmp/outside.txt", "path_outside_workspace"),
+        (".env", "sensitive_path"),
+        ("secret.pem", "sensitive_path"),
     ],
 )
 def test_path_attacks_are_denied_with_stable_code(
@@ -168,7 +168,7 @@ def test_external_symlink_and_special_file_are_denied(tmp_path: Path) -> None:
     outside.write_text("secret", encoding="utf-8")
     (tmp_path / "link.txt").symlink_to(outside)
 
-    assert _denied_code(tmp_path, "link.txt") == "path_denied"
+    assert _denied_code(tmp_path, "link.txt") == "path_outside_workspace"
 
 
 def test_limits_and_malformed_arguments_have_stable_reason_codes() -> None:
@@ -236,23 +236,37 @@ def test_runtime_phase_1_path_still_works_without_tool_execution() -> None:
     assert [message.role for message in memory.messages] == ["user", "assistant"]
 
 
-def test_runtime_second_tool_round_is_not_executed() -> None:
+def test_runtime_rejects_tool_round_once_budget_exhausted() -> None:
+    # ADR-069 superseded ADR-024's hard one-round cap with a bounded,
+    # guarded multi-round loop (default max_model_tool_rounds=3). Distinct
+    # non-duplicate requests must execute up to that budget, and only the
+    # round that would exceed it is blocked, with a real synthesized answer
+    # instead of the old fixed rejection string.
+    coordinator = ReturningCoordinator()
     runtime = AgentRuntime(
         context_builder=ContextBuilder(system_prompt="system"),
         memory=Memory(),
         model=SequenceModel(
             [
-                '{"tool_call":{"name":"read_file","arguments":{"path":"notes.txt"}}}',
-                '{"tool_call":{"name":"read_file","arguments":{"path":"again.txt"}}}',
+                '{"tool_call":{"name":"read_file","arguments":{"path":"one.txt"}}}',
+                '{"tool_call":{"name":"read_file","arguments":{"path":"two.txt"}}}',
+                '{"tool_call":{"name":"read_file","arguments":{"path":"three.txt"}}}',
+                '{"tool_call":{"name":"read_file","arguments":{"path":"four.txt"}}}',
+                "Here is a summary of what I found.",
             ]
         ),
         tool_detector=ToolCallDetector(),
-        tool_coordinator=ReturningCoordinator(),
+        tool_coordinator=coordinator,
     )
 
     response = runtime.respond("read")
 
-    assert response.content == "Tool round limit reached; no additional tool was executed."
+    assert [request.arguments["path"] for request in coordinator.requests] == [
+        "one.txt",
+        "two.txt",
+        "three.txt",
+    ]
+    assert response.content == "Here is a summary of what I found."
 
 
 def test_audit_and_logs_do_not_expose_sensitive_content(
@@ -295,6 +309,7 @@ def _request(tool_name: str, arguments: dict[str, object]) -> ToolExecutionReque
         session_id="default",
         tool_name=tool_name,
         arguments=arguments,
+        origin="model_output",
     )
 
 
@@ -382,13 +397,19 @@ class Model(ModelProvider):
     def __init__(self, response: str) -> None:
         self.response = response
 
-    def chat(self, messages: list[Message]) -> Message:
-        return Message(role="assistant", content=self.response)
+    def chat(self, messages: list[Message]) -> ModelResponse:
+        return ModelResponse(
+            message=Message(role="assistant", content=self.response),
+            finish_reason=FinishReason.STOP,
+        )
 
 
 class SequenceModel(ModelProvider):
     def __init__(self, responses: list[str]) -> None:
         self.responses = responses
 
-    def chat(self, messages: list[Message]) -> Message:
-        return Message(role="assistant", content=self.responses.pop(0))
+    def chat(self, messages: list[Message]) -> ModelResponse:
+        return ModelResponse(
+            message=Message(role="assistant", content=self.responses.pop(0)),
+            finish_reason=FinishReason.STOP,
+        )

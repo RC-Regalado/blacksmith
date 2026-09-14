@@ -657,6 +657,7 @@ def _context(
             tool_name=tool_name,
             arguments=args,
             permission=permission,
+            origin="model_output",
         ),
         workspace_id=str(workspace),
         resolved_path=str((workspace / path).resolve()),

@@ -15,11 +15,13 @@ Exact Ollama tags can differ by registry and quantization. Set the installed tag
 ```bash
 AI_ASSISTANT_PROVIDER=ollama
 AI_ASSISTANT_MODEL=<installed-ollama-tag>
-AI_ASSISTANT_CONTEXT_LIMIT=4096
+AI_ASSISTANT_MODEL_CONTEXT_WINDOW=4096
+AI_ASSISTANT_MODEL_MAX_OUTPUT_TOKENS=1024
+AI_ASSISTANT_MODEL_CONTEXT_SAFETY_MARGIN=0
 AI_ASSISTANT_REQUEST_TIMEOUT=180
 ```
 
-Use `AI_ASSISTANT_CONTEXT_LIMIT=8192` only for evaluation runs where memory pressure is acceptable.
+Use `AI_ASSISTANT_MODEL_CONTEXT_WINDOW=8192` only for evaluation runs where memory pressure is acceptable.
 
 For the current GTX 1060 6 GB local profile, Ollama server settings and the
 recommended `blacksmith-tools` CLI command, see `docs/ollama-local.md`.

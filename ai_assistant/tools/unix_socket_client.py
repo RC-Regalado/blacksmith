@@ -11,6 +11,10 @@ from ai_assistant.tools.protobuf import SerializableProto
 class UnixSocketClientError(RuntimeError):
     """Raised when communication with the Unix socket server fails."""
 
+    def __init__(self, message: str, code: str = "socket_error") -> None:
+        super().__init__(message)
+        self.code = code
+
 
 @dataclass(frozen=True, slots=True)
 class UnixSocketProtobufClient:
@@ -30,15 +34,27 @@ class UnixSocketProtobufClient:
 
     def _connect(self) -> socket.socket:
         if not self.socket_path.exists():
-            raise UnixSocketClientError(f"Socket does not exist: {self.socket_path}")
+            raise UnixSocketClientError(
+                f"Socket does not exist: {self.socket_path}",
+                "missing_socket",
+            )
 
         connection = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         connection.settimeout(self.timeout_seconds)
         try:
             connection.connect(str(self.socket_path))
+        except ConnectionRefusedError as exc:
+            connection.close()
+            raise UnixSocketClientError(
+                "Cannot connect to socket: connection refused",
+                "connection_refused",
+            ) from exc
         except OSError as exc:
             connection.close()
-            raise UnixSocketClientError(f"Cannot connect to socket: {exc}") from exc
+            raise UnixSocketClientError(
+                f"Cannot connect to socket: {exc}",
+                "socket_unavailable",
+            ) from exc
         return connection
 
     def _serialize(self, message: SerializableProto) -> bytes:
@@ -62,8 +78,10 @@ class UnixSocketProtobufClient:
         while remaining:
             chunk = connection.recv(remaining)
             if not chunk:
-                raise UnixSocketClientError("Socket closed before frame was complete.")
+                raise UnixSocketClientError(
+                    "Socket closed before frame was complete.",
+                    "incomplete_response",
+                )
             chunks.append(chunk)
             remaining -= len(chunk)
         return b"".join(chunks)
-

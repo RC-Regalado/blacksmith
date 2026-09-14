@@ -1,6 +1,7 @@
 # Local environment
 .env
 .env.*
+!.env.example
 venv/
 .venv/
 
@@ -20,6 +21,8 @@ __pycache__/
 # C toolserver build output
 c_toolserver/build/
 
-# Local Codex/session files
-.codex
-codex
+/logs/
+
+# Repositorio de pruebas
+/email/
+/hypr/

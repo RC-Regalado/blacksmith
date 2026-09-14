@@ -1,0 +1,12 @@
+# Architecture Review Checklist
+- [ ] Domain has no infrastructure imports.
+- [ ] Application depends on ports, not concrete adapters.
+- [ ] Interfaces contain no persistence/model protocol logic.
+- [ ] Bootstrap is the composition root.
+- [ ] Stores remain separate.
+- [ ] ModelProvider and EmbeddingProvider remain separate.
+- [ ] CapabilityRegistry hides executor details.
+- [ ] Planner output is validated.
+- [ ] Policy/confirmation/audit are not bypassed.
+- [ ] C toolserver independently validates privileged operations.
+- [ ] Accepted ADRs remain satisfied.

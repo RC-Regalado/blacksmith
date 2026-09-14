@@ -1,19 +1,30 @@
 """Domain objects for the assistant core."""
 
 from ai_assistant.domain.errors import (
+    AmbiguousPathError,
     AssistantError,
     ConfigurationError,
     ConversationStoreError,
+    ExecutionStoreError,
     InvalidMessageError,
+    InvalidKnowledgeError,
     InvalidSessionError,
     InvalidToolCallError,
+    KnowledgeStoreError,
     ModelConnectionError,
     ModelNotFoundError,
     ModelProtocolError,
     ModelTimeoutError,
+    PathNotFoundError,
+    PathOutsideWorkspaceError,
+    PathPermissionDeniedError,
+    SensitivePathError,
     ToolAuditStoreError,
+    ToolPathError,
+    UnsupportedFileTypeError,
 )
-from ai_assistant.domain.message import Message, Role
+from ai_assistant.domain.message import Message, MessageProvenance, Role
+from ai_assistant.domain.model_response import FinishReason, ModelResponse
 from ai_assistant.domain.session import DEFAULT_SESSION_ID, SessionId, validate_session_id
 from ai_assistant.domain.tools import (
     AuditRetentionClass,
@@ -39,18 +50,28 @@ from ai_assistant.domain.tools import (
 )
 
 __all__ = [
+    "AmbiguousPathError",
     "AssistantError",
     "ConfigurationError",
     "ConversationStoreError",
+    "ExecutionStoreError",
     "DEFAULT_SESSION_ID",
+    "FinishReason",
     "InvalidMessageError",
+    "InvalidKnowledgeError",
     "InvalidSessionError",
     "InvalidToolCallError",
+    "KnowledgeStoreError",
     "Message",
+    "MessageProvenance",
     "ModelConnectionError",
     "ModelNotFoundError",
     "ModelProtocolError",
+    "ModelResponse",
     "ModelTimeoutError",
+    "PathNotFoundError",
+    "PathOutsideWorkspaceError",
+    "PathPermissionDeniedError",
     "Role",
     "AuditRetentionClass",
     "AuditRetentionRule",
@@ -58,6 +79,7 @@ __all__ = [
     "HashMetadata",
     "PolicyDecisionKind",
     "SanitizedToolError",
+    "SensitivePathError",
     "SessionId",
     "ToolProfileId",
     "ToolAuditEvent",
@@ -69,8 +91,10 @@ __all__ = [
     "ToolExecutionRequest",
     "ToolExecutionResult",
     "ToolExecutionStatus",
+    "ToolPathError",
     "ToolPermission",
     "ToolPolicyDecision",
+    "UnsupportedFileTypeError",
     "WriteMode",
     "WriteRequest",
     "WriteResult",

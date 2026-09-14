@@ -8,6 +8,10 @@ Phase 2 adds bounded read-only workspace tools behind policy, path validation, a
 
 Phase 3 adds controlled development tools through the C toolserver: metadata, literal search, Git inspection, approved test/build profiles and bounded atomic writes.
 
+Phase 4 adds the Agent Execution Engine: objective planning, validated read-only DAG execution, budgets, checkpoints, evidence-driven evaluation, observability and adversarial regression coverage.
+
+Phase 5 adds the Context & Knowledge Engine: derived local knowledge, manual indexing, FTS5 lexical retrieval, local embeddings, hybrid retrieval, context compilation, objective integration, metrics and functional evaluation support.
+
 ## Requirements
 
 - Python 3.12+
@@ -33,7 +37,8 @@ Exit with `quit`, `exit` or EOF.
 
 ## Configuration
 
-Configuration is loaded once at bootstrap from environment variables.
+Configuration is loaded once at bootstrap. Precedence is process environment,
+then `.env`, then application defaults.
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -41,11 +46,15 @@ Configuration is loaded once at bootstrap from environment variables.
 | `AI_ASSISTANT_MODEL` | empty | Provider model name |
 | `AI_ASSISTANT_BASE_URL` | provider-specific | Ollama or OpenAI-compatible base URL |
 | `AI_ASSISTANT_DATABASE` | `assistant.sqlite3` | SQLite database path |
+| `AI_ASSISTANT_EXECUTION_DATABASE` | `assistant_execution.sqlite3` | Separate SQLite execution database path |
+| `AI_ASSISTANT_KNOWLEDGE_DATABASE` | `assistant_knowledge.sqlite3` | Separate derived SQLite knowledge database path |
 | `AI_ASSISTANT_SESSION` | `default` | Conversation session ID |
 | `AI_ASSISTANT_SYSTEM_PROMPT` | `You are a local AI assistant.` | System prompt |
 | `AI_ASSISTANT_LOG_LEVEL` | `INFO` | Python logging level |
 | `AI_ASSISTANT_REQUEST_TIMEOUT` | `60` | Provider request timeout in seconds |
-| `AI_ASSISTANT_CONTEXT_LIMIT` | `4096` | Simple character budget for context |
+| `AI_ASSISTANT_MODEL_CONTEXT_WINDOW` | `4096` | Provider-neutral model context window |
+| `AI_ASSISTANT_MODEL_MAX_OUTPUT_TOKENS` | `2048` | Provider-neutral generation reserve; Ollama maps it to `num_predict` |
+| `AI_ASSISTANT_MODEL_CONTEXT_SAFETY_MARGIN` | `0` | Extra input headroom subtracted from compiled context |
 | `AI_ASSISTANT_WORKSPACE` | unset | Workspace root for tools |
 | `AI_ASSISTANT_TOOL_EXECUTION` | `false` | Enables tools when `true` and workspace is set |
 | `AI_ASSISTANT_TOOL_TIMEOUT` | `5` | Tool timeout in seconds, capped at 30 |
@@ -56,6 +65,7 @@ Configuration is loaded once at bootstrap from environment variables.
 | `AI_ASSISTANT_AUDIT_AUTO_PURGE` | `false` | Reserved; automatic audit purge stays disabled by default |
 | `AI_ASSISTANT_TOOL_EXECUTOR` | `unix_socket` | Tool executor, `unix_socket` by default or explicit `local` |
 | `AI_ASSISTANT_TOOL_SOCKET` | `c_toolserver/build/toolserver.sock` | Unix socket path for the C toolserver |
+| `AI_ASSISTANT_TOOL_LOG_DIR` | `logs/tools` | JSONL diagnostic logs for tool-loop attempts |
 | `OPENAI_API_KEY` | unset | API key for OpenAI-compatible providers |
 
 Example with Ollama:
@@ -92,9 +102,43 @@ AI_ASSISTANT_WORKSPACE="$PWD" \
 AI_ASSISTANT_TOOL_EXECUTION=true \
 AI_ASSISTANT_TOOL_EXECUTOR=unix_socket \
 AI_ASSISTANT_TOOL_SOCKET=c_toolserver/build/toolserver.sock \
-AI_ASSISTANT_CONTEXT_LIMIT=2048 \
+AI_ASSISTANT_MODEL_CONTEXT_WINDOW=2048 \
+AI_ASSISTANT_MODEL_MAX_OUTPUT_TOKENS=512 \
+AI_ASSISTANT_MODEL_CONTEXT_SAFETY_MARGIN=0 \
 python main.py
 ```
+
+Run an objective through the Phase 4 execution path:
+
+```bash
+AI_ASSISTANT_PROVIDER=ollama \
+AI_ASSISTANT_MODEL=blacksmith-tools \
+AI_ASSISTANT_WORKSPACE="$PWD" \
+AI_ASSISTANT_TOOL_EXECUTION=true \
+python main.py objective "Inspect repository status"
+```
+
+To inspect the raw planner response when a local model fails to produce a valid plan:
+
+```bash
+python main.py objective --verbose "Inspect repository status"
+```
+
+To include Phase 5 objective metrics:
+
+```bash
+python main.py objective --metrics "Explain why ExecutionEngine cannot write files"
+```
+
+Manual knowledge indexing:
+
+```bash
+AI_ASSISTANT_WORKSPACE="$PWD" python main.py knowledge status
+AI_ASSISTANT_WORKSPACE="$PWD" python main.py knowledge rebuild .
+AI_ASSISTANT_WORKSPACE="$PWD" python main.py knowledge query "ExecutionEngine"
+```
+
+The KnowledgeStore is derived and rebuildable. It stays separate from conversation, audit and execution stores.
 
 When tools are enabled, bootstrap appends the local tool-call contract to the system prompt. For deterministic manual testing, paste a tool call directly:
 
@@ -121,6 +165,14 @@ Phase 3 tool calls use the same envelope:
 ```
 
 `run_tests`, `build_project` and `write` require first-use confirmation per session, workspace and permission. Only literal `yes` approves in the CLI.
+
+Tool-loop diagnostics are written as JSON Lines when tools are attempted. Files use:
+
+```text
+log-{model}-{session}-{date}.log
+```
+
+Model and session values are filename-sanitized. Event payloads redact sensitive keys, sensitive paths and secret-like string values.
 
 Approved process profiles:
 
@@ -149,6 +201,8 @@ Package responsibilities:
 - `ai_assistant/application/`: runtime, context building, tool-call interpretation and ports.
 - `ai_assistant/infrastructure/`: model providers and memory stores.
 - `ai_assistant/infrastructure/tools/`: local and Unix socket tool executors.
+- `ai_assistant/platform/`: objective, plan, execution, budget, checkpoint and evaluation services.
+- `ai_assistant/knowledge/`: derived knowledge domain, ports, chunking, retrieval, ranking, context compilation and metrics.
 - `ai_assistant/interfaces/`: CLI adapter.
 - `ai_assistant/bootstrap/`: composition root and environment configuration.
 - `ai_assistant/agent/`, `ai_assistant/cli/`, `ai_assistant/storage/`: compatibility exports.
@@ -266,6 +320,61 @@ Still out of scope:
 - Arbitrary shell/process execution, package installation and network tools
 - Persistent global approvals
 - Multiple autonomous tool rounds
+
+## Phase 4 Scope
+
+Implemented:
+
+- Explicit objective CLI: `python main.py objective "..."`
+- Provider-neutral `Objective`, `Plan`, `PlatformTask`, `ExecutionRecord`, `ExecutionBudget`, `Checkpoint`, `ExecutionResult` and `EvaluationResult`
+- `ModelBackedPlanner` with strict JSON plan contract and tolerant local-model parsing for common JSON wrappers
+- `CapabilityRegistry` mapping abstract read-only capabilities to approved tools
+- `PlanValidator` for IDs, dependencies, cycles, capabilities, arguments and task budgets
+- Immutable execution graph and deterministic sequential scheduler
+- Platform-owned budget accounting with `max_writes=0` and `max_replans=0`
+- Dedicated `SQLiteExecutionStore`, separate from conversation and audit
+- Logical checkpoints that store metadata only
+- Evidence-driven objective evaluator
+- Metadata-only execution observability
+- Phase 4 adversarial and Phase 1-3 regression coverage
+
+Still out of scope:
+
+- Autonomous write
+- Retry, replanning, parallel execution and subagents
+- Filesystem rollback snapshots
+- Dynamic capabilities, remote executors, shell and network tools
+- Semantic user memory, automatic skills, MCP, watcher daemon and network retrieval
+
+## Phase 5 Scope
+
+Phase 5 is the Context & Knowledge Engine.
+
+Objective: reduce the work required from the main LLM by transforming local data into indexed, retrievable, versioned knowledge that can be compiled into high-relevance context.
+
+Implemented:
+
+- Derived `SQLiteKnowledgeStore`, separate from canonical stores.
+- Manual `knowledge status|index|rebuild|query` CLI.
+- Hashing, freshness tracking and rebuild lifecycle.
+- Normalization, chunking, metadata and symbol extraction.
+- SQLite FTS5 lexical retrieval.
+- CPU-capable dummy `EmbeddingProvider` and local embedding storage.
+- Bounded semantic similarity and `HybridRetriever`.
+- Deterministic `KnowledgeRanker`.
+- `ContextCompiler` with provenance and `ContextBudget`.
+- Planning and synthesis integration for objective execution.
+- Context metrics and `objective --metrics`.
+- Security, freshness and Phase 1-4 regression coverage.
+
+Still out of scope:
+
+- Semantic long-term user memory.
+- Automatic skill generation.
+- MCP.
+- Network retrieval.
+- External vector database.
+- Filesystem watcher daemon.
 
 ## ADRs
 

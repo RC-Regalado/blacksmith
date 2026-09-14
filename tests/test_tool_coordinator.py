@@ -321,4 +321,5 @@ def _request(
         tool_name=tool_name,
         arguments={"path": "file.txt"},
         permission=permission,
+        origin="model_output",
     )
